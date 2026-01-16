@@ -1,22 +1,23 @@
-import type { ComponentPropsWithoutRef, ReactNode } from 'react'
-import s from './Input.module.scss'
+import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 
-type InputSize = 'sm' | 'md' | 'lg'
+import s from './Input.module.scss';
+
+type InputSize = 'sm' | 'md' | 'lg';
 
 type InputProps = {
-  size?: InputSize
-  invalid?: boolean
-  fullWidth?: boolean
-  iconLeft?: ReactNode
-  iconRight?: ReactNode
-  wrapperClassName?: string
-} & Omit<ComponentPropsWithoutRef<'input'>, 'size'>
+  size?: InputSize;
+  invalid?: boolean;
+  fullWidth?: boolean;
+  iconLeft?: ReactNode;
+  iconRight?: ReactNode;
+  wrapperClassName?: string;
+} & Omit<ComponentPropsWithoutRef<'input'>, 'size'>;
 
 const sizeClassMap: Record<InputSize, string> = {
   sm: s.sizeSm,
   md: s.sizeMd,
   lg: s.sizeLg,
-}
+};
 
 export function Input({
   size = 'md',
@@ -38,7 +39,7 @@ export function Input({
     wrapperClassName,
   ]
     .filter(Boolean)
-    .join(' ')
+    .join(' ');
 
   return (
     <div className={wrapperClasses}>
@@ -51,5 +52,5 @@ export function Input({
       />
       {iconRight ? <span className={s.icon}>{iconRight}</span> : null}
     </div>
-  )
+  );
 }

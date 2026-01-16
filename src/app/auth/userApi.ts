@@ -5,7 +5,7 @@ import type { IUser } from '@/common/types/user.type';
 const fallbackError = 'Unable to load your profile.';
 
 export async function getCurrentUser() {
-  const res = await apiFetch('/admin/admins/me');
+  const res = await apiFetch('admin/admins/me');
   if (!res.ok) {
     throw await buildApiError(res, fallbackError);
   }

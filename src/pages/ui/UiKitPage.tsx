@@ -36,6 +36,8 @@ import {
   Textarea,
   Typography,
 } from '@/atoms';
+import { FileDir, type IFile } from '@/common/types';
+import { FileUpload } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 
 import s from './UiKitPage.module.scss';
@@ -46,6 +48,7 @@ export function UiKitPage() {
   const [page, setPage] = useState(2);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [menuValue, setMenuValue] = useState('Preview');
+  const [uploadedFile, setUploadedFile] = useState<IFile | null>(null);
 
   return (
     <AppShell>
@@ -189,6 +192,16 @@ export function UiKitPage() {
             <Checkbox label="Enable autosave" defaultChecked />
             <Switch label="Notify collaborators" />
           </div>
+        </section>
+
+        <section className={s.section} aria-label="File upload">
+          <Typography variant="h3">File upload</Typography>
+          <FileUpload
+            label="Profile image"
+            folder={FileDir.Public}
+            value={uploadedFile}
+            onChange={setUploadedFile}
+          />
         </section>
 
         <section className={s.section} aria-label="Typography">
