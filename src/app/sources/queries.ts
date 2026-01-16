@@ -86,8 +86,8 @@ export function useRefreshSource() {
       queryClient.invalidateQueries({ queryKey: ['source', id] });
       queryClient.invalidateQueries({ queryKey: ['sources'] });
       notifySuccess(
-        'Echo started checking this source. Results will be picked up soon.',
-        'Echo started checking this source.',
+        'Aera is checking this source. Results will be picked up soon.',
+        'Aera is checking this source.',
       );
     },
     onError: (error) => {

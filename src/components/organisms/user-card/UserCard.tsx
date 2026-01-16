@@ -7,11 +7,11 @@ import s from './UserCard.module.scss';
 
 type UserCardProps = {
   name: string;
-  plan: string;
+  role: string;
   to?: string;
 };
 
-export function UserCard({ name, plan, to = '/profile' }: UserCardProps) {
+export function UserCard({ name, role, to = '/profile' }: UserCardProps) {
   const location = useLocation();
 
   const isActive = location.pathname === to;
@@ -24,7 +24,7 @@ export function UserCard({ name, plan, to = '/profile' }: UserCardProps) {
           {name}
         </Typography>
         <Typography className={s.plan} variant="meta" tone="muted">
-          {plan}
+          {role}
         </Typography>
       </div>
     </Link>

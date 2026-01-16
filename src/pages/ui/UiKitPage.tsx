@@ -247,7 +247,7 @@ export function UiKitPage() {
           <div className={s.stack}>
             <Alert
               title="Draft saved"
-              description="Your note is safely stored in Echo."
+              description="Your note is safely stored in Aera."
               tone="success"
             />
             <Alert

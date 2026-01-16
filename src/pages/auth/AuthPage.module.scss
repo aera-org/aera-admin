@@ -21,8 +21,8 @@
   top: 80px;
 
 
-  svg {
-    height: 40px;
+  img {
+    height: 80px;
     width: auto;
   }
 }
@@ -44,7 +44,7 @@
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius-base);
   padding: var(--space-6);
-  min-height: 520px;
+  min-height: 420px;
 }
 
 .panelHeader {

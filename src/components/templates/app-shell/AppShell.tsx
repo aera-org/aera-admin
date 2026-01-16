@@ -1,10 +1,10 @@
-import Logo from '@/assets/logo/logo.png';
 import { useAuth } from '@/app/auth';
+import Logo from '@/assets/logo/logo.png';
+import { Typography } from '@/atoms';
 import { cn } from '@/common/utils';
 import { Navigation, UserCard } from '@/organisms';
 
 import s from './AppShell.module.scss';
-import {Typography} from "@/atoms";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -16,7 +16,7 @@ export function AppShell({ children, className }: AppShellProps) {
   const name =
     user?.firstName || user?.lastName
       ? [user?.firstName, user?.lastName].filter(Boolean).join(' ')
-      : user?.email ?? 'Echo member';
+      : (user?.email ?? 'Aera admin');
 
   return (
     <div className={cn(s.page, [className])}>
@@ -24,12 +24,14 @@ export function AppShell({ children, className }: AppShellProps) {
         <div className={s.brandLogo}>
           <img src={Logo} alt="Aera" />
 
-          <Typography variant="h2" className={s.logoText}>Admin</Typography>
+          <Typography variant="h2" className={s.logoText}>
+            Admin
+          </Typography>
         </div>
 
         <Navigation />
         <div className={s.sidebarFooter}>
-          <UserCard name={name} plan="Echo Pro" />
+          <UserCard name={name} role="Developer" />
         </div>
       </aside>
       <main className={s.main}>{children}</main>
