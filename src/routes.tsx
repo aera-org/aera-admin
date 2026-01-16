@@ -17,6 +17,7 @@ import {
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<CharactersPage />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/auth/confirm" element={<ConfirmEmailPage />} />

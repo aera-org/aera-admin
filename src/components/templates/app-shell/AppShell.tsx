@@ -31,7 +31,7 @@ export function AppShell({ children, className }: AppShellProps) {
 
         <Navigation />
         <div className={s.sidebarFooter}>
-          <UserCard name={name} role="Developer" />
+          <UserCard name={name} role="Owner" />
         </div>
       </aside>
       <main className={s.main}>{children}</main>
