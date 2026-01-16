@@ -8,7 +8,8 @@ import {
   ForgotPasswordPage,
   ResetPasswordPage,
   UiKitPage,
-    ProfilePage,
+  ProfilePage,
+  CharactersPage,
 } from '@/pages';
 
 export function AppRoutes() {
@@ -21,6 +22,7 @@ export function AppRoutes() {
       <Route path="/auth/reset" element={<ResetPasswordPage />} />
       <Route element={<AuthGuard />}>
         <Route path="/ui" element={<UiKitPage />} />
+        <Route path="/characters" element={<CharactersPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
     </Routes>

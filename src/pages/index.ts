@@ -5,3 +5,4 @@ export { ConfirmEmailPage } from './auth/ConfirmEmailPage';
 export { ForgotPasswordPage } from './auth/ForgotPasswordPage';
 export { ResetPasswordPage } from './auth/ResetPasswordPage';
 export { ProfilePage } from './profile/ProfilePage';
+export { CharactersPage } from './characters/CharactersPage';

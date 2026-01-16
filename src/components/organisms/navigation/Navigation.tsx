@@ -1,13 +1,7 @@
 import type { JSX } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
-import {
-  AudioLinesIcon,
-  LayersIcon,
-  NewspaperIcon,
-  PencilLineIcon,
-  RadioIcon,
-} from '@/assets/icons';
+import { MessageSquareQuoteIcon } from '@/assets/icons';
 import { Button } from '@/atoms';
 
 import s from './Navigation.module.scss';
@@ -19,11 +13,7 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { label: 'Write', to: '/', icon: <PencilLineIcon /> },
-  { label: 'Posts', to: '/posts', icon: <NewspaperIcon /> },
-  { label: 'Themes', to: '/themes', icon: <LayersIcon /> },
-  { label: 'Sources', to: '/sources', icon: <RadioIcon /> },
-  { label: 'Voices', to: '/voices', icon: <AudioLinesIcon /> },
+  { label: 'Characters', to: '/characters', icon: <MessageSquareQuoteIcon /> },
 ];
 
 export function Navigation() {
