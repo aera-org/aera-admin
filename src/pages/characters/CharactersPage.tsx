@@ -1,6 +1,6 @@
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { NavLink, useSearchParams } from 'react-router-dom';
 
 import { useCharacters } from '@/app/characters';
 import { ExternalLinkIcon, PencilLineIcon, PlusIcon } from '@/assets/icons';
@@ -216,15 +216,18 @@ export function CharactersPage() {
           actions: (
             <div className={s.actionsCell}>
               <IconButton
+                as={NavLink}
+                to={`/characters/${character.id}`}
                 aria-label="View character"
                 icon={<ExternalLinkIcon />}
+                tooltip="View character"
                 variant="ghost"
                 size="sm"
-                disabled
               />
               <IconButton
                 aria-label="Edit character"
                 icon={<PencilLineIcon />}
+                tooltip="Edit character"
                 variant="ghost"
                 size="sm"
                 disabled

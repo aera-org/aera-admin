@@ -1,6 +1,6 @@
 import { apiFetch } from '@/app/api';
 import { buildApiError } from '@/app/api/apiErrors';
-import type { ICharacter } from '@/common/types';
+import type { ICharacter, ICharacterDetails } from '@/common/types';
 
 import type { PaginatedResponse } from '../paginated-response.type.ts';
 
@@ -26,4 +26,12 @@ export async function getCharacters(params: CharactersListParams) {
     throw await buildApiError(res, fallbackError);
   }
   return (await res.json()) as PaginatedResponse<ICharacter>;
+}
+
+export async function getCharacterDetails(id: string) {
+  const res = await apiFetch(`/admin/characters/${id}`);
+  if (!res.ok) {
+    throw await buildApiError(res, fallbackError);
+  }
+  return (await res.json()) as ICharacterDetails;
 }

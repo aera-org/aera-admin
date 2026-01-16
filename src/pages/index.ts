@@ -1,8 +1,9 @@
-export { UiKitPage } from './ui/UiKitPage';
-export { AuthPage } from './auth/AuthPage';
 export { AuthCallbackPage } from './auth/AuthCallbackPage';
+export { AuthPage } from './auth/AuthPage';
 export { ConfirmEmailPage } from './auth/ConfirmEmailPage';
 export { ForgotPasswordPage } from './auth/ForgotPasswordPage';
 export { ResetPasswordPage } from './auth/ResetPasswordPage';
-export { ProfilePage } from './profile/ProfilePage';
+export { CharacterDetailsPage } from './characters/CharacterDetailsPage';
 export { CharactersPage } from './characters/CharactersPage';
+export { ProfilePage } from './profile/ProfilePage';
+export { UiKitPage } from './ui/UiKitPage';

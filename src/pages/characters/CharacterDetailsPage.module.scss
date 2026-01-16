@@ -1,0 +1,165 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-bottom: var(--space-8);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.emoji {
+  font-size: 22px;
+  line-height: 1;
+  margin-right: var(--space-2);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.alignRight {
+  display: block;
+  width: 100%;
+  text-align: right;
+}
+
+.scenarioCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 200px;
+}
+
+.scenarioName {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.detailsCard {
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-base);
+  padding: var(--space-4);
+  background: var(--color-surface);
+}
+
+.detailsHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid hsl(var(--border));
+  margin-bottom: var(--space-3);
+}
+
+.detailsTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detailBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.statusField {
+  width: max-content;
+}
+
+.multiline {
+  white-space: pre-wrap;
+}
+
+.phaseGrid {
+  margin-top: var(--space-2);
+}
+
+.phaseCard {
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: hsl(var(--bg));
+}
+
+.phaseTitle {
+  font-weight: 600;
+}
+
+.phaseSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sceneCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 200px;
+}
+
+.sceneImageCell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sceneImage {
+  width: 140px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid hsl(var(--border));
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}

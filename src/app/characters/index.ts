@@ -1,2 +1,2 @@
-export { useCharacters } from './queries';
+export { useCharacterDetails, useCharacters } from './queries';
 export type { CharactersListParams } from './charactersApi';

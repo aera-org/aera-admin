@@ -3,13 +3,14 @@ import { Route, Routes } from 'react-router-dom';
 import { AuthGuard } from '@/app/auth';
 import {
   AuthCallbackPage,
-  ConfirmEmailPage,
   AuthPage,
+  CharacterDetailsPage,
+  CharactersPage,
+  ConfirmEmailPage,
   ForgotPasswordPage,
+  ProfilePage,
   ResetPasswordPage,
   UiKitPage,
-  ProfilePage,
-  CharactersPage,
 } from '@/pages';
 
 export function AppRoutes() {
@@ -23,6 +24,7 @@ export function AppRoutes() {
       <Route element={<AuthGuard />}>
         <Route path="/ui" element={<UiKitPage />} />
         <Route path="/characters" element={<CharactersPage />} />
+        <Route path="/characters/:id" element={<CharacterDetailsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
     </Routes>
