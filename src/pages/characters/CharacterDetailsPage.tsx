@@ -226,6 +226,14 @@ export function CharacterDetailsPage() {
               </Typography>
             </Field>
           </FormRow>
+
+          <FormRow columns={1}>
+            <Field label="LoRA" labelFor="character-lora">
+              <Typography id="character-lora" variant="body">
+                {data?.lora.fileName || 'Missing LoRA'}
+              </Typography>
+            </Field>
+          </FormRow>
         </div>
 
         <div className={s.section}>

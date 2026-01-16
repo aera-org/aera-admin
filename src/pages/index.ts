@@ -5,5 +5,6 @@ export { ForgotPasswordPage } from './auth/ForgotPasswordPage';
 export { ResetPasswordPage } from './auth/ResetPasswordPage';
 export { CharacterDetailsPage } from './characters/CharacterDetailsPage';
 export { CharactersPage } from './characters/CharactersPage';
+export { LorasPage } from './loras/LorasPage';
 export { ProfilePage } from './profile/ProfilePage';
 export { UiKitPage } from './ui/UiKitPage';

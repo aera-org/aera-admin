@@ -1,11 +1,4 @@
-interface ILora {
-  id: string;
-  fileName: string;
-  seed: number;
-  isUploaded: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { ILora } from './lora.type';
 
 export interface ICharacter {
   id: string;
@@ -56,6 +49,6 @@ interface IScenario {
 }
 
 export interface ICharacterDetails extends ICharacter {
-  lora: ILora[];
+  lora: ILora;
   scenarios: IScenario[];
 }

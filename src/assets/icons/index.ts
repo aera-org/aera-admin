@@ -9,4 +9,5 @@ export { default as PencilLineIcon } from './pencil-line.svg?react';
 export { default as PlusIcon } from './plus.svg?react';
 export { default as RadioIcon } from './radio.svg?react';
 export { default as SendIcon } from './send.svg?react';
+export { default as UsersRoundIcon } from './users-round.svg?react';
 export { default as YoutubeIcon } from './youtube.svg?react';

@@ -8,6 +8,7 @@ import {
   CharactersPage,
   ConfirmEmailPage,
   ForgotPasswordPage,
+  LorasPage,
   ProfilePage,
   ResetPasswordPage,
   UiKitPage,
@@ -25,6 +26,7 @@ export function AppRoutes() {
         <Route path="/ui" element={<UiKitPage />} />
         <Route path="/characters" element={<CharactersPage />} />
         <Route path="/characters/:id" element={<CharacterDetailsPage />} />
+        <Route path="/loras" element={<LorasPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
     </Routes>
