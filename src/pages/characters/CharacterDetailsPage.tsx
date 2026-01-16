@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
 
 import { useCharacterDetails } from '@/app/characters';
-import { ExternalLinkIcon, PencilLineIcon } from '@/assets/icons';
+import { PencilLineIcon } from '@/assets/icons';
 import {
   Alert,
   Badge,
@@ -12,23 +12,17 @@ import {
   Field,
   FormRow,
   Grid,
-  List,
   Skeleton,
   Stack,
   Table,
   Tabs,
   Typography,
 } from '@/atoms';
-import type { ICharacterDetails, IScene } from '@/common/types';
 import { AppShell } from '@/components/templates';
 
 import s from './CharacterDetailsPage.module.scss';
 
 type TabValue = 'overview' | 'scenarios';
-
-type Scenario = ICharacterDetails['scenarios'][number];
-
-type SceneLookup = Record<string, IScene>;
 
 const TABS = [
   { value: 'overview', label: 'Overview' },
@@ -52,21 +46,6 @@ function formatValue(value: string | null | undefined) {
   const trimmed = value.trim();
   if (!trimmed) return '-';
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-}
-
-function buildSceneLookup(scenes: IScene[]) {
-  return scenes.reduce<SceneLookup>((acc, scene) => {
-    acc[scene.id] = scene;
-    return acc;
-  }, {});
-}
-
-function getOrderedScenes(scenario: Scenario) {
-  if (!scenario.scenesOrder?.length) return scenario.scenes;
-  const lookup = buildSceneLookup(scenario.scenes);
-  return scenario.scenesOrder
-    .map((id) => lookup[id])
-    .filter((scene): scene is IScene => Boolean(scene));
 }
 
 export function CharacterDetailsPage() {
@@ -146,68 +125,47 @@ export function CharacterDetailsPage() {
     [scenarios, selectedScenarioId],
   );
 
-  const sceneColumns = useMemo(
-    () => [
-      { key: 'scene', label: 'Scene' },
-      { key: 'visual', label: 'Visual change' },
-      { key: 'image', label: 'Opening image' },
-    ],
-    [],
-  );
-
-  const sceneRows = useMemo(() => {
+  const sceneCards = useMemo(() => {
     if (!selectedScenario) return [];
-    const orderedScenes = getOrderedScenes(selectedScenario);
-    return orderedScenes.map((scene) => ({
-      scene: (
-        <div className={s.sceneCell}>
-          <Typography variant="body">{scene.name}</Typography>
-          <Typography variant="caption" tone="muted" className={s.truncate}>
-            {scene.description || 'No description'}
+    return selectedScenario.scenes.map((scene) => (
+      <div key={scene.id} className={s.sceneCard}>
+        <div className={s.sceneHeader}>
+          {scene.openingImageUrl ? (
+            <img
+              className={s.sceneImage}
+              src={scene.openingImageUrl}
+              alt={scene.name}
+              loading="lazy"
+            />
+          ) : (
+            <div className={s.sceneImagePlaceholder}>
+              <Typography variant="caption" tone="muted">
+                No image
+              </Typography>
+            </div>
+          )}
+          <div className={s.sceneTitleBlock}>
+            <Typography variant="body">{scene.name}</Typography>
+          </div>
+        </div>
+        <div className={s.sceneRow}>
+          <Typography variant="caption" tone="muted" className={s.sceneLabel}>
+            Description
+          </Typography>
+          <Typography variant="body" className={s.multiline}>
+            {scene.description || '-'}
           </Typography>
         </div>
-      ),
-      visual: (
-        <Typography variant="body" tone="muted" className={s.truncate}>
-          {scene.visualChange || '-'}
-        </Typography>
-      ),
-      image: scene.openingImageUrl ? (
-        <div className={s.sceneImageCell}>
-          <img
-            className={s.sceneImage}
-            src={scene.openingImageUrl}
-            alt={scene.name}
-            loading="lazy"
-          />
-          <Button
-            as="a"
-            href={scene.openingImageUrl}
-            target="_blank"
-            rel="noreferrer"
-            variant="ghost"
-            size="sm"
-          >
-            Open
-          </Button>
+        <div className={s.sceneRow}>
+          <Typography variant="caption" tone="muted" className={s.sceneLabel}>
+            Visual change
+          </Typography>
+          <Typography variant="body" className={s.multiline}>
+            {scene.visualChange || '-'}
+          </Typography>
         </div>
-      ) : (
-        <Typography variant="body" tone="muted">
-          -
-        </Typography>
-      ),
-    }));
-  }, [selectedScenario]);
-
-  const orderedSceneNames = useMemo(() => {
-    if (!selectedScenario) return [];
-    const lookup = buildSceneLookup(selectedScenario.scenes);
-    if (!selectedScenario.scenesOrder?.length) {
-      return selectedScenario.scenes.map((scene) => scene.name);
-    }
-    return selectedScenario.scenesOrder.map(
-      (sceneId) => lookup[sceneId]?.name ?? sceneId,
-    );
+      </div>
+    ));
   }, [selectedScenario]);
 
   const phases = selectedScenario?.phases ?? null;
@@ -384,19 +342,6 @@ export function CharacterDetailsPage() {
                       </div>
 
                       <div>
-                        <Typography variant="caption" tone="muted">
-                          Scenes order
-                        </Typography>
-                        {orderedSceneNames.length ? (
-                          <List items={orderedSceneNames} />
-                        ) : (
-                          <Typography variant="body" tone="muted">
-                            -
-                          </Typography>
-                        )}
-                      </div>
-
-                      <div>
                         <Typography variant="h3">Phases</Typography>
                         <Grid columns={3} gap="16px" className={s.phaseGrid}>
                           {(
@@ -455,9 +400,11 @@ export function CharacterDetailsPage() {
                       </div>
 
                       <div>
-                        <Typography variant="h3">Scenes</Typography>
-                        {sceneRows.length ? (
-                          <Table columns={sceneColumns} rows={sceneRows} />
+                        <Typography variant="h3" className={s.scenesTitle}>
+                          Scenes
+                        </Typography>
+                        {sceneCards.length ? (
+                          <Stack gap="16px">{sceneCards}</Stack>
                         ) : (
                           <Typography variant="body" tone="muted">
                             No scenes available.
