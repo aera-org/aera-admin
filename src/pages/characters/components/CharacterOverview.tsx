@@ -25,15 +25,17 @@ export function CharacterOverview({
     <div className={s.section}>
       <div className={s.sectionHeader}>
         <Typography variant="h3">Overview</Typography>
-        <IconButton
-          aria-label="Edit overview"
-          icon={<PencilLineIcon />}
-          tooltip="Edit"
-          variant="ghost"
-          size="sm"
-          onClick={onEdit}
-          disabled={!canEdit}
-        />
+        <span className={s.sectionEdit}>
+          <IconButton
+            aria-label="Edit overview"
+            icon={<PencilLineIcon />}
+            tooltip="Edit"
+            variant="ghost"
+            size="sm"
+            onClick={onEdit}
+            disabled={!canEdit}
+          />
+        </span>
       </div>
       <FormRow columns={3}>
         <Field label="Name" labelFor="character-name">

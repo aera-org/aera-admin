@@ -53,6 +53,16 @@
   flex-wrap: wrap;
 }
 
+.sectionEdit {
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.section:hover .sectionEdit,
+.section:focus-within .sectionEdit {
+  opacity: 1;
+}
+
 .scenarioTabs {
   overflow-x: auto;
 }

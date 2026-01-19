@@ -1,7 +1,7 @@
 import { useAuth } from '@/app/auth';
 import Logo from '@/assets/logo/logo.png';
 import { Typography } from '@/atoms';
-import { cn } from '@/common/utils';
+import { capitalize, cn } from '@/common/utils';
 import { Navigation, UserCard } from '@/organisms';
 
 import s from './AppShell.module.scss';
@@ -31,7 +31,7 @@ export function AppShell({ children, className }: AppShellProps) {
 
         <Navigation />
         <div className={s.sidebarFooter}>
-          <UserCard name={name} role="Owner" />
+          <UserCard name={name} role={capitalize(user?.role ?? 'admin')} />
         </div>
       </aside>
       <main className={s.main}>{children}</main>
