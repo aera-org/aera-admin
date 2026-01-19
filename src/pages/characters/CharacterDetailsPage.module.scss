@@ -75,6 +75,13 @@
   margin-bottom: var(--space-3);
 }
 
+.detailsActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 .detailsTitle {
   display: flex;
   flex-direction: column;
@@ -109,8 +116,31 @@
   background: hsl(var(--bg));
 }
 
+.phaseHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.phaseEdit {
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.phaseCard:hover .phaseEdit,
+.phaseCard:focus-within .phaseEdit {
+  opacity: 1;
+}
+
 .phaseTitle {
   font-weight: 600;
+}
+
+.modal {
+  width: min(700px, 70vw);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .phaseSection {
@@ -120,6 +150,15 @@
 }
 
 .scenesTitle {
+  margin: 0;
+}
+
+.scenesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
   margin-top: var(--space-4);
   margin-bottom: var(--space-4);
 }
@@ -130,6 +169,7 @@
   object-fit: cover;
   border-radius: var(--radius-sm);
   border: 1px solid hsl(var(--border));
+  margin-top: var(--space-1);
 }
 
 .sceneCard {
@@ -146,6 +186,13 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
+}
+
+.sceneHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
 }
 
 .sceneTitleBlock {
@@ -165,10 +212,26 @@
   background: hsl(var(--bg));
 }
 
+.sceneImageField {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+
 .sceneRow {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+}
+
+.sceneEdit {
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.sceneCard:hover .sceneEdit,
+.sceneCard:focus-within .sceneEdit {
+  opacity: 1;
 }
 
 .sceneLabel {

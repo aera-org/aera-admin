@@ -4,11 +4,21 @@ import { notifyError, notifySuccess } from '@/app/toast';
 import {
   type CharacterUpdateDto,
   type CharactersListParams,
+  type ScenarioCreateDto,
+  type ScenarioUpdateDto,
+  type PhaseUpdateDto,
+  type SceneCreateDto,
+  type SceneUpdateDto,
   createCharacter,
+  createScenario,
+  createScene,
   deleteCharacter,
   getCharacterDetails,
   getCharacters,
   updateCharacter,
+  updateScenario,
+  updateScene,
+  updateScenarioPhase,
 } from './charactersApi';
 
 const characterKeys = {
@@ -44,6 +54,133 @@ export function useCreateCharacter() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to create the character.');
+    },
+  });
+}
+
+export function useCreateScenario() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      payload,
+    }: {
+      characterId: string;
+      payload: ScenarioCreateDto;
+    }) => createScenario(characterId, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Scenario created.', 'Scenario created.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to create the scenario.');
+    },
+  });
+}
+
+export function useUpdateScenario() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      scenarioId,
+      payload,
+    }: {
+      characterId: string;
+      scenarioId: string;
+      payload: ScenarioUpdateDto;
+    }) => updateScenario(characterId, scenarioId, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Scenario updated.', 'Scenario updated.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to update the scenario.');
+    },
+  });
+}
+
+export function useUpdateScenarioPhase() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      scenarioId,
+      phase,
+      payload,
+    }: {
+      characterId: string;
+      scenarioId: string;
+      phase: string;
+      payload: PhaseUpdateDto;
+    }) => updateScenarioPhase(characterId, scenarioId, phase, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Phase updated.', 'Phase updated.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to update the phase.');
+    },
+  });
+}
+
+export function useCreateScene() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      scenarioId,
+      payload,
+    }: {
+      characterId: string;
+      scenarioId: string;
+      payload: SceneCreateDto;
+    }) => createScene(characterId, scenarioId, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Scene created.', 'Scene created.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to create the scene.');
+    },
+  });
+}
+
+export function useUpdateScene() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      scenarioId,
+      sceneId,
+      payload,
+    }: {
+      characterId: string;
+      scenarioId: string;
+      sceneId: string;
+      payload: SceneUpdateDto;
+    }) => updateScene(characterId, scenarioId, sceneId, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Scene updated.', 'Scene updated.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to update the scene.');
     },
   });
 }

@@ -1,66 +1,75 @@
-import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
-import type { ReactNode } from 'react'
-import { Cross2Icon } from '@radix-ui/react-icons'
-import { Typography } from '../typography/Typography'
-import s from './Modal.module.scss'
+import { Cross2Icon } from '@radix-ui/react-icons';
+import type { ReactNode } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+
+import { cn } from '@/common/utils';
+
+import { Typography } from '../typography/Typography';
+import s from './Modal.module.scss';
 
 type ModalProps = {
-  open: boolean
-  title?: ReactNode
-  children: ReactNode
-  actions?: ReactNode
-  onClose: () => void
-}
+  open: boolean;
+  title?: ReactNode;
+  children: ReactNode;
+  actions?: ReactNode;
+  onClose: () => void;
+  className?: string;
+};
 
-export function Modal({ open, title, children, actions, onClose }: ModalProps) {
-  const [isMounted, setIsMounted] = useState(open)
-  const [isClosing, setIsClosing] = useState(false)
-  const closeDelay = 220
+export function Modal({
+  open,
+  title,
+  children,
+  actions,
+  onClose,
+  className,
+}: ModalProps) {
+  const [isMounted, setIsMounted] = useState(open);
+  const [isClosing, setIsClosing] = useState(false);
+  const closeDelay = 220;
 
   useEffect(() => {
     if (open) {
-      setIsMounted(true)
-      setIsClosing(false)
-      return undefined
+      setIsMounted(true);
+      setIsClosing(false);
+      return undefined;
     }
-    if (!isMounted) return undefined
-    setIsClosing(true)
+    if (!isMounted) return undefined;
+    setIsClosing(true);
     const timer = window.setTimeout(() => {
-      setIsMounted(false)
-      setIsClosing(false)
-    }, closeDelay)
-    return () => window.clearTimeout(timer)
-  }, [open, isMounted])
+      setIsMounted(false);
+      setIsClosing(false);
+    }, closeDelay);
+    return () => window.clearTimeout(timer);
+  }, [open, isMounted]);
 
   useEffect(() => {
-    if (!isMounted) return undefined
+    if (!isMounted) return undefined;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    window.addEventListener('keydown', onKeyDown)
+      if (event.key === 'Escape') onClose();
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKeyDown);
     return () => {
-      document.body.style.overflow = previousOverflow
-      window.removeEventListener('keydown', onKeyDown)
-    }
-  }, [isMounted, onClose])
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isMounted, onClose]);
 
-  if (!isMounted) return null
+  if (!isMounted) return null;
 
   const overlayClassName = [
     s.overlay,
     open && !isClosing ? s.overlayOpen : s.overlayClose,
   ]
     .filter(Boolean)
-    .join(' ')
-  const modalClassName = [
-    s.modal,
-    open && !isClosing ? s.modalOpen : s.modalClose,
-  ]
-    .filter(Boolean)
-    .join(' ')
+    .join(' ');
+  const modalClassName = cn(s.modal, [className], {
+    [s.modalOpen]: open && !isClosing,
+    [s.modalClose]: !open || isClosing,
+  });
 
   return createPortal(
     <div
@@ -69,10 +78,18 @@ export function Modal({ open, title, children, actions, onClose }: ModalProps) {
       aria-modal="true"
       onClick={onClose}
     >
-      <div className={modalClassName} onClick={(event) => event.stopPropagation()}>
+      <div
+        className={modalClassName}
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className={s.header}>
           {title ? <Typography variant="h3">{title}</Typography> : null}
-          <button className={s.close} type="button" onClick={onClose} aria-label="Close">
+          <button
+            className={s.close}
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+          >
             <Cross2Icon />
           </button>
         </div>
@@ -80,6 +97,6 @@ export function Modal({ open, title, children, actions, onClose }: ModalProps) {
         {actions ? <div className={s.actions}>{actions}</div> : null}
       </div>
     </div>,
-    document.body
-  )
+    document.body,
+  );
 }

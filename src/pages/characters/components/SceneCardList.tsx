@@ -1,13 +1,16 @@
-import { Button, Stack, Typography } from '@/atoms';
+import { PencilLineIcon } from '@/assets/icons';
+import { IconButton, Stack, Typography } from '@/atoms';
 import type { IScene } from '@/common/types';
 
 import s from '../CharacterDetailsPage.module.scss';
 
 type SceneCardListProps = {
   scenes: IScene[];
+  onEdit: (scene: IScene) => void;
+  canEdit: boolean;
 };
 
-export function SceneCardList({ scenes }: SceneCardListProps) {
+export function SceneCardList({ scenes, onEdit, canEdit }: SceneCardListProps) {
   if (!scenes.length) {
     return (
       <Typography variant="body" tone="muted">
@@ -20,7 +23,27 @@ export function SceneCardList({ scenes }: SceneCardListProps) {
     <Stack gap="16px">
       {scenes.map((scene) => (
         <div key={scene.id} className={s.sceneCard}>
-          <div className={s.sceneHeader}>
+          <div className={s.sceneHeaderRow}>
+            <div className={s.sceneTitleBlock}>
+              <Typography variant="h3">{scene.name}</Typography>
+            </div>
+            <span className={s.sceneEdit}>
+              <IconButton
+                aria-label={`Edit ${scene.name}`}
+                icon={<PencilLineIcon />}
+                tooltip="Edit scene"
+                variant="ghost"
+                size="sm"
+                onClick={() => onEdit(scene)}
+                disabled={!canEdit}
+              />
+            </span>
+          </div>
+
+          <div>
+            <Typography variant="caption" tone="muted">
+              Opening image
+            </Typography>
             {scene.openingImageUrl ? (
               <img
                 className={s.sceneImage}
@@ -35,21 +58,6 @@ export function SceneCardList({ scenes }: SceneCardListProps) {
                 </Typography>
               </div>
             )}
-            <div className={s.sceneTitleBlock}>
-              <Typography variant="body">{scene.name}</Typography>
-              {scene.openingImageUrl ? (
-                <Button
-                  as="a"
-                  href={scene.openingImageUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  variant="ghost"
-                  size="sm"
-                >
-                  Open image
-                </Button>
-              ) : null}
-            </div>
           </div>
           <div className={s.sceneRow}>
             <Typography variant="caption" tone="muted" className={s.sceneLabel}>
@@ -57,6 +65,14 @@ export function SceneCardList({ scenes }: SceneCardListProps) {
             </Typography>
             <Typography variant="body" className={s.multiline}>
               {scene.description || '-'}
+            </Typography>
+          </div>
+          <div className={s.sceneRow}>
+            <Typography variant="caption" tone="muted" className={s.sceneLabel}>
+              Opening message
+            </Typography>
+            <Typography variant="body" className={s.multiline}>
+              {scene.openingMessage || '-'}
             </Typography>
           </div>
           <div className={s.sceneRow}>

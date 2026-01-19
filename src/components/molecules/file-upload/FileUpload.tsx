@@ -131,7 +131,6 @@ function uploadToPresigned(
 
 export function FileUpload({
   label = 'File',
-  hint,
   required,
   folder,
   accept = DEFAULT_ACCEPT,
@@ -175,11 +174,11 @@ export function FileUpload({
     }
   }, [value]);
 
-  const resolvedHint =
-    hint ??
-    (maxSizeMb
-      ? `PNG, JPG, JPEG, WEBP. Up to ${maxSizeMb} MB.`
-      : 'PNG, JPG, JPEG, WEBP.');
+  // const resolvedHint =
+  //   hint ??
+  //   (maxSizeMb
+  //     ? `PNG, JPG, JPEG, WEBP. Up to ${maxSizeMb} MB.`
+  //     : 'PNG, JPG, JPEG, WEBP.');
 
   const fileName =
     selectedFile?.name || uploadedFile?.name || 'No file selected';
@@ -284,7 +283,7 @@ export function FileUpload({
   return (
     <Field
       label={label}
-      hint={resolvedHint}
+      // hint={resolvedHint}
       required={required}
       error={errorMessage ?? undefined}
       labelFor={inputId}

@@ -15,6 +15,8 @@ const fallbackError = 'Unable to load characters.';
 const createFallbackError = 'Unable to create the character.';
 const updateFallbackError = 'Unable to update the character.';
 const deleteFallbackError = 'Unable to delete the character.';
+const createScenarioFallbackError = 'Unable to create the scenario.';
+const createSceneFallbackError = 'Unable to create the scene.';
 
 export type CharacterUpdateDto = {
   name: string;
@@ -30,6 +32,33 @@ export type CharacterCreateDto = {
   loraId: string;
   gender: string;
 };
+
+export type ScenarioCreateDto = {
+  name: string;
+  emoji: string;
+  description: string;
+  personality: string;
+  appearance: string;
+  situation: string;
+};
+
+export type ScenarioUpdateDto = ScenarioCreateDto;
+
+export type PhaseUpdateDto = {
+  toneAndBehavior: string;
+  photoSendingGuidelines: string;
+  photoMessageAlignmentRules: string;
+};
+
+export type SceneCreateDto = {
+  name: string;
+  description: string;
+  openingMessage: string;
+  visualChange: string;
+  openingImageId: string;
+};
+
+export type SceneUpdateDto = SceneCreateDto;
 
 export async function getCharacters(params: CharactersListParams) {
   const query = new URLSearchParams();
@@ -64,6 +93,99 @@ export async function createCharacter(payload: CharacterCreateDto) {
     throw await buildApiError(res, createFallbackError);
   }
   return (await res.json()) as ICharacterDetails;
+}
+
+export async function createScenario(
+  characterId: string,
+  payload: ScenarioCreateDto,
+) {
+  const res = await apiFetch(`/admin/characters/${characterId}/scenarios`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, createScenarioFallbackError);
+  }
+  return (await res.json()) as ICharacterDetails['scenarios'][number];
+}
+
+export async function updateScenario(
+  characterId: string,
+  scenarioId: string,
+  payload: ScenarioUpdateDto,
+) {
+  const res = await apiFetch(
+    `/admin/characters/${characterId}/scenarios/${scenarioId}`,
+    {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, updateFallbackError);
+  }
+  return (await res.json()) as ICharacterDetails['scenarios'][number];
+}
+
+export async function updateScenarioPhase(
+  characterId: string,
+  scenarioId: string,
+  phase: string,
+  payload: PhaseUpdateDto,
+) {
+  const res = await apiFetch(
+    `/admin/characters/${characterId}/scenarios/${scenarioId}/phases/${phase}`,
+    {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, updateFallbackError);
+  }
+  return (await res.json()) as ICharacterDetails['scenarios'][number];
+}
+
+export async function createScene(
+  characterId: string,
+  scenarioId: string,
+  payload: SceneCreateDto,
+) {
+  const res = await apiFetch(
+    `/admin/characters/${characterId}/scenarios/${scenarioId}/scenes`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, createSceneFallbackError);
+  }
+  return (await res.json()) as ICharacterDetails['scenarios'][number];
+}
+
+export async function updateScene(
+  characterId: string,
+  scenarioId: string,
+  sceneId: string,
+  payload: SceneUpdateDto,
+) {
+  const res = await apiFetch(
+    `/admin/characters/${characterId}/scenarios/${scenarioId}/scenes/${sceneId}`,
+    {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, updateFallbackError);
+  }
+  return (await res.json()) as ICharacterDetails['scenarios'][number];
 }
 
 export async function updateCharacter(id: string, payload: CharacterUpdateDto) {

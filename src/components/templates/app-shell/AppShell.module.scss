@@ -28,15 +28,19 @@
 
 .brandLogo {
 
-  margin-top: 12px;
-  margin-left: 12px;
+  margin-top: 8px;
+  //margin-left: 12px;
 
   display: flex;
-  align-items: center;
+  align-items: flex-start;
 
   .logoText {
-    color: lightskyblue;
-    font-size: 30px;
+    color: #87cefa;
+    font-size: 36px;
+    font-family: 'Titan One', var(--font-ui);
+    //text-shadow: rgb(235, 64, 226) 0 0 1px;
+    letter-spacing: 0.03em;
+    font-weight: 400;
   }
 
   img {
@@ -60,6 +64,7 @@
   .logoText {
     font-weight: 400;
     font-size: 28px;
+    font-family: 'Titan One', var(--font-ui);
   }
 }
 

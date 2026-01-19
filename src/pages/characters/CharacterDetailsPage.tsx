@@ -236,6 +236,7 @@ export function CharacterDetailsPage() {
           canEdit={Boolean(data)}
         />
         <ScenarioSection
+          characterId={id ?? null}
           scenarios={scenarios}
           selectedScenarioId={selectedScenarioId}
           onSelectScenario={setSelectedScenarioId}

@@ -28,7 +28,9 @@ export interface IScene {
   id: string;
   name: string;
   description: string;
+  openingMessage: string;
   visualChange: string;
+  openingImageId: string;
   openingImageUrl: string;
   createdAt: string;
   updatedAt: string;

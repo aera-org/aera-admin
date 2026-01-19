@@ -85,3 +85,13 @@
 body {
   background: hsl(var(--bg));
 }
+
+::selection {
+  background: hsl(var(--accent-muted));
+  color: hsl(var(--fg));
+}
+
+::-moz-selection {
+  background: hsl(var(--accent-muted));
+  color: hsl(var(--fg));
+}

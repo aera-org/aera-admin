@@ -1,5 +1,5 @@
 import { useAuth } from '@/app/auth';
-// import Logo from '@/assets/logo/logo.png';
+import Logo from '@/assets/logo/logo.png';
 import { Typography } from '@/atoms';
 import { cn } from '@/common/utils';
 import { Navigation, UserCard } from '@/organisms';
@@ -22,7 +22,7 @@ export function AppShell({ children, className }: AppShellProps) {
     <div className={cn(s.page, [className])}>
       <aside className={s.sidebar}>
         <div className={s.brandLogo}>
-          {/*<img src={Logo} alt="Aera" />*/}
+          <img src={Logo} alt="Aera" />
 
           <Typography variant="h2" className={s.logoText}>
             Aera

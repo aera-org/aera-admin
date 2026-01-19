@@ -1,5 +1,5 @@
-import { Badge, IconButton, Skeleton, Typography } from '@/atoms';
 import { TrashIcon } from '@/assets/icons';
+import { Badge, IconButton, Skeleton, Typography } from '@/atoms';
 import type { ICharacterDetails } from '@/common/types';
 
 import s from '../CharacterDetailsPage.module.scss';
@@ -27,7 +27,9 @@ export function CharacterHeader({
         ) : (
           <div className={s.titleRow}>
             <Typography variant="h2">
-              {data?.emoji ? <span className={s.emoji}>{data.emoji}</span> : null}
+              {data?.emoji ? (
+                <span className={s.emoji}>{data.emoji}</span>
+              ) : null}
               {data?.name ?? 'Character'}
             </Typography>
             {data ? (
@@ -51,7 +53,6 @@ export function CharacterHeader({
           icon={<TrashIcon />}
           tooltip="Delete character"
           variant="ghost"
-          tone="danger"
           size="sm"
           onClick={onDelete}
           disabled={!canDelete || isDeleting}
