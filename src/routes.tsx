@@ -4,6 +4,7 @@ import { AuthGuard } from '@/app/auth';
 import {
   AuthCallbackPage,
   AuthPage,
+  AdminsPage,
   CharacterDetailsPage,
   CharactersPage,
   ConfirmEmailPage,
@@ -27,6 +28,7 @@ export function AppRoutes() {
         <Route path="/ui" element={<UiKitPage />} />
         <Route path="/characters" element={<CharactersPage />} />
         <Route path="/characters/:id" element={<CharacterDetailsPage />} />
+        <Route path="/admins" element={<AdminsPage />} />
         <Route path="/loras" element={<LorasPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>

@@ -10,5 +10,6 @@ export { default as PlusIcon } from './plus.svg?react';
 export { default as RadioIcon } from './radio.svg?react';
 export { default as SendIcon } from './send.svg?react';
 export { default as TrashIcon } from './trash.svg?react';
+export { default as UserCogIcon } from './user-cog.svg?react';
 export { default as UsersRoundIcon } from './users-round.svg?react';
 export { default as YoutubeIcon } from './youtube.svg?react';

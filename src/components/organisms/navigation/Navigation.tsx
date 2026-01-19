@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
-import { LayersIcon, UsersRoundIcon } from '@/assets/icons';
+import { LayersIcon, UserCogIcon, UsersRoundIcon } from '@/assets/icons';
 import { Button } from '@/atoms';
 
 import s from './Navigation.module.scss';
@@ -15,6 +15,7 @@ type NavItem = {
 const navItems: NavItem[] = [
   { label: 'Characters', to: '/characters', icon: <UsersRoundIcon /> },
   { label: 'LoRAs', to: '/loras', icon: <LayersIcon /> },
+  { label: 'Admins', to: '/admins', icon: <UserCogIcon /> },
 ];
 
 export function Navigation() {
