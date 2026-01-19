@@ -1,25 +1,33 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
-import { useCharacterDetails } from '@/app/characters';
-import { PencilLineIcon } from '@/assets/icons';
+import {
+  useCharacterDetails,
+  useDeleteCharacter,
+  useUpdateCharacter,
+} from '@/app/characters';
+import { useLoras } from '@/app/loras';
 import {
   Alert,
-  Badge,
   Button,
   Container,
   EmptyState,
   Field,
   FormRow,
-  Grid,
-  Skeleton,
+  Input,
+  Modal,
+  Select,
   Stack,
-  Tabs,
-  Typography,
+  Switch,
 } from '@/atoms';
+import { ConfirmModal } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 
 import s from './CharacterDetailsPage.module.scss';
+import { CharacterHeader } from './components/CharacterHeader';
+import { CharacterOverview } from './components/CharacterOverview';
+import { LoraSelect } from './components/LoraSelect';
+import { ScenarioSection } from './components/ScenarioSection';
 
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -40,9 +48,23 @@ function formatValue(value: string | null | undefined) {
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
 }
 
+function useDebouncedValue<T>(value: T, delay: number) {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebounced(value), delay);
+    return () => window.clearTimeout(timer);
+  }, [value, delay]);
+
+  return debounced;
+}
+
 export function CharacterDetailsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { data, error, isLoading, refetch } = useCharacterDetails(id ?? null);
+  const updateMutation = useUpdateCharacter();
+  const deleteMutation = useDeleteCharacter();
 
   const scenarios = data?.scenarios ?? [];
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(
@@ -66,102 +88,129 @@ export function CharacterDetailsPage() {
     }
   }, [scenarios, selectedScenarioId]);
 
-  const selectedScenario = useMemo(
-    () =>
-      scenarios.find((scenario) => scenario.id === selectedScenarioId) ?? null,
-    [scenarios, selectedScenarioId],
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [formValues, setFormValues] = useState({
+    name: '',
+    emoji: '',
+    gender: '',
+    isActive: true,
+    loraId: '',
+  });
+  const [initialValues, setInitialValues] = useState(formValues);
+  const [showErrors, setShowErrors] = useState(false);
+  const [loraSearch, setLoraSearch] = useState('');
+  const debouncedLoraSearch = useDebouncedValue(loraSearch, 300);
+
+  const loraQueryParams = useMemo(
+    () => ({
+      search: debouncedLoraSearch || undefined,
+      order: 'DESC',
+      skip: 0,
+      take: 50,
+    }),
+    [debouncedLoraSearch],
+  );
+  const { data: loraData, isLoading: isLoraLoading } =
+    useLoras(loraQueryParams);
+
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
+  const loraOptions = useMemo(() => {
+    const list = loraData?.data ?? [];
+    if (data?.lora && !list.some((lora) => lora.id === data.lora.id)) {
+      return [data.lora, ...list];
+    }
+    return list;
+  }, [data?.lora, loraData?.data]);
+
+  const validationErrors = useMemo(() => {
+    if (!showErrors) return {};
+    const errors: { name?: string; loraId?: string } = {};
+    if (!formValues.name.trim()) {
+      errors.name = 'Enter a name.';
+    }
+    if (!formValues.loraId) {
+      errors.loraId = 'Select a LoRA.';
+    }
+    return errors;
+  }, [formValues.loraId, formValues.name, showErrors]);
+
+  const isValid = useMemo(
+    () => Boolean(formValues.name.trim() && formValues.loraId),
+    [formValues.loraId, formValues.name],
   );
 
-  const scenarioTabs = useMemo(
+  const isDirty = useMemo(
     () =>
-      scenarios.map((scenario) => ({
-        value: scenario.id,
-        label: scenario.name || 'Untitled',
-      })),
-    [scenarios],
+      formValues.name !== initialValues.name ||
+      formValues.emoji !== initialValues.emoji ||
+      formValues.gender !== initialValues.gender ||
+      formValues.isActive !== initialValues.isActive ||
+      formValues.loraId !== initialValues.loraId,
+    [formValues, initialValues],
   );
 
-  const sceneCards = useMemo(() => {
-    if (!selectedScenario) return [];
-    return selectedScenario.scenes.map((scene) => (
-      <div key={scene.id} className={s.sceneCard}>
-        <div className={s.sceneHeader}>
-          {scene.openingImageUrl ? (
-            <img
-              className={s.sceneImage}
-              src={scene.openingImageUrl}
-              alt={scene.name}
-              loading="lazy"
-            />
-          ) : (
-            <div className={s.sceneImagePlaceholder}>
-              <Typography variant="caption" tone="muted">
-                No image
-              </Typography>
-            </div>
-          )}
-          <div className={s.sceneTitleBlock}>
-            <Typography variant="body">{scene.name}</Typography>
-          </div>
-        </div>
-        <div className={s.sceneRow}>
-          <Typography variant="caption" tone="muted" className={s.sceneLabel}>
-            Description
-          </Typography>
-          <Typography variant="body" className={s.multiline}>
-            {scene.description || '-'}
-          </Typography>
-        </div>
-        <div className={s.sceneRow}>
-          <Typography variant="caption" tone="muted" className={s.sceneLabel}>
-            Visual change
-          </Typography>
-          <Typography variant="body" className={s.multiline}>
-            {scene.visualChange || '-'}
-          </Typography>
-        </div>
-      </div>
-    ));
-  }, [selectedScenario]);
+  const openEditModal = () => {
+    if (!data) return;
+    const nextValues = {
+      name: data.name ?? '',
+      emoji: data.emoji ?? '',
+      gender: data.gender ?? '',
+      isActive: data.isActive,
+      loraId: data.lora?.id ?? '',
+    };
+    setFormValues(nextValues);
+    setInitialValues(nextValues);
+    setShowErrors(false);
+    setLoraSearch('');
+    setIsEditOpen(true);
+  };
 
-  const phases = selectedScenario?.phases ?? null;
+  const closeEditModal = () => {
+    if (updateMutation.isPending) return;
+    setIsEditOpen(false);
+  };
+
+  const handleSave = async () => {
+    if (!data) return;
+    const errors = {
+      name: formValues.name.trim() ? undefined : 'Enter a name.',
+      loraId: formValues.loraId ? undefined : 'Select a LoRA.',
+    };
+    if (errors.name || errors.loraId) {
+      setShowErrors(true);
+      return;
+    }
+    await updateMutation.mutateAsync({
+      id: data.id,
+      payload: {
+        name: formValues.name.trim(),
+        emoji: formValues.emoji.trim(),
+        gender: formValues.gender.trim(),
+        isActive: formValues.isActive,
+        loraId: formValues.loraId,
+      },
+    });
+    setIsEditOpen(false);
+  };
+
+  const handleDelete = async () => {
+    if (!data) return;
+    await deleteMutation.mutateAsync(data.id);
+    setIsDeleteOpen(false);
+    navigate('/characters');
+  };
 
   return (
     <AppShell>
       <Container size="wide" className={s.page}>
-        <div className={s.header}>
-          <div className={s.titleBlock}>
-            {isLoading && !data ? (
-              <Skeleton width={260} height={24} />
-            ) : (
-              <div className={s.titleRow}>
-                <Typography variant="h2">
-                  {data?.emoji ? (
-                    <span className={s.emoji}>{data.emoji}</span>
-                  ) : null}
-                  {data?.name ?? 'Character'}
-                </Typography>
-                {data ? (
-                  <Badge tone={data.isActive ? 'success' : 'warning'}>
-                    {data.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
-                ) : null}
-              </div>
-            )}
-            {isLoading && !data ? (
-              <Skeleton width={320} height={12} />
-            ) : (
-              <Typography variant="meta" tone="muted">
-                {data?.id ?? '-'}
-              </Typography>
-            )}
-          </div>
-          <div className={s.actions}>
-            <Button variant="secondary" iconLeft={<PencilLineIcon />} disabled>
-              Edit
-            </Button>
-          </div>
-        </div>
+        <CharacterHeader
+          data={data}
+          isLoading={isLoading}
+          onDelete={() => setIsDeleteOpen(true)}
+          canDelete={Boolean(data)}
+          isDeleting={deleteMutation.isPending}
+        />
 
         {error ? (
           <Stack className={s.state} gap="12px">
@@ -178,203 +227,156 @@ export function CharacterDetailsPage() {
           </Stack>
         ) : null}
 
-        <div className={s.section}>
-          <Typography variant="h3">Overview</Typography>
-          <FormRow columns={3}>
-            <Field label="Name" labelFor="character-name">
-              <Typography id="character-name" variant="body">
-                {data?.name ?? '-'}
-              </Typography>
-            </Field>
-            <Field label="Emoji" labelFor="character-emoji">
-              <Typography id="character-emoji" variant="body">
-                {data?.emoji || '-'}
-              </Typography>
-            </Field>
+        <CharacterOverview
+          data={data}
+          formatDate={formatDate}
+          formatValue={formatValue}
+          loraLabel={data?.lora?.fileName || '-'}
+          onEdit={openEditModal}
+          canEdit={Boolean(data)}
+        />
+        <ScenarioSection
+          scenarios={scenarios}
+          selectedScenarioId={selectedScenarioId}
+          onSelectScenario={setSelectedScenarioId}
+          isLoading={Boolean(isLoading && !data)}
+          formatDate={formatDate}
+        />
 
-            <Field label="Gender" labelFor="character-gender">
-              <Typography id="character-gender" variant="body">
-                {formatValue(data?.gender)}
-              </Typography>
-            </Field>
-          </FormRow>
-
-          <FormRow columns={3}>
-            <Field
-              className={s.statusField}
-              label="Status"
-              labelFor="character-status"
-            >
-              {data ? (
-                <Badge tone={data.isActive ? 'success' : 'warning'}>
-                  {data.isActive ? 'Active' : 'Inactive'}
-                </Badge>
-              ) : (
-                <Typography id="character-status" variant="body">
-                  -
-                </Typography>
-              )}
-            </Field>
-            <Field label="Created" labelFor="character-created">
-              <Typography id="character-created" variant="body">
-                {formatDate(data?.createdAt)}
-              </Typography>
-            </Field>
-            <Field label="Updated" labelFor="character-updated">
-              <Typography id="character-updated" variant="body">
-                {formatDate(data?.updatedAt)}
-              </Typography>
-            </Field>
-          </FormRow>
-
-          <FormRow columns={1}>
-            <Field label="LoRA" labelFor="character-lora">
-              <Typography id="character-lora" variant="body">
-                {data?.lora.fileName || 'Missing LoRA'}
-              </Typography>
-            </Field>
-          </FormRow>
-        </div>
-
-        <div className={s.section}>
-          <Typography variant="h3">Scenarios</Typography>
-          {isLoading && !data ? (
-            <Stack gap="16px">
-              <Skeleton width="100%" height={160} />
-            </Stack>
-          ) : scenarios.length === 0 ? (
-            <EmptyState
-              title="No scenarios"
-              description="This character has no scenarios yet."
-            />
-          ) : (
-            <Stack gap="24px">
-              <div className={s.scenarioTabs}>
-                <Tabs
-                  items={scenarioTabs}
-                  value={selectedScenarioId ?? scenarioTabs[0]?.value ?? ''}
-                  onChange={setSelectedScenarioId}
+        <Modal
+          open={isEditOpen}
+          title="Edit character"
+          onClose={closeEditModal}
+          actions={
+            <div className={s.modalActions}>
+              <Button
+                variant="secondary"
+                onClick={closeEditModal}
+                disabled={updateMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                loading={updateMutation.isPending}
+                disabled={
+                  !isDirty ||
+                  !isValid ||
+                  updateMutation.isPending ||
+                  Boolean(validationErrors.name || validationErrors.loraId)
+                }
+              >
+                Save
+              </Button>
+            </div>
+          }
+        >
+          <Stack gap="16px">
+            <FormRow columns={2}>
+              <Field
+                label="Name"
+                labelFor="character-edit-name"
+                error={validationErrors.name}
+              >
+                <Input
+                  id="character-edit-name"
+                  size="sm"
+                  value={formValues.name}
+                  onChange={(event) =>
+                    setFormValues((prev) => ({
+                      ...prev,
+                      name: event.target.value,
+                    }))
+                  }
+                  fullWidth
                 />
-              </div>
+              </Field>
+              <Field label="Emoji" labelFor="character-edit-emoji">
+                <Input
+                  id="character-edit-emoji"
+                  size="sm"
+                  value={formValues.emoji}
+                  onChange={(event) =>
+                    setFormValues((prev) => ({
+                      ...prev,
+                      emoji: event.target.value,
+                    }))
+                  }
+                  fullWidth
+                />
+              </Field>
+            </FormRow>
 
-              {selectedScenario ? (
-                <div className={s.detailsCard}>
-                  <div className={s.detailsHeader}>
-                    <Typography variant="h3">
-                      <span className={s.emoji}>
-                        {selectedScenario.emoji || ''}
-                      </span>
-                      {selectedScenario.name}
-                    </Typography>
-                    <Typography variant="meta" tone="muted">
-                      {selectedScenario.updatedAt
-                        ? `Updated ${formatDate(selectedScenario.updatedAt)}`
-                        : ''}
-                    </Typography>
-                  </div>
+            <FormRow columns={2}>
+              <Field label="Gender" labelFor="character-edit-gender">
+                <Select
+                  id="character-edit-gender"
+                  size="sm"
+                  options={[
+                    { label: 'Female', value: 'female' },
+                    { label: 'Male', value: 'male' },
+                  ]}
+                  value={formValues.gender}
+                  onChange={(value) =>
+                    setFormValues((prev) => ({ ...prev, gender: value }))
+                  }
+                  fullWidth
+                />
+              </Field>
+              <Field label="Status" labelFor="character-edit-status">
+                <Switch
+                  id="character-edit-status"
+                  checked={formValues.isActive}
+                  onChange={(event) =>
+                    setFormValues((prev) => ({
+                      ...prev,
+                      isActive: event.target.checked,
+                    }))
+                  }
+                  label={formValues.isActive ? 'Active' : 'Inactive'}
+                />
+              </Field>
+            </FormRow>
 
-                  <Stack gap="16px">
-                    <div className={s.detailBlock}>
-                      <Typography variant="caption" tone="muted">
-                        Description
-                      </Typography>
-                      <Typography variant="body" className={s.multiline}>
-                        {selectedScenario.description || '-'}
-                      </Typography>
-                    </div>
-                    <div className={s.detailBlock}>
-                      <Typography variant="caption" tone="muted">
-                        Appearance
-                      </Typography>
-                      <Typography variant="body" className={s.multiline}>
-                        {selectedScenario.appearance || '-'}
-                      </Typography>
-                    </div>
-                    <div className={s.detailBlock}>
-                      <Typography variant="caption" tone="muted">
-                        Situation
-                      </Typography>
-                      <Typography variant="body" className={s.multiline}>
-                        {selectedScenario.situation || '-'}
-                      </Typography>
-                    </div>
+            <Field
+              label="LoRA"
+              labelFor="character-edit-lora"
+              error={validationErrors.loraId}
+            >
+              <LoraSelect
+                id="character-edit-lora"
+                value={formValues.loraId}
+                options={loraOptions.map((lora) => ({
+                  id: lora.id,
+                  fileName: lora.fileName,
+                }))}
+                search={loraSearch}
+                onSearchChange={setLoraSearch}
+                onSelect={(value) =>
+                  setFormValues((prev) => ({ ...prev, loraId: value }))
+                }
+                placeholder={isLoraLoading ? 'Loading LoRAs...' : 'Select LoRA'}
+                disabled={isLoraLoading}
+                loading={isLoraLoading}
+              />
+            </Field>
+          </Stack>
+        </Modal>
 
-                    <div>
-                      <Typography variant="h3">Phases</Typography>
-                      <Grid columns={3} gap="16px" className={s.phaseGrid}>
-                        {(
-                          [
-                            { key: 'hook', label: 'Hook' },
-                            { key: 'resistance', label: 'Resistance' },
-                            { key: 'retention', label: 'Retention' },
-                          ] as const
-                        ).map((phase) => {
-                          const content = phases ? phases[phase.key] : null;
-                          return (
-                            <div key={phase.key} className={s.phaseCard}>
-                              <Typography
-                                variant="body"
-                                className={s.phaseTitle}
-                              >
-                                {phase.label}
-                              </Typography>
-                              <div className={s.phaseSection}>
-                                <Typography variant="caption" tone="muted">
-                                  Tone and behavior
-                                </Typography>
-                                <Typography
-                                  variant="body"
-                                  className={s.multiline}
-                                >
-                                  {content?.toneAndBehavior || '-'}
-                                </Typography>
-                              </div>
-                              <div className={s.phaseSection}>
-                                <Typography variant="caption" tone="muted">
-                                  Photo sending guidelines
-                                </Typography>
-                                <Typography
-                                  variant="body"
-                                  className={s.multiline}
-                                >
-                                  {content?.photoSendingGuidelines || '-'}
-                                </Typography>
-                              </div>
-                              <div className={s.phaseSection}>
-                                <Typography variant="caption" tone="muted">
-                                  Photo message alignment rules
-                                </Typography>
-                                <Typography
-                                  variant="body"
-                                  className={s.multiline}
-                                >
-                                  {content?.photoMessageAlignmentRules || '-'}
-                                </Typography>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </Grid>
-                    </div>
-
-                    <div>
-                      <Typography variant="h3" className={s.scenesTitle}>
-                        Scenes
-                      </Typography>
-                      {sceneCards.length ? (
-                        <Stack gap="16px">{sceneCards}</Stack>
-                      ) : (
-                        <Typography variant="body" tone="muted">
-                          No scenes available.
-                        </Typography>
-                      )}
-                    </div>
-                  </Stack>
-                </div>
-              ) : null}
-            </Stack>
-          )}
-        </div>
+        <ConfirmModal
+          open={isDeleteOpen}
+          title="Delete character"
+          description={
+            data
+              ? `Delete ${data.name}? This cannot be undone.`
+              : 'Delete this character? This cannot be undone.'
+          }
+          confirmLabel="Delete"
+          tone="danger"
+          isConfirming={deleteMutation.isPending}
+          onConfirm={handleDelete}
+          onClose={() => setIsDeleteOpen(false)}
+        />
 
         {!data && !isLoading && !error ? (
           <EmptyState

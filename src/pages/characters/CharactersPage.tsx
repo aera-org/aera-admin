@@ -1,9 +1,10 @@
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { NavLink, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import { useCharacters } from '@/app/characters';
-import { ExternalLinkIcon, PencilLineIcon, PlusIcon } from '@/assets/icons';
+import { useCharacters, useCreateCharacter } from '@/app/characters';
+import { useLoras } from '@/app/loras';
+import { PlusIcon } from '@/assets/icons';
 import {
   Alert,
   Badge,
@@ -11,8 +12,9 @@ import {
   Container,
   EmptyState,
   Field,
-  IconButton,
+  FormRow,
   Input,
+  Modal,
   Pagination,
   Select,
   Skeleton,
@@ -23,6 +25,7 @@ import {
 import { AppShell } from '@/components/templates';
 
 import s from './CharactersPage.module.scss';
+import { LoraSelect } from './components/LoraSelect';
 
 type QueryUpdate = {
   search?: string;
@@ -79,6 +82,7 @@ function parsePageSize(value: string | null) {
 
 export function CharactersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const rawSearch = searchParams.get('search') ?? '';
   const rawOrder = searchParams.get('order');
   const rawPage = searchParams.get('page');
@@ -87,6 +91,17 @@ export function CharactersPage() {
   const [searchInput, setSearchInput] = useState(rawSearch);
   const debouncedSearch = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
   const normalizedSearch = debouncedSearch.trim();
+  const createMutation = useCreateCharacter();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createValues, setCreateValues] = useState({
+    name: '',
+    emoji: '',
+    gender: 'female',
+    loraId: '',
+  });
+  const [createShowErrors, setCreateShowErrors] = useState(false);
+  const [loraSearch, setLoraSearch] = useState('');
+  const debouncedLoraSearch = useDebouncedValue(loraSearch, 300);
 
   const order = ORDER_VALUES.has(rawOrder ?? '') ? rawOrder! : DEFAULT_ORDER;
   const page = parsePositiveNumber(rawPage, 1);
@@ -154,6 +169,17 @@ export function CharactersPage() {
   );
 
   const { data, error, isLoading, refetch } = useCharacters(queryParams);
+  const loraQueryParams = useMemo(
+    () => ({
+      search: debouncedLoraSearch || undefined,
+      order: 'DESC',
+      skip: 0,
+      take: 50,
+    }),
+    [debouncedLoraSearch],
+  );
+  const { data: loraData, isLoading: isLoraLoading } =
+    useLoras(loraQueryParams);
 
   const characters = data?.data ?? [];
   const total = data?.total ?? 0;
@@ -173,7 +199,6 @@ export function CharactersPage() {
       { key: 'character', label: 'Character' },
       { key: 'status', label: 'Status' },
       { key: 'updated', label: <span className={s.alignRight}>Updated</span> },
-      { key: 'actions', label: '' },
     ],
     [],
   );
@@ -213,27 +238,6 @@ export function CharactersPage() {
               {formatDate(character.updatedAt)}
             </Typography>
           ),
-          actions: (
-            <div className={s.actionsCell}>
-              <IconButton
-                as={NavLink}
-                to={`/characters/${character.id}`}
-                aria-label="View character"
-                icon={<ExternalLinkIcon />}
-                tooltip="View character"
-                variant="ghost"
-                size="sm"
-              />
-              <IconButton
-                aria-label="Edit character"
-                icon={<PencilLineIcon />}
-                tooltip="Edit character"
-                variant="ghost"
-                size="sm"
-                disabled
-              />
-            </div>
-          ),
         };
       }),
     [characters],
@@ -257,12 +261,6 @@ export function CharactersPage() {
             <Skeleton width={120} height={12} />
           </div>
         ),
-        actions: (
-          <div className={s.actionsCell}>
-            <Skeleton width={28} height={28} />
-            <Skeleton width={28} height={28} />
-          </div>
-        ),
       })),
     [],
   );
@@ -276,6 +274,63 @@ export function CharactersPage() {
   const rangeEnd =
     total === 0 ? 0 : Math.min(effectiveSkip + effectiveTake, total);
 
+  const loraOptions = useMemo(() => loraData?.data ?? [], [loraData?.data]);
+
+  const createValidationErrors = useMemo(() => {
+    if (!createShowErrors) return {};
+    const errors: { name?: string; loraId?: string } = {};
+    if (!createValues.name.trim()) {
+      errors.name = 'Enter a name.';
+    }
+    if (!createValues.loraId) {
+      errors.loraId = 'Select a LoRA.';
+    }
+    return errors;
+  }, [createShowErrors, createValues.loraId, createValues.name]);
+
+  const createIsValid = useMemo(
+    () => Boolean(createValues.name.trim() && createValues.loraId),
+    [createValues.loraId, createValues.name],
+  );
+
+  const openCreateModal = () => {
+    setCreateValues({
+      name: '',
+      emoji: '',
+      gender: 'female',
+      loraId: '',
+    });
+    setCreateShowErrors(false);
+    setLoraSearch('');
+    setIsCreateOpen(true);
+  };
+
+  const closeCreateModal = () => {
+    if (createMutation.isPending) return;
+    setIsCreateOpen(false);
+  };
+
+  const handleCreate = async () => {
+    const errors = {
+      name: createValues.name.trim() ? undefined : 'Enter a name.',
+      loraId: createValues.loraId ? undefined : 'Select a LoRA.',
+    };
+    if (errors.name || errors.loraId) {
+      setCreateShowErrors(true);
+      return;
+    }
+    const result = await createMutation.mutateAsync({
+      name: createValues.name.trim(),
+      emoji: createValues.emoji.trim(),
+      gender: createValues.gender.trim(),
+      loraId: createValues.loraId,
+    });
+    setIsCreateOpen(false);
+    if (result?.id) {
+      navigate(`/characters/${result.id}`);
+    }
+  };
+
   return (
     <AppShell>
       <Container size="wide" className={s.page}>
@@ -283,7 +338,7 @@ export function CharactersPage() {
           <div className={s.titleBlock}>
             <Typography variant="h2">Characters</Typography>
           </div>
-          <Button iconLeft={<PlusIcon />} disabled>
+          <Button iconLeft={<PlusIcon />} onClick={openCreateModal}>
             Create character
           </Button>
         </div>
@@ -346,6 +401,26 @@ export function CharactersPage() {
             <Table
               columns={columns}
               rows={showSkeleton ? skeletonRows : rows}
+              getRowProps={
+                showSkeleton
+                  ? undefined
+                  : (_, index) => {
+                      const character = characters[index];
+                      if (!character) return {};
+                      return {
+                        className: s.clickableRow,
+                        role: 'link',
+                        tabIndex: 0,
+                        onClick: () => navigate(`/characters/${character.id}`),
+                        onKeyDown: (event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            navigate(`/characters/${character.id}`);
+                          }
+                        },
+                      };
+                    }
+              }
             />
 
             {showFooter ? (
@@ -361,6 +436,8 @@ export function CharactersPage() {
                       label: `${size} / page`,
                       value: String(size),
                     }))}
+                    size="sm"
+                    variant="ghost"
                     value={String(pageSize)}
                     onChange={(value) =>
                       updateSearchParams({
@@ -384,6 +461,115 @@ export function CharactersPage() {
             ) : null}
           </div>
         ) : null}
+
+        <Modal
+          open={isCreateOpen}
+          title="Create character"
+          onClose={closeCreateModal}
+          actions={
+            <div className={s.modalActions}>
+              <Button
+                variant="secondary"
+                onClick={closeCreateModal}
+                disabled={createMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreate}
+                loading={createMutation.isPending}
+                disabled={
+                  !createIsValid ||
+                  createMutation.isPending ||
+                  Boolean(
+                    createValidationErrors.name ||
+                      createValidationErrors.loraId,
+                  )
+                }
+              >
+                Create
+              </Button>
+            </div>
+          }
+        >
+          <Stack gap="16px">
+            <FormRow columns={2}>
+              <Field
+                label="Name"
+                labelFor="character-create-name"
+                error={createValidationErrors.name}
+              >
+                <Input
+                  id="character-create-name"
+                  size="sm"
+                  value={createValues.name}
+                  onChange={(event) =>
+                    setCreateValues((prev) => ({
+                      ...prev,
+                      name: event.target.value,
+                    }))
+                  }
+                  fullWidth
+                />
+              </Field>
+              <Field label="Emoji" labelFor="character-create-emoji">
+                <Input
+                  id="character-create-emoji"
+                  size="sm"
+                  value={createValues.emoji}
+                  onChange={(event) =>
+                    setCreateValues((prev) => ({
+                      ...prev,
+                      emoji: event.target.value,
+                    }))
+                  }
+                  fullWidth
+                />
+              </Field>
+            </FormRow>
+
+            <FormRow columns={2}>
+              <Field label="Gender" labelFor="character-create-gender">
+                <Select
+                  id="character-create-gender"
+                  size="sm"
+                  options={[
+                    { label: 'Female', value: 'female' },
+                    { label: 'Male', value: 'male' },
+                  ]}
+                  value={createValues.gender}
+                  onChange={(value) =>
+                    setCreateValues((prev) => ({ ...prev, gender: value }))
+                  }
+                  fullWidth
+                />
+              </Field>
+            </FormRow>
+
+            <Field
+              label="LoRA"
+              labelFor="character-create-lora"
+              error={createValidationErrors.loraId}
+            >
+              <LoraSelect
+                id="character-create-lora"
+                value={createValues.loraId}
+                options={loraOptions.map((lora) => ({
+                  id: lora.id,
+                  fileName: lora.fileName,
+                }))}
+                search={loraSearch}
+                onSearchChange={setLoraSearch}
+                onSelect={(value) =>
+                  setCreateValues((prev) => ({ ...prev, loraId: value }))
+                }
+                placeholder={isLoraLoading ? 'Loading LoRAs...' : 'Select LoRA'}
+                disabled={isLoraLoading}
+                loading={isLoraLoading}
+              />
+            </Field>
+          </Stack>
+        </Modal>
       </Container>
     </AppShell>
   );

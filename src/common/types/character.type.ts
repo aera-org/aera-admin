@@ -39,6 +39,7 @@ interface IScenario {
   name: string;
   emoji: string;
   description: string;
+  personality: string;
   appearance: string;
   situation: string;
   phases: PhaseBehaviourMap;

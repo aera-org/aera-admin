@@ -45,6 +45,14 @@
   gap: var(--space-4);
 }
 
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
 .scenarioTabs {
   overflow-x: auto;
 }
@@ -165,6 +173,63 @@
 
 .sceneLabel {
   letter-spacing: var(--ls-wide);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.loraTrigger {
+  width: 100%;
+}
+
+.loraMenu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 280px;
+}
+
+.loraMenuList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.loraOptionButton {
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  color: hsl(var(--fg));
+  cursor: pointer;
+}
+
+.loraOptionButton:hover {
+  background: hsl(var(--bg));
+}
+
+.loraOptionActive {
+  border-color: hsl(var(--border));
+  background: hsl(var(--accent-muted));
+}
+
+.loraOptionName {
+  display: block;
+  font-size: var(--text-sm);
+}
+
+.loraOptionMeta {
+  display: block;
+  font-size: var(--text-xs);
+  color: hsl(var(--fg-muted));
 }
 
 .state {

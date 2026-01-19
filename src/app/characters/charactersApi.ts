@@ -12,6 +12,24 @@ export type CharactersListParams = {
 };
 
 const fallbackError = 'Unable to load characters.';
+const createFallbackError = 'Unable to create the character.';
+const updateFallbackError = 'Unable to update the character.';
+const deleteFallbackError = 'Unable to delete the character.';
+
+export type CharacterUpdateDto = {
+  name: string;
+  emoji: string;
+  loraId: string;
+  gender: string;
+  isActive: boolean;
+};
+
+export type CharacterCreateDto = {
+  name: string;
+  emoji: string;
+  loraId: string;
+  gender: string;
+};
 
 export async function getCharacters(params: CharactersListParams) {
   const query = new URLSearchParams();
@@ -34,4 +52,37 @@ export async function getCharacterDetails(id: string) {
     throw await buildApiError(res, fallbackError);
   }
   return (await res.json()) as ICharacterDetails;
+}
+
+export async function createCharacter(payload: CharacterCreateDto) {
+  const res = await apiFetch('/admin/characters', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, createFallbackError);
+  }
+  return (await res.json()) as ICharacterDetails;
+}
+
+export async function updateCharacter(id: string, payload: CharacterUpdateDto) {
+  const res = await apiFetch(`/admin/characters/${id}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, updateFallbackError);
+  }
+  return (await res.json()) as ICharacterDetails;
+}
+
+export async function deleteCharacter(id: string) {
+  const res = await apiFetch(`/admin/characters/${id}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, deleteFallbackError);
+  }
 }

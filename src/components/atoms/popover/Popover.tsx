@@ -17,6 +17,7 @@ type PopoverProps = {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   placement?: 'top' | 'right' | 'bottom' | 'left';
+  disableTriggerToggle?: boolean;
 };
 
 export function Popover({
@@ -25,6 +26,7 @@ export function Popover({
   open,
   onOpenChange,
   placement = 'bottom',
+  disableTriggerToggle = false,
 }: PopoverProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = open !== undefined;
@@ -60,11 +62,11 @@ export function Popover({
       onClick: (event: ReactMouseEvent) => {
         const original = (trigger.props as any)?.onClick;
         if (typeof original === 'function') original(event);
-        toggle();
+        if (!disableTriggerToggle) toggle();
       },
     })
   ) : (
-    <button type="button" onClick={toggle}>
+    <button type="button" onClick={disableTriggerToggle ? undefined : toggle}>
       {trigger}
     </button>
   );
