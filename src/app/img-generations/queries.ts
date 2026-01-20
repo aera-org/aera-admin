@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { notifyError, notifySuccess } from '@/app/toast';
 import { ImgGenerationStatus } from '@/common/types';
+
 import {
   createImgGeneration,
   deleteImgGeneration,
@@ -11,7 +12,8 @@ import {
 } from './imgGenerationsApi';
 
 const imgGenerationKeys = {
-  list: (params: ImgGenerationsListParams) => ['img-generations', params] as const,
+  list: (params: ImgGenerationsListParams) =>
+    ['img-generations', params] as const,
   details: (id: string) => ['img-generation', id] as const,
 };
 
@@ -28,11 +30,14 @@ export function useImgGenerationDetails(id: string | null) {
     queryKey: imgGenerationKeys.details(id ?? ''),
     queryFn: () => getImgGenerationDetails(id ?? ''),
     enabled: Boolean(id),
-    refetchInterval: (data) =>
-      data && data.status !== ImgGenerationStatus.Ready &&
-      data.status !== ImgGenerationStatus.Failed
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      return data &&
+        data.status !== ImgGenerationStatus.Ready &&
+        data.status !== ImgGenerationStatus.Failed
         ? 5000
-        : false,
+        : false;
+    },
     refetchIntervalInBackground: true,
   });
 }
