@@ -21,6 +21,7 @@ export function Textarea({
   fullWidth = false,
   className,
   disabled,
+  autoComplete = 'off',
   ...props
 }: TextareaProps) {
   const wrapperClasses = [
@@ -37,6 +38,7 @@ export function Textarea({
     <div className={wrapperClasses}>
       <textarea
         {...props}
+        autoComplete={autoComplete}
         className={[s.textarea, className].filter(Boolean).join(' ')}
         disabled={disabled}
         aria-invalid={invalid || undefined}

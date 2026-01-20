@@ -28,6 +28,7 @@ export function Input({
   wrapperClassName,
   className,
   disabled,
+  autoComplete = 'off',
   ...props
 }: InputProps) {
   const wrapperClasses = [
@@ -46,6 +47,7 @@ export function Input({
       {iconLeft ? <span className={s.icon}>{iconLeft}</span> : null}
       <input
         {...props}
+        autoComplete={autoComplete}
         className={[s.input, className].filter(Boolean).join(' ')}
         disabled={disabled}
         aria-invalid={invalid || undefined}

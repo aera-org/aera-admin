@@ -9,6 +9,9 @@ import {
   CharactersPage,
   ConfirmEmailPage,
   ForgotPasswordPage,
+  GenerationDetailsPage,
+  GenerateImagePage,
+  GenerationsPage,
   LorasPage,
   ProfilePage,
   ResetPasswordPage,
@@ -29,6 +32,9 @@ export function AppRoutes() {
         <Route path="/characters" element={<CharactersPage />} />
         <Route path="/characters/:id" element={<CharacterDetailsPage />} />
         <Route path="/admins" element={<AdminsPage />} />
+        <Route path="/generations/new" element={<GenerateImagePage />} />
+        <Route path="/generations" element={<GenerationsPage />} />
+        <Route path="/generations/:id" element={<GenerationDetailsPage />} />
         <Route path="/loras" element={<LorasPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>

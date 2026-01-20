@@ -36,7 +36,7 @@ export interface IScene {
   updatedAt: string;
 }
 
-interface IScenario {
+export interface IScenario {
   id: string;
   name: string;
   emoji: string;
