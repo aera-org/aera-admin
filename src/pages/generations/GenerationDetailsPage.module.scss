@@ -52,11 +52,20 @@
 
 .preview {
   width: 100%;
-  max-height: 640px;
+  height: 100%;
   object-fit: contain;
+}
+
+.previewFrame {
+  width: 100%;
+  aspect-ratio: 1 / 1;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-bg-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .state {

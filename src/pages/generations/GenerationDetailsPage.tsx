@@ -118,22 +118,43 @@ export function GenerationDetailsPage() {
         {data ? (
           <div className={s.content}>
             <div className={s.mediaColumn}>
-              {hasImage ? (
-                <img
-                  className={s.preview}
-                  src={data.file?.url ?? ''}
-                  alt="Generated image"
-                />
-              ) : isGenerating ? (
-                <Skeleton height={360} />
-              ) : isFailed ? (
-                <EmptyState
-                  title="Generation failed"
-                  description="No image was produced."
-                />
-              ) : (
-                <EmptyState title="No image yet" description="Image pending." />
-              )}
+              <div className={s.previewFrame}>
+                {hasImage ? (
+                  <img
+                    className={s.preview}
+                    src={data.file?.url ?? ''}
+                    alt="Generated image"
+                  />
+                ) : isGenerating ? (
+                  <Skeleton height="100%" />
+                ) : isFailed ? (
+                  <EmptyState
+                    title="Generation failed"
+                    description="No image was produced."
+                  />
+                ) : (
+                  <EmptyState
+                    title="No image yet"
+                    description="Image pending."
+                  />
+                )}
+              </div>
+              <Stack gap="12px">
+                <div>
+                  <Typography variant="meta" tone="muted">
+                    Request
+                  </Typography>
+                  <Typography variant="body">{data.userRequest}</Typography>
+                </div>
+                {data.prompt ? (
+                  <div>
+                    <Typography variant="meta" tone="muted">
+                      Prompt
+                    </Typography>
+                    <Typography variant="body">{data.prompt}</Typography>
+                  </div>
+                ) : null}
+              </Stack>
             </div>
             <div className={s.detailsColumn}>
               <Stack gap="16px">
@@ -230,20 +251,6 @@ export function GenerationDetailsPage() {
                     {data.madeBy?.email}
                   </Typography>
                 </div>
-                <div>
-                  <Typography variant="meta" tone="muted">
-                    Request
-                  </Typography>
-                  <Typography variant="body">{data.userRequest}</Typography>
-                </div>
-                {data.prompt ? (
-                  <div>
-                    <Typography variant="meta" tone="muted">
-                      Prompt
-                    </Typography>
-                    <Typography variant="body">{data.prompt}</Typography>
-                  </div>
-                ) : null}
               </Stack>
             </div>
           </div>
