@@ -35,6 +35,12 @@ function formatDate(value: string | null | undefined) {
   return dateTimeFormatter.format(parsed);
 }
 
+function formatLatency(value: number | undefined) {
+  if (value === undefined || value === null) return '-';
+  const seconds = value / 1000;
+  return `${seconds.toFixed(2)}s`;
+}
+
 export function GenerationDetailsPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -223,19 +229,19 @@ export function GenerationDetailsPage() {
                         Prompt generation
                       </Typography>
                       <Typography variant="body">
-                        {data.latency?.promptGeneration ?? 0} ms
+                        {formatLatency(data.latency?.promptGeneration)}
                       </Typography>
                       <Typography variant="caption" tone="muted">
                         Image generation
                       </Typography>
                       <Typography variant="body">
-                        {data.latency?.imageGeneration ?? 0} ms
+                        {formatLatency(data.latency?.imageGeneration)}
                       </Typography>
                       <Typography variant="caption" tone="muted">
                         Image upload
                       </Typography>
                       <Typography variant="body">
-                        {data.latency?.imageUpload ?? 0} ms
+                        {formatLatency(data.latency?.imageUpload)}
                       </Typography>
                     </div>
                   </div>
