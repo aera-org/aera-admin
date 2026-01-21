@@ -100,7 +100,7 @@ function getSubscriptionStatus(user: ITgUser) {
       label: 'None',
       tone: 'accent' as const,
       outline: true,
-      dateLabel: '-',
+      dateLabel: null,
     };
   }
   const parsed = new Date(user.subscribedUntil);
@@ -343,9 +343,11 @@ export function UsersPage() {
               <Badge tone={subscription.tone} outline={subscription.outline}>
                 {subscription.label}
               </Badge>
-              <Typography variant="caption" tone="muted">
-                {subscription.dateLabel}
-              </Typography>
+              {subscription.dateLabel && (
+                <Typography variant="caption" tone="muted">
+                  {subscription.dateLabel}
+                </Typography>
+              )}
             </div>
           ),
           lastActivity: (
