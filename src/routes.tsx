@@ -13,9 +13,11 @@ import {
   GenerateImagePage,
   GenerationsPage,
   LorasPage,
+  PlansPage,
   ProfilePage,
   ResetPasswordPage,
   UiKitPage,
+  UsersPage,
 } from '@/pages';
 
 export function AppRoutes() {
@@ -32,10 +34,12 @@ export function AppRoutes() {
         <Route path="/characters" element={<CharactersPage />} />
         <Route path="/characters/:id" element={<CharacterDetailsPage />} />
         <Route path="/admins" element={<AdminsPage />} />
+        <Route path="/users" element={<UsersPage />} />
         <Route path="/generations/new" element={<GenerateImagePage />} />
         <Route path="/generations" element={<GenerationsPage />} />
         <Route path="/generations/:id" element={<GenerationDetailsPage />} />
         <Route path="/loras" element={<LorasPage />} />
+        <Route path="/plans" element={<PlansPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
     </Routes>

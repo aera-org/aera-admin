@@ -2,9 +2,11 @@ import type { JSX } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
 import {
+  DollarSignIcon,
   LayersIcon,
   NewspaperIcon,
   UserCogIcon,
+  UserIcon,
   UsersRoundIcon,
 } from '@/assets/icons';
 import { Button } from '@/atoms';
@@ -22,6 +24,8 @@ const navItems: NavItem[] = [
   { label: 'LoRAs', to: '/loras', icon: <LayersIcon /> },
   { label: 'Generations', to: '/generations', icon: <NewspaperIcon /> },
   { label: 'Admins', to: '/admins', icon: <UserCogIcon /> },
+  { label: 'Plans', to: '/plans', icon: <DollarSignIcon /> },
+  { label: 'Users', to: '/users', icon: <UserIcon /> },
 ];
 
 export function Navigation() {
