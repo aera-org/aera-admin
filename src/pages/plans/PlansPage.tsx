@@ -556,6 +556,7 @@ export function PlansPage() {
             <Field
               label="Code"
               labelFor="plan-create-code"
+              hint={'* Letters, numbers, and dashes'}
               error={createErrors.code}
             >
               <Input
@@ -647,9 +648,6 @@ export function PlansPage() {
               label={createValues.isActive ? 'Active' : 'Inactive'}
             />
           </Field>
-          <Typography variant="caption" tone="muted" className={s.helperText}>
-            Codes must be lowercase with letters, numbers, and dashes only.
-          </Typography>
         </Stack>
       </Modal>
     </AppShell>
