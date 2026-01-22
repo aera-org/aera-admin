@@ -43,7 +43,7 @@ const ORDER_VALUES = new Set(ORDER_OPTIONS.map((option) => option.value));
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
 const DEFAULT_ORDER = 'ASC';
 const DEFAULT_PAGE_SIZE = 20;
-const DEFAULT_ACTIVE_FILTER = 'true';
+const DEFAULT_ACTIVE_FILTER = 'all';
 const DEFAULT_TYPE_FILTER = 'all';
 const SEARCH_DEBOUNCE_MS = 400;
 
@@ -192,7 +192,8 @@ export function PromptsPage() {
   }, [normalizedSearch, rawSearch, updateSearchParams]);
 
   const queryParams = useMemo(() => {
-    const isActive = activeFilter === 'all' ? undefined : activeFilter === 'true';
+    const isActive =
+      activeFilter === 'all' ? undefined : activeFilter === 'true';
     const type = typeFilter === 'all' ? undefined : (typeFilter as PromptType);
     return {
       search: normalizedSearch || undefined,
@@ -308,7 +309,10 @@ export function PromptsPage() {
           <div className={s.titleBlock}>
             <Typography variant="h2">Prompts</Typography>
           </div>
-          <Button iconLeft={<PlusIcon />} onClick={() => navigate('/prompts/new')}>
+          <Button
+            iconLeft={<PlusIcon />}
+            onClick={() => navigate('/prompts/new')}
+          >
             Create prompt
           </Button>
         </div>
@@ -336,7 +340,9 @@ export function PromptsPage() {
                 value={typeFilter}
                 size="sm"
                 variant="ghost"
-                onChange={(value) => updateSearchParams({ type: value, page: 1 })}
+                onChange={(value) =>
+                  updateSearchParams({ type: value, page: 1 })
+                }
               />
             </Field>
             <Field label="Status" labelFor="prompts-status">
@@ -358,7 +364,9 @@ export function PromptsPage() {
                 value={order}
                 size="sm"
                 variant="ghost"
-                onChange={(value) => updateSearchParams({ order: value, page: 1 })}
+                onChange={(value) =>
+                  updateSearchParams({ order: value, page: 1 })
+                }
               />
             </Field>
           </div>
@@ -383,7 +391,11 @@ export function PromptsPage() {
           <EmptyState
             title="No prompts found"
             description="Create a prompt to get started."
-            action={<Button onClick={() => navigate('/prompts/new')}>Create prompt</Button>}
+            action={
+              <Button onClick={() => navigate('/prompts/new')}>
+                Create prompt
+              </Button>
+            }
           />
         ) : null}
 
@@ -442,7 +454,9 @@ export function PromptsPage() {
                     <Pagination
                       page={page}
                       totalPages={totalPages}
-                      onChange={(nextPage) => updateSearchParams({ page: nextPage })}
+                      onChange={(nextPage) =>
+                        updateSearchParams({ page: nextPage })
+                      }
                     />
                   ) : null}
                 </div>
