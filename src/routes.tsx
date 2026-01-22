@@ -13,6 +13,9 @@ import {
   GenerateImagePage,
   GenerationsPage,
   LorasPage,
+  PromptCreatePage,
+  PromptUpdatePage,
+  PromptsPage,
   PlansPage,
   ProfilePage,
   ResetPasswordPage,
@@ -39,6 +42,9 @@ export function AppRoutes() {
         <Route path="/generations" element={<GenerationsPage />} />
         <Route path="/generations/:id" element={<GenerationDetailsPage />} />
         <Route path="/loras" element={<LorasPage />} />
+        <Route path="/prompts" element={<PromptsPage />} />
+        <Route path="/prompts/new" element={<PromptCreatePage />} />
+        <Route path="/prompts/:id" element={<PromptUpdatePage />} />
         <Route path="/plans" element={<PlansPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
