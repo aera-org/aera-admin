@@ -95,7 +95,7 @@ function parsePageSize(value: string | null) {
 }
 
 function resolveActiveFilter(value: string | null) {
-  if (value === 'false' || value === 'all') return value;
+  if (value === 'true' || value === 'false' || value === 'all') return value;
   return DEFAULT_ACTIVE_FILTER;
 }
 
