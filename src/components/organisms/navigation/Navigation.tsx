@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 
 import {
   DollarSignIcon,
+  ImageIcon,
   LayersIcon,
   MessageSquareQuoteIcon,
   NewspaperIcon,
@@ -24,6 +25,7 @@ const navItems: NavItem[] = [
   { label: 'Characters', to: '/characters', icon: <UsersRoundIcon /> },
   { label: 'LoRAs', to: '/loras', icon: <LayersIcon /> },
   { label: 'Prompts', to: '/prompts', icon: <MessageSquareQuoteIcon /> },
+  { label: 'Images', to: '/character-images', icon: <ImageIcon /> },
   { label: 'Generations', to: '/generations', icon: <NewspaperIcon /> },
   { label: 'Admins', to: '/admins', icon: <UserCogIcon /> },
   { label: 'Plans', to: '/plans', icon: <DollarSignIcon /> },

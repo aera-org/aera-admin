@@ -1,5 +1,6 @@
 export * from './admin.type';
 export * from './character.type';
+export * from './character-image.type';
 export * from './file.type';
 export * from './img-generation.type';
 export * from './lora.type';

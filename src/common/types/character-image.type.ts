@@ -6,6 +6,7 @@ export type CreateCharacterImageDto = {
   description: string;
   isFree: boolean;
   isPregenerated: boolean;
+  isPromotional: boolean;
   fileId: string;
   blurredFileId?: string;
 };
@@ -15,6 +16,7 @@ export interface ICharacterImage {
   description: string;
   isFree: boolean;
   isPregenerated: boolean;
+  isPromotional: boolean;
   character: ICharacter;
   createdAt: string;
   updatedAt: string;

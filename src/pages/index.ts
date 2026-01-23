@@ -5,6 +5,8 @@ export { ForgotPasswordPage } from './auth/ForgotPasswordPage';
 export { ResetPasswordPage } from './auth/ResetPasswordPage';
 export { CharacterDetailsPage } from './characters/CharacterDetailsPage';
 export { CharactersPage } from './characters/CharactersPage';
+export { CharacterImagesPage } from './character-images/CharacterImagesPage';
+export { CharacterImageDetailsPage } from './character-images/CharacterImageDetailsPage';
 export { AdminsPage } from './admins/AdminsPage';
 export { UsersPage } from './users/UsersPage';
 export { GenerationDetailsPage } from './generations/GenerationDetailsPage';

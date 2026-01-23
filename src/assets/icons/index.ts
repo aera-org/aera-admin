@@ -3,6 +3,7 @@ export { default as CircleDotIcon } from './circle-dot.svg?react';
 export { default as DollarSignIcon } from './dollar-sign.svg?react';
 export { default as ExternalLinkIcon } from './external-link.svg?react';
 export { default as GlobeIcon } from './globe.svg?react';
+export { default as ImageIcon } from './image.svg?react';
 export { default as LayersIcon } from './layers.svg?react';
 export { default as MessageSquareQuoteIcon } from './message-square-quote.svg?react';
 export { default as NewspaperIcon } from './newspaper.svg?react';

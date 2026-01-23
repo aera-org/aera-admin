@@ -5,6 +5,8 @@ import {
   AuthCallbackPage,
   AuthPage,
   AdminsPage,
+  CharacterImageDetailsPage,
+  CharacterImagesPage,
   CharacterDetailsPage,
   CharactersPage,
   ConfirmEmailPage,
@@ -36,6 +38,11 @@ export function AppRoutes() {
         <Route path="/ui" element={<UiKitPage />} />
         <Route path="/characters" element={<CharactersPage />} />
         <Route path="/characters/:id" element={<CharacterDetailsPage />} />
+        <Route path="/character-images" element={<CharacterImagesPage />} />
+        <Route
+          path="/character-images/:id"
+          element={<CharacterImageDetailsPage />}
+        />
         <Route path="/admins" element={<AdminsPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/generations/new" element={<GenerateImagePage />} />
