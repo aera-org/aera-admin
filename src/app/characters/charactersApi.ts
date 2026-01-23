@@ -38,21 +38,26 @@ export type ScenarioCreateDto = {
   emoji: string;
   description: string;
   personality: string;
+  messagingStyle: string;
   appearance: string;
   situation: string;
 };
 
-export type ScenarioUpdateDto = ScenarioCreateDto;
+export type ScenarioUpdateDto = ScenarioCreateDto & {
+  scenesOrder?: string[];
+};
 
 export type PhaseUpdateDto = {
   toneAndBehavior: string;
-  photoSendingGuidelines: string;
-  photoMessageAlignmentRules: string;
+  photoSendingRules: string;
+  restrictions: string;
+  goal: string;
 };
 
 export type SceneCreateDto = {
   name: string;
   description: string;
+  goal: string;
   openingMessage: string;
   visualChange: string;
   openingImageId: string;

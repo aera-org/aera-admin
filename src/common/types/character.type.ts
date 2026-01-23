@@ -18,8 +18,9 @@ export enum ChatPhase {
 
 export type PhaseBehavior = {
   toneAndBehavior: string;
-  photoSendingGuidelines: string;
-  photoMessageAlignmentRules: string;
+  photoSendingRules: string;
+  restrictions: string;
+  goal: string;
 };
 
 export type PhaseBehaviourMap = Record<ChatPhase, PhaseBehavior>;
@@ -28,6 +29,7 @@ export interface IScene {
   id: string;
   name: string;
   description: string;
+  goal: string;
   openingMessage: string;
   visualChange: string;
   openingImageId: string;
@@ -42,6 +44,7 @@ export interface IScenario {
   emoji: string;
   description: string;
   personality: string;
+  messagingStyle: string;
   appearance: string;
   situation: string;
   phases: PhaseBehaviourMap;

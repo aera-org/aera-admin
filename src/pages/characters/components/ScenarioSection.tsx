@@ -48,6 +48,7 @@ export function ScenarioSection({
     emoji: '',
     description: '',
     personality: '',
+    messagingStyle: '',
     appearance: '',
     situation: '',
   });
@@ -68,6 +69,8 @@ export function ScenarioSection({
       errors.description = 'Enter a description.';
     if (!values.personality.trim())
       errors.personality = 'Enter a personality.';
+    if (!values.messagingStyle.trim())
+      errors.messagingStyle = 'Enter a messaging style.';
     if (!values.appearance.trim())
       errors.appearance = 'Enter an appearance.';
     if (!values.situation.trim()) errors.situation = 'Enter a situation.';
@@ -97,6 +100,7 @@ export function ScenarioSection({
       emoji: '',
       description: '',
       personality: '',
+      messagingStyle: '',
       appearance: '',
       situation: '',
     });
@@ -116,6 +120,7 @@ export function ScenarioSection({
       emoji: selectedScenario.emoji ?? '',
       description: selectedScenario.description ?? '',
       personality: selectedScenario.personality ?? '',
+      messagingStyle: selectedScenario.messagingStyle ?? '',
       appearance: selectedScenario.appearance ?? '',
       situation: selectedScenario.situation ?? '',
     });
@@ -139,6 +144,9 @@ export function ScenarioSection({
       personality: formValues.personality.trim()
         ? undefined
         : 'Enter a personality.',
+      messagingStyle: formValues.messagingStyle.trim()
+        ? undefined
+        : 'Enter a messaging style.',
       appearance: formValues.appearance.trim()
         ? undefined
         : 'Enter an appearance.',
@@ -155,6 +163,7 @@ export function ScenarioSection({
         emoji: formValues.emoji.trim(),
         description: formValues.description.trim(),
         personality: formValues.personality.trim(),
+        messagingStyle: formValues.messagingStyle.trim(),
         appearance: formValues.appearance.trim(),
         situation: formValues.situation.trim(),
       },
@@ -180,6 +189,7 @@ export function ScenarioSection({
         emoji: editValues.emoji.trim(),
         description: editValues.description.trim(),
         personality: editValues.personality.trim(),
+        messagingStyle: editValues.messagingStyle.trim(),
         appearance: editValues.appearance.trim(),
         situation: editValues.situation.trim(),
       },
@@ -335,6 +345,25 @@ export function ScenarioSection({
           </Field>
 
           <Field
+            label="Messaging style"
+            labelFor="scenario-create-messaging-style"
+            error={validationErrors.messagingStyle}
+          >
+            <Textarea
+              id="scenario-create-messaging-style"
+              value={formValues.messagingStyle}
+              onChange={(event) =>
+                setFormValues((prev) => ({
+                  ...prev,
+                  messagingStyle: event.target.value,
+                }))
+              }
+              rows={3}
+              fullWidth
+            />
+          </Field>
+
+          <Field
             label="Appearance"
             labelFor="scenario-create-appearance"
             error={validationErrors.appearance}
@@ -469,6 +498,25 @@ export function ScenarioSection({
                 setEditValues((prev) => ({
                   ...prev,
                   personality: event.target.value,
+                }))
+              }
+              rows={3}
+              fullWidth
+            />
+          </Field>
+
+          <Field
+            label="Messaging style"
+            labelFor="scenario-edit-messaging-style"
+            error={editValidationErrors.messagingStyle}
+          >
+            <Textarea
+              id="scenario-edit-messaging-style"
+              value={editValues.messagingStyle}
+              onChange={(event) =>
+                setEditValues((prev) => ({
+                  ...prev,
+                  messagingStyle: event.target.value,
                 }))
               }
               rows={3}

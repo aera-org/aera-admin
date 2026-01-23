@@ -69,6 +69,14 @@ export function SceneCardList({ scenes, onEdit, canEdit }: SceneCardListProps) {
           </div>
           <div className={s.sceneRow}>
             <Typography variant="caption" tone="muted" className={s.sceneLabel}>
+              Goal
+            </Typography>
+            <Typography variant="body" className={s.multiline}>
+              {scene.goal || '-'}
+            </Typography>
+          </div>
+          <div className={s.sceneRow}>
+            <Typography variant="caption" tone="muted" className={s.sceneLabel}>
               Opening message
             </Typography>
             <Typography variant="body" className={s.multiline}>

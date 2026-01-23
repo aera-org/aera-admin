@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 
 import {
   useCreateScene,
+  useUpdateScenario,
   useUpdateScenarioPhase,
   useUpdateScene,
 } from '@/app/characters';
@@ -41,6 +42,7 @@ export function ScenarioDetails({
   canEdit,
 }: ScenarioDetailsProps) {
   const updatePhaseMutation = useUpdateScenarioPhase();
+  const updateScenarioMutation = useUpdateScenario();
   const createSceneMutation = useCreateScene();
   const updateSceneMutation = useUpdateScene();
   const [isPhaseModalOpen, setIsPhaseModalOpen] = useState(false);
@@ -49,12 +51,15 @@ export function ScenarioDetails({
   >(null);
   const [phaseValues, setPhaseValues] = useState({
     toneAndBehavior: '',
-    photoSendingGuidelines: '',
-    photoMessageAlignmentRules: '',
+    photoSendingRules: '',
+    restrictions: '',
+    goal: '',
   });
   const [showErrors, setShowErrors] = useState(false);
   const [isSceneCreateOpen, setIsSceneCreateOpen] = useState(false);
   const [isSceneEditOpen, setIsSceneEditOpen] = useState(false);
+  const [isSceneOrderOpen, setIsSceneOrderOpen] = useState(false);
+  const [sceneOrderIds, setSceneOrderIds] = useState<string[]>([]);
   const [sceneShowErrors, setSceneShowErrors] = useState(false);
   const [sceneEditShowErrors, setSceneEditShowErrors] = useState(false);
   const [activeScene, setActiveScene] = useState<
@@ -65,12 +70,14 @@ export function ScenarioDetails({
     openingMessage: '',
     openingImageId: '',
     description: '',
+    goal: '',
     visualChange: '',
   });
   const [sceneEditValues, setSceneEditValues] = useState(sceneValues);
   const [sceneFile, setSceneFile] = useState<IFile | null>(null);
   const [sceneEditFile, setSceneEditFile] = useState<IFile | null>(null);
   const phases = scenario.phases;
+  const scenes = scenario.scenes;
   const phaseLabels = useMemo(
     () => ({
       hook: 'Hook',
@@ -85,11 +92,11 @@ export function ScenarioDetails({
     const errors: Record<string, string> = {};
     if (!phaseValues.toneAndBehavior.trim())
       errors.toneAndBehavior = 'Enter tone and behavior.';
-    if (!phaseValues.photoSendingGuidelines.trim())
-      errors.photoSendingGuidelines = 'Enter photo sending guidelines.';
-    if (!phaseValues.photoMessageAlignmentRules.trim())
-      errors.photoMessageAlignmentRules =
-        'Enter photo message alignment rules.';
+    if (!phaseValues.photoSendingRules.trim())
+      errors.photoSendingRules = 'Enter photo sending rules.';
+    if (!phaseValues.restrictions.trim())
+      errors.restrictions = 'Enter restrictions.';
+    if (!phaseValues.goal.trim()) errors.goal = 'Enter a goal.';
     return errors;
   }, [phaseValues, showErrors]);
 
@@ -97,16 +104,23 @@ export function ScenarioDetails({
     () =>
       Boolean(
         phaseValues.toneAndBehavior.trim() &&
-        phaseValues.photoSendingGuidelines.trim() &&
-        phaseValues.photoMessageAlignmentRules.trim(),
+        phaseValues.photoSendingRules.trim() &&
+        phaseValues.restrictions.trim() &&
+        phaseValues.goal.trim(),
       ),
     [phaseValues],
   );
 
   const getSceneErrors = (values: typeof sceneValues) => {
     const errors: Record<string, string> = {};
-    if (!values.name.trim()) errors.name = 'Enter a name.';
+    const trimmedName = values.name.trim();
+    if (!trimmedName) {
+      errors.name = 'Enter a name.';
+    } else if (!/^[a-z0-9_]+$/.test(trimmedName)) {
+      errors.name = 'Use lowercase snake_case only.';
+    }
     if (!values.description.trim()) errors.description = 'Enter a description.';
+    if (!values.goal.trim()) errors.goal = 'Enter a goal.';
     if (!values.openingMessage.trim())
       errors.openingMessage = 'Enter opening messages.';
     if (!values.visualChange.trim())
@@ -137,8 +151,9 @@ export function ScenarioDetails({
     const content = phases ? phases[phase] : null;
     setPhaseValues({
       toneAndBehavior: content?.toneAndBehavior ?? '',
-      photoSendingGuidelines: content?.photoSendingGuidelines ?? '',
-      photoMessageAlignmentRules: content?.photoMessageAlignmentRules ?? '',
+      photoSendingRules: content?.photoSendingRules ?? '',
+      restrictions: content?.restrictions ?? '',
+      goal: content?.goal ?? '',
     });
     setShowErrors(false);
     setActivePhase(phase);
@@ -156,11 +171,31 @@ export function ScenarioDetails({
       openingMessage: '',
       openingImageId: '',
       description: '',
+      goal: '',
       visualChange: '',
     });
     setSceneFile(null);
     setSceneShowErrors(false);
     setIsSceneCreateOpen(true);
+  };
+
+  const resolveSceneOrder = () => {
+    const sceneIds = scenes.map((scene) => scene.id);
+    const ordered = scenario.scenesOrder?.length
+      ? scenario.scenesOrder.filter((id) => sceneIds.includes(id))
+      : sceneIds;
+    const missing = sceneIds.filter((id) => !ordered.includes(id));
+    return [...ordered, ...missing];
+  };
+
+  const openSceneOrderModal = () => {
+    setSceneOrderIds(resolveSceneOrder());
+    setIsSceneOrderOpen(true);
+  };
+
+  const closeSceneOrderModal = () => {
+    if (updateScenarioMutation.isPending) return;
+    setIsSceneOrderOpen(false);
   };
 
   const closeSceneCreateModal = () => {
@@ -177,6 +212,7 @@ export function ScenarioDetails({
       openingMessage: scene.openingMessage ?? '',
       openingImageId: scene.openingImageId ?? '',
       description: scene.description ?? '',
+      goal: scene.goal ?? '',
       visualChange: scene.visualChange ?? '',
     });
     setSceneEditFile(null);
@@ -189,18 +225,30 @@ export function ScenarioDetails({
     setIsSceneEditOpen(false);
   };
 
+  const moveSceneOrder = (index: number, direction: -1 | 1) => {
+    setSceneOrderIds((prev) => {
+      const nextIndex = index + direction;
+      if (nextIndex < 0 || nextIndex >= prev.length) return prev;
+      const next = [...prev];
+      const [item] = next.splice(index, 1);
+      next.splice(nextIndex, 0, item);
+      return next;
+    });
+  };
+
   const handlePhaseSave = async () => {
     if (!characterId || !activePhase) return;
     const errors = {
       toneAndBehavior: phaseValues.toneAndBehavior.trim()
         ? undefined
         : 'Enter tone and behavior.',
-      photoSendingGuidelines: phaseValues.photoSendingGuidelines.trim()
+      photoSendingRules: phaseValues.photoSendingRules.trim()
         ? undefined
-        : 'Enter photo sending guidelines.',
-      photoMessageAlignmentRules: phaseValues.photoMessageAlignmentRules.trim()
+        : 'Enter photo sending rules.',
+      restrictions: phaseValues.restrictions.trim()
         ? undefined
-        : 'Enter photo message alignment rules.',
+        : 'Enter restrictions.',
+      goal: phaseValues.goal.trim() ? undefined : 'Enter a goal.',
     };
     if (Object.values(errors).some(Boolean)) {
       setShowErrors(true);
@@ -212,9 +260,9 @@ export function ScenarioDetails({
       phase: activePhase,
       payload: {
         toneAndBehavior: phaseValues.toneAndBehavior.trim(),
-        photoSendingGuidelines: phaseValues.photoSendingGuidelines.trim(),
-        photoMessageAlignmentRules:
-          phaseValues.photoMessageAlignmentRules.trim(),
+        photoSendingRules: phaseValues.photoSendingRules.trim(),
+        restrictions: phaseValues.restrictions.trim(),
+        goal: phaseValues.goal.trim(),
       },
     });
     setIsPhaseModalOpen(false);
@@ -233,6 +281,7 @@ export function ScenarioDetails({
       payload: {
         name: sceneValues.name.trim(),
         description: sceneValues.description.trim(),
+        goal: sceneValues.goal.trim(),
         openingMessage: sceneValues.openingMessage.trim(),
         visualChange: sceneValues.visualChange.trim(),
         openingImageId: sceneValues.openingImageId,
@@ -255,12 +304,40 @@ export function ScenarioDetails({
       payload: {
         name: sceneEditValues.name.trim(),
         description: sceneEditValues.description.trim(),
+        goal: sceneEditValues.goal.trim(),
         openingMessage: sceneEditValues.openingMessage.trim(),
         visualChange: sceneEditValues.visualChange.trim(),
         openingImageId: sceneEditValues.openingImageId,
       },
     });
     setIsSceneEditOpen(false);
+  };
+
+  const handleSceneOrderSave = async () => {
+    if (!characterId) return;
+    const baseOrder = resolveSceneOrder();
+    const isDirty =
+      sceneOrderIds.length !== baseOrder.length ||
+      sceneOrderIds.some((id, index) => id !== baseOrder[index]);
+    if (!isDirty) {
+      setIsSceneOrderOpen(false);
+      return;
+    }
+    await updateScenarioMutation.mutateAsync({
+      characterId,
+      scenarioId: scenario.id,
+      payload: {
+        name: scenario.name ?? '',
+        emoji: scenario.emoji ?? '',
+        description: scenario.description ?? '',
+        personality: scenario.personality ?? '',
+        messagingStyle: scenario.messagingStyle ?? '',
+        appearance: scenario.appearance ?? '',
+        situation: scenario.situation ?? '',
+        scenesOrder: sceneOrderIds,
+      },
+    });
+    setIsSceneOrderOpen(false);
   };
 
   return (
@@ -303,6 +380,14 @@ export function ScenarioDetails({
           </Typography>
           <Typography variant="body" className={s.multiline}>
             {scenario.personality || '-'}
+          </Typography>
+        </div>
+        <div className={s.detailBlock}>
+          <Typography variant="caption" tone="muted">
+            Messaging style
+          </Typography>
+          <Typography variant="body" className={s.multiline}>
+            {scenario.messagingStyle || '-'}
           </Typography>
         </div>
         <div className={s.detailBlock}>
@@ -361,18 +446,26 @@ export function ScenarioDetails({
                   </div>
                   <div className={s.phaseSection}>
                     <Typography variant="caption" tone="muted">
-                      Photo sending guidelines
+                      Photo sending rules
                     </Typography>
                     <Typography variant="body" className={s.multiline}>
-                      {content?.photoSendingGuidelines || '-'}
+                      {content?.photoSendingRules || '-'}
                     </Typography>
                   </div>
                   <div className={s.phaseSection}>
                     <Typography variant="caption" tone="muted">
-                      Photo message alignment rules
+                      Restrictions
                     </Typography>
                     <Typography variant="body" className={s.multiline}>
-                      {content?.photoMessageAlignmentRules || '-'}
+                      {content?.restrictions || '-'}
+                    </Typography>
+                  </div>
+                  <div className={s.phaseSection}>
+                    <Typography variant="caption" tone="muted">
+                      Goal
+                    </Typography>
+                    <Typography variant="body" className={s.multiline}>
+                      {content?.goal || '-'}
                     </Typography>
                   </div>
                 </div>
@@ -386,15 +479,25 @@ export function ScenarioDetails({
             <Typography variant="h3" className={s.scenesTitle}>
               Scenes
             </Typography>
-            <Button
-              variant="ghost"
-              size="sm"
-              iconLeft={<PlusIcon />}
-              onClick={openSceneCreateModal}
-              disabled={!characterId}
-            >
-              New scene
-            </Button>
+            <Stack direction="horizontal" gap="8px">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={openSceneOrderModal}
+                disabled={!characterId || scenes.length === 0}
+              >
+                Change order
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                iconLeft={<PlusIcon />}
+                onClick={openSceneCreateModal}
+                disabled={!characterId}
+              >
+                New scene
+              </Button>
+            </Stack>
           </div>
           <SceneCardList
             scenes={scenario.scenes}
@@ -450,17 +553,17 @@ export function ScenarioDetails({
             />
           </Field>
           <Field
-            label="Photo sending guidelines"
-            labelFor="phase-edit-guidelines"
-            error={validationErrors.photoSendingGuidelines}
+            label="Photo sending rules"
+            labelFor="phase-edit-photo-rules"
+            error={validationErrors.photoSendingRules}
           >
             <Textarea
-              id="phase-edit-guidelines"
-              value={phaseValues.photoSendingGuidelines}
+              id="phase-edit-photo-rules"
+              value={phaseValues.photoSendingRules}
               onChange={(event) =>
                 setPhaseValues((prev) => ({
                   ...prev,
-                  photoSendingGuidelines: event.target.value,
+                  photoSendingRules: event.target.value,
                 }))
               }
               rows={3}
@@ -468,17 +571,35 @@ export function ScenarioDetails({
             />
           </Field>
           <Field
-            label="Photo message alignment rules"
-            labelFor="phase-edit-alignment"
-            error={validationErrors.photoMessageAlignmentRules}
+            label="Restrictions"
+            labelFor="phase-edit-restrictions"
+            error={validationErrors.restrictions}
           >
             <Textarea
-              id="phase-edit-alignment"
-              value={phaseValues.photoMessageAlignmentRules}
+              id="phase-edit-restrictions"
+              value={phaseValues.restrictions}
               onChange={(event) =>
                 setPhaseValues((prev) => ({
                   ...prev,
-                  photoMessageAlignmentRules: event.target.value,
+                  restrictions: event.target.value,
+                }))
+              }
+              rows={3}
+              fullWidth
+            />
+          </Field>
+          <Field
+            label="Goal"
+            labelFor="phase-edit-goal"
+            error={validationErrors.goal}
+          >
+            <Textarea
+              id="phase-edit-goal"
+              value={phaseValues.goal}
+              onChange={(event) =>
+                setPhaseValues((prev) => ({
+                  ...prev,
+                  goal: event.target.value,
                 }))
               }
               rows={3}
@@ -567,6 +688,25 @@ export function ScenarioDetails({
                 setSceneValues((prev) => ({
                   ...prev,
                   description: event.target.value,
+                }))
+              }
+              rows={3}
+              fullWidth
+            />
+          </Field>
+
+          <Field
+            label="Goal"
+            labelFor="scene-create-goal"
+            error={sceneValidationErrors.goal}
+          >
+            <Textarea
+              id="scene-create-goal"
+              value={sceneValues.goal}
+              onChange={(event) =>
+                setSceneValues((prev) => ({
+                  ...prev,
+                  goal: event.target.value,
                 }))
               }
               rows={3}
@@ -701,6 +841,25 @@ export function ScenarioDetails({
           </Field>
 
           <Field
+            label="Goal"
+            labelFor="scene-edit-goal"
+            error={sceneEditValidationErrors.goal}
+          >
+            <Textarea
+              id="scene-edit-goal"
+              value={sceneEditValues.goal}
+              onChange={(event) =>
+                setSceneEditValues((prev) => ({
+                  ...prev,
+                  goal: event.target.value,
+                }))
+              }
+              rows={3}
+              fullWidth
+            />
+          </Field>
+
+          <Field
             label="Opening message"
             labelFor="scene-edit-opening-messages"
             error={sceneEditValidationErrors.openingMessage}
@@ -737,6 +896,74 @@ export function ScenarioDetails({
               fullWidth
             />
           </Field>
+        </Stack>
+      </Modal>
+
+      <Modal
+        open={isSceneOrderOpen}
+        title="Change scene order"
+        className={s.modal}
+        onClose={closeSceneOrderModal}
+        actions={
+          <div className={s.modalActions}>
+            <Button
+              variant="secondary"
+              onClick={closeSceneOrderModal}
+              disabled={updateScenarioMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSceneOrderSave}
+              loading={updateScenarioMutation.isPending}
+              disabled={
+                updateScenarioMutation.isPending || sceneOrderIds.length === 0
+              }
+            >
+              Save
+            </Button>
+          </div>
+        }
+      >
+        <Stack gap="12px">
+          {sceneOrderIds.map((sceneId, index) => {
+            const scene = scenes.find((item) => item.id === sceneId);
+            return (
+              <div key={sceneId} className={s.sceneOrderRow}>
+                <div className={s.sceneOrderInfo}>
+                  <Typography variant="body">
+                    {index + 1}. {scene?.name || 'Untitled scene'}
+                  </Typography>
+                  <Typography variant="caption" tone="muted">
+                    {sceneId}
+                  </Typography>
+                </div>
+                <div className={s.sceneOrderActions}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => moveSceneOrder(index, -1)}
+                    disabled={index === 0}
+                  >
+                    Up
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => moveSceneOrder(index, 1)}
+                    disabled={index === sceneOrderIds.length - 1}
+                  >
+                    Down
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+          {sceneOrderIds.length === 0 ? (
+            <Typography variant="body" tone="muted">
+              No scenes to reorder.
+            </Typography>
+          ) : null}
         </Stack>
       </Modal>
     </div>
