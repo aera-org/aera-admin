@@ -32,8 +32,7 @@ export function CharacterImageDetailsPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const imageId = id ?? '';
-  const { data, error, isLoading, refetch } =
-    useCharacterImageDetails(imageId);
+  const { data, error, isLoading, refetch } = useCharacterImageDetails(imageId);
 
   const flags = useMemo(() => {
     if (!data) return [];
@@ -68,7 +67,10 @@ export function CharacterImageDetailsPage() {
               </Typography>
             ) : null}
           </div>
-          <Button variant="secondary" onClick={() => navigate('/character-images')}>
+          <Button
+            variant="secondary"
+            onClick={() => navigate('/character-images')}
+          >
             Back to images
           </Button>
         </div>
@@ -115,7 +117,11 @@ export function CharacterImageDetailsPage() {
               </Typography>
               <div className={s.previewFrame}>
                 {data.file?.url ? (
-                  <img className={s.preview} src={data.file.url} alt={data.file.name} />
+                  <img
+                    className={s.preview}
+                    src={data.file.url}
+                    alt={data.file.name}
+                  />
                 ) : (
                   <Typography variant="caption" tone="muted">
                     No image available.
@@ -154,7 +160,7 @@ export function CharacterImageDetailsPage() {
                   {flags.map((flag) => (
                     <Badge
                       key={flag.label}
-                      tone={flag.tone}
+                      tone={flag.tone as any}
                       outline={flag.outline}
                     >
                       {flag.label}
@@ -163,10 +169,14 @@ export function CharacterImageDetailsPage() {
                 </div>
               </Field>
               <Field label="Updated">
-                <Typography variant="body">{formatDate(data.updatedAt)}</Typography>
+                <Typography variant="body">
+                  {formatDate(data.updatedAt)}
+                </Typography>
               </Field>
               <Field label="Created">
-                <Typography variant="body">{formatDate(data.createdAt)}</Typography>
+                <Typography variant="body">
+                  {formatDate(data.createdAt)}
+                </Typography>
               </Field>
             </div>
           </div>
