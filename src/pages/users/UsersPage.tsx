@@ -137,6 +137,15 @@ function toIsoString(value: string) {
   return parsed.toISOString();
 }
 
+function parseFuelValue(value: string) {
+  if (!value.trim()) return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  if (!Number.isInteger(parsed)) return null;
+  if (parsed < 0 || parsed > 100) return null;
+  return parsed;
+}
+
 export function UsersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSearch = searchParams.get('search') ?? '';
@@ -238,6 +247,9 @@ export function UsersPage() {
   );
   const [subscriptionValue, setSubscriptionValue] = useState('');
   const [subscriptionShowErrors, setSubscriptionShowErrors] = useState(false);
+  const [fuelTarget, setFuelTarget] = useState<ITgUser | null>(null);
+  const [fuelValue, setFuelValue] = useState('');
+  const [fuelShowErrors, setFuelShowErrors] = useState(false);
   const [actionTarget, setActionTarget] = useState<string | null>(null);
 
   const openSubscriptionModal = (user: ITgUser) => {
@@ -250,6 +262,18 @@ export function UsersPage() {
     if (updateUserMutation.isPending) return;
     setSubscriptionTarget(null);
     setSubscriptionValue('');
+  };
+
+  const openFuelModal = (user: ITgUser) => {
+    setFuelTarget(user);
+    setFuelValue(String(user.fuel ?? 0));
+    setFuelShowErrors(false);
+  };
+
+  const closeFuelModal = () => {
+    if (updateUserMutation.isPending) return;
+    setFuelTarget(null);
+    setFuelValue('');
   };
 
   const subscriptionErrors = useMemo(() => {
@@ -288,6 +312,39 @@ export function UsersPage() {
     }
   };
 
+  const fuelErrors = useMemo(() => {
+    if (!fuelShowErrors) return {};
+    const errors: { fuel?: string } = {};
+    if (parseFuelValue(fuelValue) === null) {
+      errors.fuel = 'Enter a number between 0 and 100.';
+    }
+    return errors;
+  }, [fuelShowErrors, fuelValue]);
+
+  const fuelIsValid = useMemo(
+    () => parseFuelValue(fuelValue) !== null,
+    [fuelValue],
+  );
+
+  const handleFuelSave = async () => {
+    if (!fuelTarget) return;
+    const nextFuel = parseFuelValue(fuelValue);
+    if (nextFuel === null) {
+      setFuelShowErrors(true);
+      return;
+    }
+    setActionTarget(fuelTarget.id);
+    try {
+      await updateUserMutation.mutateAsync({
+        id: fuelTarget.id,
+        payload: { fuel: nextFuel },
+      });
+      closeFuelModal();
+    } finally {
+      setActionTarget(null);
+    }
+  };
+
   const handleConfirmBlock = async () => {
     if (!confirmTarget) return;
     setActionTarget(confirmTarget.user.id);
@@ -307,6 +364,7 @@ export function UsersPage() {
       { key: 'user', label: 'User' },
       { key: 'status', label: 'Status' },
       { key: 'subscription', label: 'Subscription' },
+      { key: 'fuel', label: 'Fuel' },
       {
         key: 'lastActivity',
         label: <span className={s.alignRight}>Last activity</span>,
@@ -350,6 +408,11 @@ export function UsersPage() {
               )}
             </div>
           ),
+          fuel: (
+            <Typography variant="body" tone="muted">
+              {Number.isFinite(user.fuel) ? user.fuel : '-'}
+            </Typography>
+          ),
           lastActivity: (
             <Typography variant="caption" tone="muted" className={s.alignRight}>
               {formatDate(user.lastActivityAt)}
@@ -372,6 +435,15 @@ export function UsersPage() {
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={() => openFuelModal(user)}
+                loading={isUpdating && fuelTarget?.id === user.id}
+                disabled={updateUserMutation.isPending}
+              >
+                Fuel
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => openSubscriptionModal(user)}
                 loading={isUpdating && subscriptionTarget?.id === user.id}
                 disabled={updateUserMutation.isPending}
@@ -385,6 +457,7 @@ export function UsersPage() {
     [
       actionTarget,
       confirmTarget?.user.id,
+      fuelTarget?.id,
       subscriptionTarget?.id,
       updateUserMutation.isPending,
       users,
@@ -407,6 +480,7 @@ export function UsersPage() {
             <Skeleton width={120} height={10} />
           </div>
         ),
+        fuel: <Skeleton width={40} height={12} />,
         lastActivity: (
           <div className={s.alignRight}>
             <Skeleton width={120} height={12} />
@@ -415,6 +489,7 @@ export function UsersPage() {
         actions: (
           <div className={s.actionsCell}>
             <Skeleton width={70} height={28} />
+            <Skeleton width={90} height={28} />
             <Skeleton width={90} height={28} />
           </div>
         ),
@@ -581,6 +656,52 @@ export function UsersPage() {
           </Field>
           <Typography variant="caption" tone="muted" className={s.helperText}>
             Set a past date to expire the subscription.
+          </Typography>
+        </Stack>
+      </Modal>
+
+      <Modal
+        open={Boolean(fuelTarget)}
+        title="Update fuel"
+        onClose={closeFuelModal}
+        actions={
+          <div className={s.modalActions}>
+            <Button
+              variant="secondary"
+              onClick={closeFuelModal}
+              disabled={updateUserMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleFuelSave}
+              loading={updateUserMutation.isPending && Boolean(fuelTarget)}
+              disabled={!fuelIsValid || updateUserMutation.isPending}
+            >
+              Save
+            </Button>
+          </div>
+        }
+      >
+        <Stack gap="12px">
+          <Field
+            label="Fuel"
+            labelFor="user-fuel"
+            error={fuelErrors.fuel}
+          >
+            <Input
+              id="user-fuel"
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              value={fuelValue}
+              onChange={(event) => setFuelValue(event.target.value)}
+              fullWidth
+            />
+          </Field>
+          <Typography variant="caption" tone="muted" className={s.helperText}>
+            Set a value from 0 to 100.
           </Typography>
         </Stack>
       </Modal>

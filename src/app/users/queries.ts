@@ -36,6 +36,10 @@ export function useUpdateUser() {
         notifySuccess('Subscription updated.', 'Subscription updated.');
         return;
       }
+      if (variables.payload.fuel !== undefined) {
+        notifySuccess('Fuel updated.', 'Fuel updated.');
+        return;
+      }
       notifySuccess('User updated.', 'User updated.');
     },
     onError: (error) => {

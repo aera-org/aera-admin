@@ -1,9 +1,10 @@
-import { TrashIcon } from '@radix-ui/react-icons';
+import { DownloadIcon, TrashIcon } from '@radix-ui/react-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import {
+  downloadLora,
   uploadLora,
   useDeleteLora,
   useLoras,
@@ -191,6 +192,7 @@ export function LorasPage() {
   const [seedInput, setSeedInput] = useState('123456');
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const resetUpload = () => {
     setUploadFile(null);
@@ -295,6 +297,28 @@ export function LorasPage() {
         actions: (
           <div className={s.actionsCell}>
             <IconButton
+              aria-label="Download LoRA"
+              icon={<DownloadIcon />}
+              tooltip="Download LoRA"
+              variant="ghost"
+              size="sm"
+              loading={downloadingId === lora.id}
+              disabled={downloadingId === lora.id}
+              onClick={async () => {
+                if (downloadingId) return;
+                setDownloadingId(lora.id);
+                try {
+                  await downloadLora(lora.id, lora.fileName);
+                } catch (downloadError) {
+                  notifyError(downloadError, 'Unable to download the LoRA.');
+                } finally {
+                  setDownloadingId((current) =>
+                    current === lora.id ? null : current,
+                  );
+                }
+              }}
+            />
+            <IconButton
               aria-label="Edit seed"
               icon={<PencilLineIcon />}
               tooltip="Edit seed"
@@ -313,7 +337,7 @@ export function LorasPage() {
           </div>
         ),
       })),
-    [loras],
+    [downloadingId, loras],
   );
 
   const skeletonRows = useMemo(

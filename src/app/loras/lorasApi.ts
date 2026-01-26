@@ -15,6 +15,19 @@ const fallbackError = 'Unable to load LoRAs.';
 const uploadFallbackError = 'Unable to upload the LoRA.';
 const updateFallbackError = 'Unable to update the seed.';
 const deleteFallbackError = 'Unable to delete the LoRA.';
+const downloadFallbackError = 'Unable to download the LoRA.';
+
+function getFileNameFromDisposition(value: string | null) {
+  if (!value) return null;
+
+  const utf8Match = /filename\*=UTF-8''([^;]+)/i.exec(value);
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1]);
+  }
+
+  const simpleMatch = /filename="?([^";]+)"?/i.exec(value);
+  return simpleMatch?.[1] ?? null;
+}
 
 export async function getLoras(params: LorasListParams) {
   const query = new URLSearchParams();
@@ -65,4 +78,27 @@ export async function deleteLora(id: string) {
   if (!res.ok) {
     throw await buildApiError(res, deleteFallbackError);
   }
+}
+
+export async function downloadLora(id: string, fallbackName?: string) {
+  const res = await apiFetch(`/admin/loras/${id}/download`);
+  if (!res.ok) {
+    throw await buildApiError(res, downloadFallbackError);
+  }
+
+  const blob = await res.blob();
+  const headerName = getFileNameFromDisposition(
+    res.headers.get('content-disposition'),
+  );
+  const fileName = headerName ?? fallbackName ?? `lora-${id}.safetensors`;
+
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.rel = 'noopener';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 }
