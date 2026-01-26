@@ -444,10 +444,8 @@ export function CharacterImagesPage() {
     isFree: false,
     isPromotional: false,
     fileId: '',
-    blurredFileId: '',
   });
   const [mainFile, setMainFile] = useState<IFile | null>(null);
-  const [blurredFile, setBlurredFile] = useState<IFile | null>(null);
   const [createShowErrors, setCreateShowErrors] = useState(false);
 
   const openCreateDrawer = () => {
@@ -457,10 +455,8 @@ export function CharacterImagesPage() {
       isFree: false,
       isPromotional: false,
       fileId: '',
-      blurredFileId: '',
     });
     setMainFile(null);
-    setBlurredFile(null);
     setCreateShowErrors(false);
     setIsDrawerOpen(true);
   };
@@ -523,7 +519,6 @@ export function CharacterImagesPage() {
       isPregenerated: true,
       isPromotional: createValues.isPromotional,
       fileId: createValues.fileId,
-      blurredFileId: createValues.blurredFileId || undefined,
     });
     setIsDrawerOpen(false);
   };
@@ -800,45 +795,39 @@ export function CharacterImagesPage() {
             ) : null}
           </div>
 
-          <FileUpload
-            label="Blurred file (optional)"
-            folder={FileDir.Public}
-            value={blurredFile}
-            onChange={(file) => {
-              setBlurredFile(file);
-              setCreateValues((prev) => ({
-                ...prev,
-                blurredFileId: file?.id ?? '',
-              }));
-            }}
-            onError={(message) =>
-              notifyError(new Error(message), 'Unable to upload image.')
-            }
-          />
-
           <Field label="Flags">
-            <Stack gap="12px">
-              <Switch
-                checked={createValues.isFree}
-                onChange={(event) =>
-                  setCreateValues((prev) => ({
-                    ...prev,
-                    isFree: event.target.checked,
-                  }))
-                }
-                label={createValues.isFree ? 'Free' : 'Paid'}
-              />
-              <Switch
-                checked={createValues.isPromotional}
-                onChange={(event) =>
-                  setCreateValues((prev) => ({
-                    ...prev,
-                    isPromotional: event.target.checked,
-                  }))
-                }
-                label={createValues.isPromotional ? 'Promotional' : 'Regular'}
-              />
-            </Stack>
+            <div className={s.toggleGrid}>
+              <div className={s.toggleRow}>
+                <Typography variant="meta" tone="muted">
+                  Free
+                </Typography>
+                <Switch
+                  checked={createValues.isFree}
+                  onChange={(event) =>
+                    setCreateValues((prev) => ({
+                      ...prev,
+                      isFree: event.target.checked,
+                    }))
+                  }
+                  aria-label="isFree"
+                />
+              </div>
+              <div className={s.toggleRow}>
+                <Typography variant="meta" tone="muted">
+                  Promotional
+                </Typography>
+                <Switch
+                  checked={createValues.isPromotional}
+                  onChange={(event) =>
+                    setCreateValues((prev) => ({
+                      ...prev,
+                      isPromotional: event.target.checked,
+                    }))
+                  }
+                  aria-label="isPromotional"
+                />
+              </div>
+            </div>
           </Field>
 
           <div className={s.drawerActions}>
