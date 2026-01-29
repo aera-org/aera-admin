@@ -2,7 +2,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  padding-bottom: var(--space-8);
 }
 
 .header {
@@ -118,6 +117,39 @@
   gap: var(--space-3);
 }
 
+.breakdownGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.breakdownHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+
+.breakdownTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.breakdownField {
+  min-width: 180px;
+}
+
+.breakdownName {
+  display: inline-block;
+  max-width: 240px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .tableHeader {
   cursor: help;
   font-size: 12px;
@@ -169,5 +201,9 @@
 
   .kpiGrid {
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+
+  .breakdownGrid {
+    grid-template-columns: 1fr;
   }
 }

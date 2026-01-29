@@ -1,6 +1,8 @@
 export {
   useAnalyticsMainRange,
   useAnalyticsMetrics,
+  usePaymentsConversionBreakdown,
+  usePaymentsRevenueBreakdown,
 } from './queries';
 export type {
   AnalyticsMainRangeResponse,
@@ -8,6 +10,10 @@ export type {
   AnalyticsMetricPoint,
   AnalyticsMetricSeries,
   AnalyticsMetricsResponse,
+  PaymentsConversionBreakdownItem,
+  PaymentsConversionGroupBy,
+  PaymentsRevenueBreakdownItem,
+  PaymentsRevenueGroupBy,
 } from './analyticsApi';
 export type {
   AnalyticsSection,
@@ -33,4 +39,9 @@ export {
   isValidMonthId,
   normalizeRange,
 } from './months';
-export { formatMetricDelta, formatMetricValue } from './format';
+export {
+  formatCount,
+  formatMetricDelta,
+  formatMetricValue,
+  formatStars,
+} from './format';

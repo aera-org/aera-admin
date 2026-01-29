@@ -10,7 +10,13 @@ export type AnalyticsMetricKey =
   | 'stickinessRatio'
   | 'avgSessionDurationSec'
   | 'avgMessagesPerSession'
-  | 'chatRecoveryRate';
+  | 'chatRecoveryRate'
+  | 'conversionRate'
+  | 'repeatPurchaseRate'
+  | 'averagePurchaseValue'
+  | 'cohortLtvM0'
+  | 'averageRevenuePerUser'
+  | 'totalTransactions';
 
 export type MetricFormat = 'percent' | 'count' | 'duration' | 'currency';
 
@@ -112,6 +118,59 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
   },
 ];
 
+const PAYMENTS_METRICS: AnalyticsMetricDefinition[] = [
+  {
+    key: 'conversionRate',
+    label: 'Conversion rate',
+    description:
+      'Unique users with at least one payment in month / active users in month.',
+    format: 'percent',
+    section: 'payments',
+    precision: 1,
+  },
+  {
+    key: 'repeatPurchaseRate',
+    label: 'Repeat purchase rate',
+    description:
+      'Users with at least 2 payments by month-end / users with at least 1 payment by month-end.',
+    format: 'percent',
+    section: 'payments',
+    precision: 1,
+  },
+  {
+    key: 'averagePurchaseValue',
+    label: 'Average purchase value',
+    description: 'Total revenue in month / number of payments in month.',
+    format: 'currency',
+    section: 'payments',
+    precision: 2,
+  },
+  {
+    key: 'cohortLtvM0',
+    label: 'Cohort LTV M0',
+    description:
+      'Average revenue in the first month from users whose first payment is in that month.',
+    format: 'currency',
+    section: 'payments',
+    precision: 2,
+  },
+  {
+    key: 'averageRevenuePerUser',
+    label: 'ARPU',
+    description: 'Total revenue in month / active users in month.',
+    format: 'currency',
+    section: 'payments',
+    precision: 2,
+  },
+  {
+    key: 'totalTransactions',
+    label: 'Total transactions',
+    description: 'Number of payments in month.',
+    format: 'count',
+    section: 'payments',
+  },
+];
+
 const SECTIONS: AnalyticsSectionConfig[] = [
   {
     key: 'main',
@@ -123,9 +182,9 @@ const SECTIONS: AnalyticsSectionConfig[] = [
   {
     key: 'payments',
     label: 'Payments',
-    available: false,
-    metrics: [],
-    defaultMetric: null,
+    available: true,
+    metrics: PAYMENTS_METRICS,
+    defaultMetric: 'conversionRate',
   },
   {
     key: 'technical',
@@ -136,7 +195,9 @@ const SECTIONS: AnalyticsSectionConfig[] = [
   },
 ];
 
-const METRIC_MAP = new Map(MAIN_METRICS.map((metric) => [metric.key, metric]));
+const METRIC_MAP = new Map(
+  [...MAIN_METRICS, ...PAYMENTS_METRICS].map((metric) => [metric.key, metric]),
+);
 
 export function getSectionConfig(
   section: AnalyticsSection,

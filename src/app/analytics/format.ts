@@ -8,6 +8,7 @@ type DeltaResult = {
 };
 
 const numberFormatCache = new Map<string, Intl.NumberFormat>();
+const STAR_SUFFIX = ' ⭐️';
 
 function getNumberFormatter(options: Intl.NumberFormatOptions) {
   const key = JSON.stringify(options);
@@ -18,12 +19,16 @@ function getNumberFormatter(options: Intl.NumberFormatOptions) {
   return formatter;
 }
 
-function formatCount(value: number, precision = 0) {
+export function formatCount(value: number, precision = 0) {
   const formatter = getNumberFormatter({
     maximumFractionDigits: precision,
     minimumFractionDigits: precision,
   });
   return formatter.format(value);
+}
+
+export function formatStars(value: number, precision = 2) {
+  return `${formatCount(value, precision)}${STAR_SUFFIX}`;
 }
 
 function formatPercent(value: number, precision = 1) {
@@ -81,7 +86,7 @@ export function formatMetricValue(
     case 'duration':
       return formatDuration(value, variant);
     case 'currency':
-      return formatCount(value, metric.precision ?? 2);
+      return formatStars(value, metric.precision ?? 2);
     default:
       return formatCount(value, metric.precision ?? 0);
   }
@@ -115,6 +120,14 @@ export function formatMetricDelta(
   if (metric.format === 'duration') {
     return {
       label: `${sign}${formatDuration(Math.abs(diff), 'delta')}`,
+      isPositive: diff > 0,
+    };
+  }
+
+  if (metric.format === 'currency') {
+    const formatted = formatStars(Math.abs(diff), metric.precision ?? 2);
+    return {
+      label: `${sign}${formatted}`,
       isPositive: diff > 0,
     };
   }

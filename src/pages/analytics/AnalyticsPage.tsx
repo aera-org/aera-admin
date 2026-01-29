@@ -12,9 +12,11 @@ import { useSearchParams } from 'react-router-dom';
 import {
   addMonths,
   compareMonthIds,
+  formatCount,
   formatMetricDelta,
   formatMetricValue,
   formatMonthLabel,
+  formatStars,
   getDefaultRange,
   getLastFullMonthId,
   getMetricDefinition,
@@ -26,8 +28,12 @@ import {
   isValidMonthId,
   isValidSection,
   normalizeRange,
+  type PaymentsConversionGroupBy,
+  type PaymentsRevenueGroupBy,
   useAnalyticsMainRange,
   useAnalyticsMetrics,
+  usePaymentsConversionBreakdown,
+  usePaymentsRevenueBreakdown,
 } from '@/app/analytics';
 import {
   Alert,
@@ -115,6 +121,10 @@ export function AnalyticsPage() {
   const rawKpi = searchParams.get('kpi');
 
   const fallbackRange = useMemo(() => getDefaultRange(), []);
+  const [conversionGroupBy, setConversionGroupBy] =
+    useState<PaymentsConversionGroupBy>('character');
+  const [revenueGroupBy, setRevenueGroupBy] =
+    useState<PaymentsRevenueGroupBy>('character');
   const section = isValidSection(rawSection) ? rawSection : 'main';
   const {
     start: startMonth,
@@ -273,6 +283,24 @@ export function AnalyticsPage() {
   const currentRow = kpiDataByMonth.get(kpiMonth);
   const previousRow = kpiDataByMonth.get(addMonths(kpiMonth, -1));
 
+  const {
+    data: conversionBreakdown,
+    isLoading: isConversionLoading,
+    error: conversionError,
+  } = usePaymentsConversionBreakdown(
+    { groupBy: conversionGroupBy, month: kpiMonth },
+    { enabled: section === 'payments' && isValidMonthId(kpiMonth) },
+  );
+
+  const {
+    data: revenueBreakdown,
+    isLoading: isRevenueLoading,
+    error: revenueError,
+  } = usePaymentsRevenueBreakdown(
+    { groupBy: revenueGroupBy, month: kpiMonth },
+    { enabled: section === 'payments' && isValidMonthId(kpiMonth) },
+  );
+
   const kpiCards = sectionConfig.metrics.map((metric) => {
     const value = currentRow?.[metric.key] ?? null;
     const previous = previousRow?.[metric.key] ?? null;
@@ -383,6 +411,217 @@ export function AnalyticsPage() {
   }, [chartSeries]);
 
   const sectionOptions = useMemo(() => getSectionOptions(), []);
+  const conversionMetric = useMemo(
+    () => getMetricDefinition('conversionRate'),
+    [],
+  );
+
+  const conversionColumns = useMemo(
+    () => [
+      {
+        key: 'name',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ minWidth: 120, fontSize: 12 }}
+          >
+            Name
+          </Typography>
+        ),
+      },
+      {
+        key: 'activeUsers',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Active users
+          </Typography>
+        ),
+      },
+      {
+        key: 'payingUsers',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Paying users
+          </Typography>
+        ),
+      },
+      {
+        key: 'conversionRate',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Conversion
+          </Typography>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const conversionRows = useMemo(() => {
+    const entries = conversionBreakdown ?? [];
+    return entries.map((item) => ({
+      name: (
+        <Typography variant="body" as="span" className={s.breakdownName}>
+          {item.name || 'Unknown'}
+        </Typography>
+      ),
+      activeUsers: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {Number.isFinite(item.activeUsers)
+            ? formatCount(item.activeUsers)
+            : '—'}
+        </Typography>
+      ),
+      payingUsers: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {Number.isFinite(item.payingUsers)
+            ? formatCount(item.payingUsers)
+            : '—'}
+        </Typography>
+      ),
+      conversionRate: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {conversionMetric && Number.isFinite(item.conversionRate)
+            ? formatMetricValue(conversionMetric, item.conversionRate, 'table')
+            : '—'}
+        </Typography>
+      ),
+    }));
+  }, [conversionBreakdown, conversionMetric]);
+
+  const revenueColumns = useMemo(
+    () => [
+      {
+        key: 'name',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ minWidth: 120, fontSize: 12 }}
+          >
+            Source
+          </Typography>
+        ),
+      },
+      {
+        key: 'revenue',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Revenue
+          </Typography>
+        ),
+      },
+      {
+        key: 'transactions',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Transactions
+          </Typography>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const revenueRows = useMemo(() => {
+    const entries = revenueBreakdown ?? [];
+    return entries.map((item) => {
+      const label = item.name || item.deeplink || 'Unknown';
+      return {
+        name: (
+          <Typography variant="body" as="span" className={s.breakdownName}>
+            {label}
+          </Typography>
+        ),
+        revenue: (
+          <Typography
+            variant="body"
+            as="span"
+            className={s.alignRight}
+            style={{ fontSize: 14 }}
+          >
+            {Number.isFinite(item.revenue) ? formatStars(item.revenue, 2) : '—'}
+          </Typography>
+        ),
+        transactions: (
+          <Typography
+            variant="body"
+            as="span"
+            className={s.alignRight}
+            style={{ fontSize: 14 }}
+          >
+            {Number.isFinite(item.transactions)
+              ? formatCount(item.transactions)
+              : '—'}
+          </Typography>
+        ),
+      };
+    });
+  }, [revenueBreakdown]);
+
+  const conversionGroupOptions = useMemo(
+    () => [
+      { value: 'character', label: 'Character' },
+      { value: 'scenario', label: 'Scenario' },
+    ],
+    [],
+  );
+
+  const revenueGroupOptions = useMemo(
+    () => [
+      { value: 'character', label: 'Character' },
+      { value: 'deeplink', label: 'Deeplink' },
+    ],
+    [],
+  );
 
   const { ref: chartRef, width: chartWidth } =
     useElementWidth<HTMLDivElement>();
@@ -398,13 +637,14 @@ export function AnalyticsPage() {
             <ButtonGroup>
               {sectionOptions.map((item) => {
                 const isActive = item.value === section;
+                const isDisabled = Boolean(item.disabled);
                 return (
                   <Button
                     key={item.value}
                     size="sm"
                     variant={'ghost'}
                     onClick={() => updateSearchParams({ section: item.value })}
-                    disabled={isActive}
+                    disabled={isActive || isDisabled}
                   >
                     {item.label}
                   </Button>
@@ -469,6 +709,119 @@ export function AnalyticsPage() {
                   <div className={s.kpiGrid}>{kpiCards}</div>
                 )}
               </Section>
+
+              {section === 'payments' ? (
+                <Section
+                  title="Breakdowns"
+                  description={`Top sources for ${formatMonthLabel(
+                    kpiMonth,
+                    'long',
+                  )}.`}
+                >
+                  <Grid columns={2} gap={16} className={s.breakdownGrid}>
+                    <Card className={s.panel} padding="md">
+                      <div className={s.breakdownHeader}>
+                        <div className={s.breakdownTitle}>
+                          <Typography variant="h3">
+                            Conversion breakdown
+                          </Typography>
+                          <Typography variant="caption" tone="muted">
+                            {formatMonthLabel(kpiMonth, 'short')}
+                          </Typography>
+                        </div>
+                        <Field
+                          label="Group by"
+                          layout="inline"
+                          className={s.breakdownField}
+                        >
+                          <Select
+                            options={conversionGroupOptions}
+                            value={conversionGroupBy}
+                            onChange={(value) =>
+                              setConversionGroupBy(
+                                value as PaymentsConversionGroupBy,
+                              )
+                            }
+                            size="sm"
+                            fitContent
+                          />
+                        </Field>
+                      </div>
+                      {conversionError ? (
+                        <Alert
+                          tone="danger"
+                          title="Unable to load conversion breakdown"
+                          description="Please retry or select another month."
+                        />
+                      ) : null}
+                      {isConversionLoading ? (
+                        <Skeleton height={180} />
+                      ) : conversionRows.length ? (
+                        <div className={s.tableWrap}>
+                          <Table
+                            columns={conversionColumns}
+                            rows={conversionRows}
+                          />
+                        </div>
+                      ) : (
+                        <EmptyState
+                          title="No conversion data"
+                          description="Try another month."
+                        />
+                      )}
+                    </Card>
+
+                    <Card className={s.panel} padding="md">
+                      <div className={s.breakdownHeader}>
+                        <div className={s.breakdownTitle}>
+                          <Typography variant="h3">
+                            Revenue breakdown
+                          </Typography>
+                          <Typography variant="caption" tone="muted">
+                            {formatMonthLabel(kpiMonth, 'short')}
+                          </Typography>
+                        </div>
+                        <Field
+                          label="Group by"
+                          layout="inline"
+                          className={s.breakdownField}
+                        >
+                          <Select
+                            options={revenueGroupOptions}
+                            value={revenueGroupBy}
+                            onChange={(value) =>
+                              setRevenueGroupBy(
+                                value as PaymentsRevenueGroupBy,
+                              )
+                            }
+                            size="sm"
+                            fitContent
+                          />
+                        </Field>
+                      </div>
+                      {revenueError ? (
+                        <Alert
+                          tone="danger"
+                          title="Unable to load revenue breakdown"
+                          description="Please retry or select another month."
+                        />
+                      ) : null}
+                      {isRevenueLoading ? (
+                        <Skeleton height={180} />
+                      ) : revenueRows.length ? (
+                        <div className={s.tableWrap}>
+                          <Table columns={revenueColumns} rows={revenueRows} />
+                        </div>
+                      ) : (
+                        <EmptyState
+                          title="No revenue data"
+                          description="Try another month."
+                        />
+                      )}
+                    </Card>
+                  </Grid>
+                </Section>
+              ) : null}
 
               <div className={s.filters}>
                 <div className={s.filterRow}>
@@ -628,6 +981,7 @@ export function AnalyticsPage() {
                   )}
                 </Card>
               </Section>
+
             </>
           )}
         </Stack>

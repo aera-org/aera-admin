@@ -26,6 +26,25 @@ export type AnalyticsMetricsResponse = {
   metrics: AnalyticsMetricSeries[];
 };
 
+export type PaymentsConversionGroupBy = 'character' | 'scenario';
+export type PaymentsRevenueGroupBy = 'character' | 'deeplink';
+
+export type PaymentsConversionBreakdownItem = {
+  id: string;
+  name: string;
+  activeUsers: number;
+  payingUsers: number;
+  conversionRate: number;
+};
+
+export type PaymentsRevenueBreakdownItem = {
+  id?: string;
+  name?: string;
+  deeplink?: string;
+  revenue: number;
+  transactions: number;
+};
+
 export async function getAnalyticsMainRange(params: {
   section: AnalyticsSection;
   startMonth: string;
@@ -62,4 +81,43 @@ export async function getAnalyticsMetrics(params: {
   }
 
   return (await res.json()) as AnalyticsMetricsResponse;
+}
+
+export async function getPaymentsConversionBreakdown(params: {
+  groupBy: PaymentsConversionGroupBy;
+  month: string;
+}) {
+  const query = new URLSearchParams();
+  query.set('groupBy', params.groupBy);
+  query.set('month', params.month);
+
+  const res = await apiFetch(
+    `/admin/analytics/payments/breakdown/conversion?${query.toString()}`,
+  );
+  if (!res.ok) {
+    throw await buildApiError(
+      res,
+      'Unable to load conversion breakdown.',
+    );
+  }
+
+  return (await res.json()) as PaymentsConversionBreakdownItem[];
+}
+
+export async function getPaymentsRevenueBreakdown(params: {
+  groupBy: PaymentsRevenueGroupBy;
+  month: string;
+}) {
+  const query = new URLSearchParams();
+  query.set('groupBy', params.groupBy);
+  query.set('month', params.month);
+
+  const res = await apiFetch(
+    `/admin/analytics/payments/breakdown/revenue?${query.toString()}`,
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, 'Unable to load revenue breakdown.');
+  }
+
+  return (await res.json()) as PaymentsRevenueBreakdownItem[];
 }
