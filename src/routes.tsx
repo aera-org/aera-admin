@@ -4,6 +4,7 @@ import { AuthGuard } from '@/app/auth';
 import {
   AuthCallbackPage,
   AuthPage,
+  AnalyticsPage,
   AdminsPage,
   CharacterImageDetailsPage,
   CharacterImagesPage,
@@ -28,13 +29,13 @@ import {
 export function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<CharactersPage />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/auth/confirm" element={<ConfirmEmailPage />} />
       <Route path="/auth/forgot" element={<ForgotPasswordPage />} />
       <Route path="/auth/reset" element={<ResetPasswordPage />} />
       <Route element={<AuthGuard />}>
+        <Route path="/" element={<AnalyticsPage />} />
         <Route path="/ui" element={<UiKitPage />} />
         <Route path="/characters" element={<CharactersPage />} />
         <Route path="/characters/:id" element={<CharacterDetailsPage />} />

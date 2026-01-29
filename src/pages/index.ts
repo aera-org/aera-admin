@@ -1,5 +1,6 @@
 export { AuthCallbackPage } from './auth/AuthCallbackPage';
 export { AuthPage } from './auth/AuthPage';
+export { AnalyticsPage } from './analytics/AnalyticsPage';
 export { ConfirmEmailPage } from './auth/ConfirmEmailPage';
 export { ForgotPasswordPage } from './auth/ForgotPasswordPage';
 export { ResetPasswordPage } from './auth/ResetPasswordPage';

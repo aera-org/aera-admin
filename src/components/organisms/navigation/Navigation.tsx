@@ -2,6 +2,7 @@ import type { JSX } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
 import {
+  ChartIcon,
   DollarSignIcon,
   ImageIcon,
   LayersIcon,
@@ -22,6 +23,7 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
+  { label: 'Analytics', to: '/', icon: <ChartIcon /> },
   { label: 'Characters', to: '/characters', icon: <UsersRoundIcon /> },
   { label: 'LoRAs', to: '/loras', icon: <LayersIcon /> },
   { label: 'Prompts', to: '/prompts', icon: <MessageSquareQuoteIcon /> },

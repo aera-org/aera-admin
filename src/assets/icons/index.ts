@@ -1,4 +1,5 @@
 export { default as AudioLinesIcon } from './audio-lines.svg?react';
+export { default as ChartIcon } from './chart-no-axes-combined.svg?react';
 export { default as CircleDotIcon } from './circle-dot.svg?react';
 export { default as DollarSignIcon } from './dollar-sign.svg?react';
 export { default as ExternalLinkIcon } from './external-link.svg?react';
