@@ -16,7 +16,15 @@ export type AnalyticsMetricKey =
   | 'averagePurchaseValue'
   | 'cohortLtvM0'
   | 'averageRevenuePerUser'
-  | 'totalTransactions';
+  | 'totalTransactions'
+  | 'errorRate'
+  | 'avgResponseTime'
+  | 'totalLlmCost'
+  | 'avgCostPerCall'
+  | 'imgGenTotalAvg'
+  | 'imgGenGenerationAvg'
+  | 'imgGenerationTotal'
+  | 'imgGenerationPerChat';
 
 export type MetricFormat = 'percent' | 'count' | 'duration' | 'currency';
 
@@ -27,6 +35,8 @@ export type AnalyticsMetricDefinition = {
   format: MetricFormat;
   section: AnalyticsSection;
   precision?: number;
+  currency?: 'stars' | 'usd';
+  durationUnit?: 's' | 'ms';
 };
 
 export type AnalyticsSectionConfig = {
@@ -144,6 +154,7 @@ const PAYMENTS_METRICS: AnalyticsMetricDefinition[] = [
     format: 'currency',
     section: 'payments',
     precision: 2,
+    currency: 'stars',
   },
   {
     key: 'cohortLtvM0',
@@ -153,6 +164,7 @@ const PAYMENTS_METRICS: AnalyticsMetricDefinition[] = [
     format: 'currency',
     section: 'payments',
     precision: 2,
+    currency: 'stars',
   },
   {
     key: 'averageRevenuePerUser',
@@ -161,6 +173,7 @@ const PAYMENTS_METRICS: AnalyticsMetricDefinition[] = [
     format: 'currency',
     section: 'payments',
     precision: 2,
+    currency: 'stars',
   },
   {
     key: 'totalTransactions',
@@ -168,6 +181,75 @@ const PAYMENTS_METRICS: AnalyticsMetricDefinition[] = [
     description: 'Number of payments in month.',
     format: 'count',
     section: 'payments',
+  },
+];
+
+const TECHNICAL_METRICS: AnalyticsMetricDefinition[] = [
+  {
+    key: 'errorRate',
+    label: 'Error rate',
+    description: 'Errors divided by responses plus errors.',
+    format: 'percent',
+    section: 'technical',
+    precision: 1,
+  },
+  {
+    key: 'avgResponseTime',
+    label: 'Avg response time',
+    description: 'Average of chat response total latency.',
+    format: 'duration',
+    section: 'technical',
+    durationUnit: 'ms',
+  },
+  {
+    key: 'totalLlmCost',
+    label: 'Total LLM cost',
+    description: 'Sum of llm_call.price.',
+    format: 'currency',
+    section: 'technical',
+    precision: 2,
+    currency: 'usd',
+  },
+  {
+    key: 'avgCostPerCall',
+    label: 'Avg cost per call',
+    description: 'Average of llm_call.price.',
+    format: 'currency',
+    section: 'technical',
+    precision: 2,
+    currency: 'usd',
+  },
+  {
+    key: 'imgGenTotalAvg',
+    label: 'Img response avg',
+    description:
+      'Average of image response total latency (prompt generation + image generation + image upload).',
+    format: 'duration',
+    section: 'technical',
+    durationUnit: 'ms',
+  },
+  {
+    key: 'imgGenGenerationAvg',
+    label: 'Img generation avg',
+    description: 'Average of image generation latency.',
+    format: 'duration',
+    section: 'technical',
+    durationUnit: 'ms',
+  },
+  {
+    key: 'imgGenerationTotal',
+    label: 'Img generation total',
+    description: 'Count of image generation events.',
+    format: 'count',
+    section: 'technical',
+  },
+  {
+    key: 'imgGenerationPerChat',
+    label: 'Img generation per chat',
+    description: 'Image generations per distinct chat.',
+    format: 'count',
+    section: 'technical',
+    precision: 2,
   },
 ];
 
@@ -189,14 +271,17 @@ const SECTIONS: AnalyticsSectionConfig[] = [
   {
     key: 'technical',
     label: 'Technical',
-    available: false,
-    metrics: [],
-    defaultMetric: null,
+    available: true,
+    metrics: TECHNICAL_METRICS,
+    defaultMetric: 'errorRate',
   },
 ];
 
 const METRIC_MAP = new Map(
-  [...MAIN_METRICS, ...PAYMENTS_METRICS].map((metric) => [metric.key, metric]),
+  [...MAIN_METRICS, ...PAYMENTS_METRICS, ...TECHNICAL_METRICS].map((metric) => [
+    metric.key,
+    metric,
+  ]),
 );
 
 export function getSectionConfig(

@@ -1,6 +1,7 @@
 import type { AnalyticsMetricDefinition } from './metricRegistry';
 
 export type FormatVariant = 'card' | 'table' | 'chart' | 'tooltip' | 'delta';
+type DurationUnit = 's' | 'ms';
 
 type DeltaResult = {
   label: string;
@@ -9,6 +10,7 @@ type DeltaResult = {
 
 const numberFormatCache = new Map<string, Intl.NumberFormat>();
 const STAR_SUFFIX = ' ⭐️';
+const currencyFormatterCache = new Map<string, Intl.NumberFormat>();
 
 function getNumberFormatter(options: Intl.NumberFormatOptions) {
   const key = JSON.stringify(options);
@@ -29,6 +31,20 @@ export function formatCount(value: number, precision = 0) {
 
 export function formatStars(value: number, precision = 2) {
   return `${formatCount(value, precision)}${STAR_SUFFIX}`;
+}
+
+function formatUsd(value: number, precision = 2) {
+  const key = `usd-${precision}`;
+  const existing = currencyFormatterCache.get(key);
+  if (existing) return existing.format(value);
+  const formatter = new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: precision,
+    maximumFractionDigits: precision,
+  });
+  currencyFormatterCache.set(key, formatter);
+  return formatter.format(value);
 }
 
 function formatPercent(value: number, precision = 1) {
@@ -61,7 +77,32 @@ function formatDurationClock(value: number) {
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
-function formatDuration(value: number, variant: FormatVariant) {
+function formatDurationMs(value: number, variant: FormatVariant) {
+  const ms = Math.max(0, value);
+  if (variant === 'tooltip') {
+    return `${Math.round(ms)} ms`;
+  }
+
+  const seconds = ms / 1000;
+  if (variant === 'card' || variant === 'delta') {
+    if (seconds >= 60) return formatDurationClock(seconds);
+    if (seconds >= 1) return `${seconds.toFixed(1)}s`;
+    return `${Math.round(ms)} ms`;
+  }
+
+  if (seconds >= 60) return formatDurationClock(seconds);
+  if (seconds >= 1) return `${seconds.toFixed(2)}s`;
+  return `${Math.round(ms)} ms`;
+}
+
+function formatDuration(
+  value: number,
+  variant: FormatVariant,
+  unit: DurationUnit = 's',
+) {
+  if (unit === 'ms') {
+    return formatDurationMs(value, variant);
+  }
   if (variant === 'tooltip') {
     return `${Math.round(value)} sec`;
   }
@@ -84,9 +125,11 @@ export function formatMetricValue(
     case 'percent':
       return formatPercent(value, metric.precision ?? 1);
     case 'duration':
-      return formatDuration(value, variant);
+      return formatDuration(value, variant, metric.durationUnit ?? 's');
     case 'currency':
-      return formatStars(value, metric.precision ?? 2);
+      return metric.currency === 'usd'
+        ? formatUsd(value, metric.precision ?? 2)
+        : formatStars(value, metric.precision ?? 2);
     default:
       return formatCount(value, metric.precision ?? 0);
   }
@@ -119,13 +162,16 @@ export function formatMetricDelta(
 
   if (metric.format === 'duration') {
     return {
-      label: `${sign}${formatDuration(Math.abs(diff), 'delta')}`,
+      label: `${sign}${formatDuration(Math.abs(diff), 'delta', metric.durationUnit ?? 's')}`,
       isPositive: diff > 0,
     };
   }
 
   if (metric.format === 'currency') {
-    const formatted = formatStars(Math.abs(diff), metric.precision ?? 2);
+    const formatted =
+      metric.currency === 'usd'
+        ? formatUsd(Math.abs(diff), metric.precision ?? 2)
+        : formatStars(Math.abs(diff), metric.precision ?? 2);
     return {
       label: `${sign}${formatted}`,
       isPositive: diff > 0,
