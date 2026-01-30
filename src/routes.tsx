@@ -15,6 +15,7 @@ import {
   GenerationDetailsPage,
   GenerateImagePage,
   GenerationsPage,
+  LogsPage,
   LorasPage,
   PromptCreatePage,
   PromptUpdatePage,
@@ -49,6 +50,7 @@ export function AppRoutes() {
         <Route path="/generations/new" element={<GenerateImagePage />} />
         <Route path="/generations" element={<GenerationsPage />} />
         <Route path="/generations/:id" element={<GenerationDetailsPage />} />
+        <Route path="/logs" element={<LogsPage />} />
         <Route path="/loras" element={<LorasPage />} />
         <Route path="/prompts" element={<PromptsPage />} />
         <Route path="/prompts/new" element={<PromptCreatePage />} />

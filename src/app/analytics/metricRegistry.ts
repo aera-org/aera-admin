@@ -20,7 +20,6 @@ export type AnalyticsMetricKey =
   | 'errorRate'
   | 'avgResponseTime'
   | 'totalLlmCost'
-  | 'avgCostPerCall'
   | 'imgGenTotalAvg'
   | 'imgGenGenerationAvg'
   | 'imgGenerationTotal'
@@ -205,15 +204,6 @@ const TECHNICAL_METRICS: AnalyticsMetricDefinition[] = [
     key: 'totalLlmCost',
     label: 'Total LLM cost',
     description: 'Sum of llm_call.price.',
-    format: 'currency',
-    section: 'technical',
-    precision: 2,
-    currency: 'usd',
-  },
-  {
-    key: 'avgCostPerCall',
-    label: 'Avg cost per call',
-    description: 'Average of llm_call.price.',
     format: 'currency',
     section: 'technical',
     precision: 2,

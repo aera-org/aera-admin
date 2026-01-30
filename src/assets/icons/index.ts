@@ -6,6 +6,7 @@ export { default as ExternalLinkIcon } from './external-link.svg?react';
 export { default as GlobeIcon } from './globe.svg?react';
 export { default as ImageIcon } from './image.svg?react';
 export { default as LayersIcon } from './layers.svg?react';
+export { default as LogsIcon } from './logs.svg?react';
 export { default as MessageSquareQuoteIcon } from './message-square-quote.svg?react';
 export { default as NewspaperIcon } from './newspaper.svg?react';
 export { default as PencilLineIcon } from './pencil-line.svg?react';

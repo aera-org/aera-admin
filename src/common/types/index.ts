@@ -8,3 +8,4 @@ export * from './plan.type';
 export * from './prompt.type';
 export * from './tg-user.type';
 export * from './user.type';
+export * from './logs.type';
