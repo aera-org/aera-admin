@@ -1,7 +1,7 @@
 import type { ImgHTMLAttributes } from 'react'
 import s from './Avatar.module.scss'
 
-type AvatarSize = 'sm' | 'md' | 'lg'
+type AvatarSize = 'sm' | 'md' | 'lg' | 'xl'
 
 type AvatarProps = {
   size?: AvatarSize
@@ -13,6 +13,7 @@ const sizeClassMap: Record<AvatarSize, string> = {
   sm: s.sizeSm,
   md: s.sizeMd,
   lg: s.sizeLg,
+  xl: s.sizeXl,
 }
 
 export function Avatar({ size = 'md', fallback, src, alt, ...props }: AvatarProps) {

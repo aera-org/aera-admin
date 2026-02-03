@@ -1,5 +1,5 @@
 import { PencilLineIcon } from '@/assets/icons';
-import { Badge, Field, FormRow, IconButton, Typography } from '@/atoms';
+import { Avatar, Badge, Field, FormRow, IconButton, Typography } from '@/atoms';
 import type { ICharacterDetails } from '@/common/types';
 
 import s from '../CharacterDetailsPage.module.scss';
@@ -21,6 +21,8 @@ export function CharacterOverview({
   onEdit,
   canEdit,
 }: CharacterOverviewProps) {
+  const description = data?.description?.trim() ?? '';
+  const avatarName = data?.name ?? 'Character';
   return (
     <div className={s.section}>
       <div className={s.sectionHeader}>
@@ -82,6 +84,33 @@ export function CharacterOverview({
         <Field label="Updated at" labelFor="character-updated">
           <Typography id="character-updated" variant="body">
             {formatDate(data?.updatedAt)}
+          </Typography>
+        </Field>
+      </FormRow>
+
+      <FormRow columns={3}>
+        <Field labelFor="character-avatar">
+          {data ? (
+            <div id="character-avatar" className={s.avatarRow}>
+              <Avatar
+                size="xl"
+                src={data?.avatar?.url ?? undefined}
+                fallback={avatarName}
+              />
+            </div>
+          ) : (
+            <Typography id="character-avatar" variant="body">
+              -
+            </Typography>
+          )}
+        </Field>
+        <Field label="Description" labelFor="character-description">
+          <Typography
+            id="character-description"
+            variant="body"
+            className={s.multiline}
+          >
+            {description || '-'}
           </Typography>
         </Field>
       </FormRow>

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useCharacters, useCreateCharacter } from '@/app/characters';
+import { notifyError } from '@/app/toast';
 import { useLoras } from '@/app/loras';
 import { PlusIcon } from '@/assets/icons';
 import {
@@ -20,9 +21,12 @@ import {
   Skeleton,
   Stack,
   Table,
+  Textarea,
   Typography,
 } from '@/atoms';
+import { FileUpload } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
+import { FileDir, type IFile } from '@/common/types';
 
 import s from './CharactersPage.module.scss';
 import { LoraSelect } from './components/LoraSelect';
@@ -98,7 +102,10 @@ export function CharactersPage() {
     emoji: '',
     gender: 'female',
     loraId: '',
+    description: '',
+    avatarId: '',
   });
+  const [avatarFile, setAvatarFile] = useState<IFile | null>(null);
   const [createShowErrors, setCreateShowErrors] = useState(false);
   const [loraSearch, setLoraSearch] = useState('');
   const debouncedLoraSearch = useDebouncedValue(loraSearch, 300);
@@ -299,7 +306,10 @@ export function CharactersPage() {
       emoji: '',
       gender: 'female',
       loraId: '',
+      description: '',
+      avatarId: '',
     });
+    setAvatarFile(null);
     setCreateShowErrors(false);
     setLoraSearch('');
     setIsCreateOpen(true);
@@ -324,6 +334,8 @@ export function CharactersPage() {
       emoji: createValues.emoji.trim(),
       gender: createValues.gender.trim(),
       loraId: createValues.loraId,
+      description: createValues.description.trim(),
+      avatarId: createValues.avatarId,
     });
     setIsCreateOpen(false);
     if (result?.id) {
@@ -568,6 +580,37 @@ export function CharactersPage() {
                 loading={isLoraLoading}
               />
             </Field>
+
+            <Field label="Description" labelFor="character-create-description">
+              <Textarea
+                id="character-create-description"
+                size="sm"
+                value={createValues.description}
+                onChange={(event) =>
+                  setCreateValues((prev) => ({
+                    ...prev,
+                    description: event.target.value,
+                  }))
+                }
+                rows={4}
+                fullWidth
+              />
+            </Field>
+            <FileUpload
+              label="Avatar"
+              folder={FileDir.Public}
+              value={avatarFile}
+              onChange={(file) => {
+                setAvatarFile(file);
+                setCreateValues((prev) => ({
+                  ...prev,
+                  avatarId: file?.id ?? '',
+                }));
+              }}
+              onError={(message) =>
+                notifyError(new Error(message), 'Unable to upload avatar.')
+              }
+            />
           </Stack>
         </Modal>
       </Container>

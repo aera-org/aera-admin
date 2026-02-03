@@ -7,6 +7,7 @@ import {
   useUpdateCharacter,
 } from '@/app/characters';
 import { useLoras } from '@/app/loras';
+import { notifyError } from '@/app/toast';
 import {
   Alert,
   Button,
@@ -19,8 +20,10 @@ import {
   Select,
   Stack,
   Switch,
+  Textarea,
 } from '@/atoms';
-import { ConfirmModal } from '@/components/molecules';
+import { FileDir, type IFile } from '@/common/types';
+import { ConfirmModal, FileUpload } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 
 import s from './CharacterDetailsPage.module.scss';
@@ -96,8 +99,11 @@ export function CharacterDetailsPage() {
     gender: '',
     isActive: true,
     loraId: '',
+    description: '',
+    avatarId: '',
   });
   const [initialValues, setInitialValues] = useState(formValues);
+  const [avatarFile, setAvatarFile] = useState<IFile | null>(null);
   const [showErrors, setShowErrors] = useState(false);
   const [loraSearch, setLoraSearch] = useState('');
   const debouncedLoraSearch = useDebouncedValue(loraSearch, 300);
@@ -146,7 +152,9 @@ export function CharacterDetailsPage() {
       formValues.emoji !== initialValues.emoji ||
       formValues.gender !== initialValues.gender ||
       formValues.isActive !== initialValues.isActive ||
-      formValues.loraId !== initialValues.loraId,
+      formValues.loraId !== initialValues.loraId ||
+      formValues.description !== initialValues.description ||
+      formValues.avatarId !== initialValues.avatarId,
     [formValues, initialValues],
   );
 
@@ -158,9 +166,12 @@ export function CharacterDetailsPage() {
       gender: data.gender ?? '',
       isActive: data.isActive,
       loraId: data.lora?.id ?? '',
+      description: data.description ?? '',
+      avatarId: data.avatar?.id ?? '',
     };
     setFormValues(nextValues);
     setInitialValues(nextValues);
+    setAvatarFile(data.avatar ?? null);
     setShowErrors(false);
     setLoraSearch('');
     setIsEditOpen(true);
@@ -189,6 +200,8 @@ export function CharacterDetailsPage() {
         gender: formValues.gender.trim(),
         isActive: formValues.isActive,
         loraId: formValues.loraId,
+        description: formValues.description.trim(),
+        avatarId: formValues.avatarId,
       },
     });
     setIsEditOpen(false);
@@ -361,6 +374,37 @@ export function CharacterDetailsPage() {
                 loading={isLoraLoading}
               />
             </Field>
+
+            <Field label="Description" labelFor="character-edit-description">
+              <Textarea
+                id="character-edit-description"
+                size="sm"
+                value={formValues.description}
+                onChange={(event) =>
+                  setFormValues((prev) => ({
+                    ...prev,
+                    description: event.target.value,
+                  }))
+                }
+                rows={4}
+                fullWidth
+              />
+            </Field>
+            <FileUpload
+              label="Avatar"
+              folder={FileDir.Public}
+              value={avatarFile}
+              onChange={(file) => {
+                setAvatarFile(file);
+                setFormValues((prev) => ({
+                  ...prev,
+                  avatarId: file?.id ?? '',
+                }));
+              }}
+              onError={(message) =>
+                notifyError(new Error(message), 'Unable to upload avatar.')
+              }
+            />
           </Stack>
         </Modal>
 

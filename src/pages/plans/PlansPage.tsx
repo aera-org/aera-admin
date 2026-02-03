@@ -198,14 +198,19 @@ export function PlansPage() {
     }
   }, [data, page, total, totalPages, updateSearchParams]);
 
-  const [toggleTarget, setToggleTarget] = useState<string | null>(null);
+  const [toggleTarget, setToggleTarget] = useState<{
+    id: string;
+    type: 'status' | 'recommended';
+  } | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createValues, setCreateValues] = useState({
     code: '',
     period: PlanPeriod.Month,
     periodCount: '1',
     price: '',
+    air: '',
     isActive: true,
+    isRecommended: false,
   });
   const [createShowErrors, setCreateShowErrors] = useState(false);
 
@@ -215,6 +220,7 @@ export function PlansPage() {
       code?: string;
       periodCount?: string;
       price?: string;
+      air?: string;
     } = {};
     const code = createValues.code.trim();
     if (!code) {
@@ -228,12 +234,16 @@ export function PlansPage() {
     if (!parsePositiveInteger(createValues.price)) {
       errors.price = 'Use a whole number greater than 0.';
     }
+    if (!parsePositiveInteger(createValues.air)) {
+      errors.air = 'Use a whole number greater than 0.';
+    }
     return errors;
   }, [
     createShowErrors,
     createValues.code,
     createValues.periodCount,
     createValues.price,
+    createValues.air,
   ]);
 
   const createIsValid = useMemo(() => {
@@ -242,9 +252,15 @@ export function PlansPage() {
       code &&
       CODE_PATTERN.test(code) &&
       parsePositiveInteger(createValues.periodCount) &&
-      parsePositiveInteger(createValues.price),
+      parsePositiveInteger(createValues.price) &&
+      parsePositiveInteger(createValues.air),
     );
-  }, [createValues.code, createValues.periodCount, createValues.price]);
+  }, [
+    createValues.air,
+    createValues.code,
+    createValues.periodCount,
+    createValues.price,
+  ]);
 
   const openCreateModal = () => {
     setCreateValues({
@@ -252,7 +268,9 @@ export function PlansPage() {
       period: PlanPeriod.Month,
       periodCount: '1',
       price: '',
+      air: '',
       isActive: true,
+      isRecommended: false,
     });
     setCreateShowErrors(false);
     setIsCreateOpen(true);
@@ -267,6 +285,7 @@ export function PlansPage() {
     const code = createValues.code.trim();
     const periodCount = parsePositiveInteger(createValues.periodCount);
     const price = parsePositiveInteger(createValues.price);
+    const air = parsePositiveInteger(createValues.air);
     const errors = {
       code: !code
         ? 'Enter a code.'
@@ -277,8 +296,9 @@ export function PlansPage() {
         ? undefined
         : 'Use a whole number greater than 0.',
       price: price ? undefined : 'Use a whole number greater than 0.',
+      air: air ? undefined : 'Use a whole number greater than 0.',
     };
-    if (errors.code || errors.periodCount || errors.price) {
+    if (errors.code || errors.periodCount || errors.price || errors.air) {
       setCreateShowErrors(true);
       return;
     }
@@ -287,18 +307,37 @@ export function PlansPage() {
       period: createValues.period,
       periodCount: periodCount!,
       price: price!,
+      air: air!,
       isActive: createValues.isActive,
+      isRecommended: createValues.isRecommended,
     });
     setIsCreateOpen(false);
   };
 
   const handleToggleStatus = async (plan: IPlan) => {
     const nextStatus = !plan.isActive;
-    setToggleTarget(plan.id);
+    setToggleTarget({ id: plan.id, type: 'status' });
     try {
       await updateStatusMutation.mutateAsync({
         id: plan.id,
-        payload: { isActive: nextStatus },
+        payload: { isActive: nextStatus, isRecommended: plan.isRecommended },
+      });
+    } finally {
+      setToggleTarget(null);
+    }
+  };
+
+  const handleToggleRecommended = async (plan: IPlan) => {
+    const nextRecommended = !plan.isRecommended;
+    setToggleTarget({ id: plan.id, type: 'recommended' });
+    try {
+      await updateStatusMutation.mutateAsync({
+        id: plan.id,
+        payload: { isActive: plan.isActive, isRecommended: nextRecommended },
+        successTitle: nextRecommended
+          ? 'Plan recommended.'
+          : 'Plan no longer recommended.',
+        successDescription: 'Plan updated.',
       });
     } finally {
       setToggleTarget(null);
@@ -309,7 +348,9 @@ export function PlansPage() {
     () => [
       { key: 'plan', label: 'Plan' },
       { key: 'period', label: 'Period' },
+      { key: 'air', label: 'Air' },
       { key: 'price', label: 'Price' },
+      { key: 'recommended', label: 'Recommended' },
       { key: 'status', label: 'Status' },
       { key: 'updated', label: <span className={s.alignRight}>Updated</span> },
       { key: 'actions', label: '' },
@@ -320,8 +361,14 @@ export function PlansPage() {
   const rows = useMemo(
     () =>
       plans.map((plan) => {
-        const isToggling =
-          updateStatusMutation.isPending && toggleTarget === plan.id;
+        const isTogglingStatus =
+          updateStatusMutation.isPending &&
+          toggleTarget?.id === plan.id &&
+          toggleTarget.type === 'status';
+        const isTogglingRecommended =
+          updateStatusMutation.isPending &&
+          toggleTarget?.id === plan.id &&
+          toggleTarget.type === 'recommended';
         return {
           plan: (
             <div className={s.planCell}>
@@ -336,10 +383,20 @@ export function PlansPage() {
               {formatPlanPeriod(plan)}
             </Typography>
           ),
+          air: (
+            <Typography variant="body" tone="muted">
+              {formatPrice(plan.air)}
+            </Typography>
+          ),
           price: (
             <Typography variant="body" tone="muted">
               {formatPrice(plan.price)}
             </Typography>
+          ),
+          recommended: plan.isRecommended ? (
+            <Badge>Recommended</Badge>
+          ) : (
+            <Badge outline>Standard</Badge>
           ),
           status: plan.isActive ? (
             <Badge tone="success">Active</Badge>
@@ -360,16 +417,32 @@ export function PlansPage() {
                 variant="outline"
                 tone={plan.isActive ? 'warning' : 'success'}
                 onClick={() => handleToggleStatus(plan)}
-                loading={isToggling}
+                loading={isTogglingStatus}
                 disabled={updateStatusMutation.isPending}
               >
                 {plan.isActive ? 'Make inactive' : 'Make active'}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                tone={plan.isRecommended ? 'warning' : 'accent'}
+                onClick={() => handleToggleRecommended(plan)}
+                loading={isTogglingRecommended}
+                disabled={updateStatusMutation.isPending}
+              >
+                {plan.isRecommended ? 'Unrecommend' : 'Recommend'}
               </Button>
             </div>
           ),
         };
       }),
-    [plans, toggleTarget, updateStatusMutation.isPending],
+    [
+      plans,
+      toggleTarget,
+      updateStatusMutation.isPending,
+      handleToggleRecommended,
+      handleToggleStatus,
+    ],
   );
 
   const skeletonRows = useMemo(
@@ -382,7 +455,9 @@ export function PlansPage() {
           </div>
         ),
         period: <Skeleton width={90} height={12} />,
+        air: <Skeleton width={70} height={12} />,
         price: <Skeleton width={80} height={12} />,
+        recommended: <Skeleton width={110} height={20} />,
         status: <Skeleton width={80} height={20} />,
         updated: (
           <div className={s.alignRight}>
@@ -391,6 +466,7 @@ export function PlansPage() {
         ),
         actions: (
           <div className={s.actionsCell}>
+            <Skeleton width={110} height={28} />
             <Skeleton width={110} height={28} />
           </div>
         ),
@@ -541,8 +617,9 @@ export function PlansPage() {
                 createMutation.isPending ||
                 Boolean(
                   createErrors.code ||
-                  createErrors.periodCount ||
-                  createErrors.price,
+                    createErrors.periodCount ||
+                    createErrors.price ||
+                    createErrors.air,
                 )
               }
             >
@@ -631,6 +708,45 @@ export function PlansPage() {
                   }))
                 }
                 fullWidth
+              />
+            </Field>
+          </FormRow>
+
+          <FormRow columns={2}>
+            <Field
+              label="Air"
+              labelFor="plan-create-air"
+              error={createErrors.air}
+            >
+              <Input
+                id="plan-create-air"
+                size="sm"
+                type="number"
+                min={1}
+                step={1}
+                value={createValues.air}
+                onChange={(event) =>
+                  setCreateValues((prev) => ({
+                    ...prev,
+                    air: event.target.value,
+                  }))
+                }
+                fullWidth
+              />
+            </Field>
+            <Field label="Recommended" labelFor="plan-create-recommended">
+              <Switch
+                id="plan-create-recommended"
+                checked={createValues.isRecommended}
+                onChange={(event) =>
+                  setCreateValues((prev) => ({
+                    ...prev,
+                    isRecommended: event.target.checked,
+                  }))
+                }
+                label={
+                  createValues.isRecommended ? 'Recommended' : 'Not recommended'
+                }
               />
             </Field>
           </FormRow>

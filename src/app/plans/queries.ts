@@ -32,18 +32,26 @@ export function useCreatePlan() {
   });
 }
 
+type PlanUpdateOptions = {
+  id: string;
+  payload: PlanUpdateDto;
+  successTitle?: string;
+  successDescription?: string;
+};
+
 export function useUpdatePlanStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: PlanUpdateDto }) =>
-      updatePlan(id, payload),
+    mutationFn: ({ id, payload }: PlanUpdateOptions) => updatePlan(id, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
-      notifySuccess(
-        variables.payload.isActive ? 'Plan activated.' : 'Plan deactivated.',
-        'Plan status updated.',
-      );
+      const title =
+        variables.successTitle ??
+        (variables.payload.isActive ? 'Plan activated.' : 'Plan deactivated.');
+      const description =
+        variables.successDescription ?? 'Plan status updated.';
+      notifySuccess(title, description);
     },
     onError: (error) => {
       notifyError(error, 'Unable to update the plan.');

@@ -10,10 +10,13 @@ export type PlanCreateDto = {
   periodCount: number;
   price: number;
   isActive: boolean;
+  air: number;
+  isRecommended: boolean;
 };
 
 export type PlanUpdateDto = {
   isActive: boolean;
+  isRecommended: boolean;
 };
 
 export interface IPlan {
@@ -23,6 +26,8 @@ export interface IPlan {
   periodCount: number;
   price: number;
   isActive: boolean;
+  air: number;
+  isRecommended: boolean;
   createdAt: string;
   updatedAt: string;
 }

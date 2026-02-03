@@ -1,8 +1,11 @@
+import type { IFile } from './file.type.ts';
 import type { ILora } from './lora.type';
 
 export interface ICharacter {
   id: string;
   name: string;
+  description: string;
+  avatar: IFile;
   emoji: string;
   isActive: boolean;
   gender: string;

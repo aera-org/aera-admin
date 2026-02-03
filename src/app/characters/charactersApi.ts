@@ -24,6 +24,8 @@ export type CharacterUpdateDto = {
   loraId: string;
   gender: string;
   isActive: boolean;
+  description: string;
+  avatarId: string;
 };
 
 export type CharacterCreateDto = {
@@ -31,6 +33,8 @@ export type CharacterCreateDto = {
   emoji: string;
   loraId: string;
   gender: string;
+  description: string;
+  avatarId: string;
 };
 
 export type ScenarioCreateDto = {
