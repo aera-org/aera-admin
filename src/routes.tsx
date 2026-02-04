@@ -11,6 +11,8 @@ import {
   CharacterDetailsPage,
   CharactersPage,
   ConfirmEmailPage,
+  DatasetDetailsPage,
+  DatasetsPage,
   ForgotPasswordPage,
   GenerationDetailsPage,
   GenerateImagePage,
@@ -50,6 +52,8 @@ export function AppRoutes() {
         <Route path="/generations/new" element={<GenerateImagePage />} />
         <Route path="/generations" element={<GenerationsPage />} />
         <Route path="/generations/:id" element={<GenerationDetailsPage />} />
+        <Route path="/datasets" element={<DatasetsPage />} />
+        <Route path="/datasets/:id" element={<DatasetDetailsPage />} />
         <Route path="/logs" element={<LogsPage />} />
         <Route path="/loras" element={<LorasPage />} />
         <Route path="/prompts" element={<PromptsPage />} />

@@ -13,6 +13,8 @@ export { UsersPage } from './users/UsersPage';
 export { GenerationDetailsPage } from './generations/GenerationDetailsPage';
 export { GenerateImagePage } from './generations/GenerateImagePage';
 export { GenerationsPage } from './generations/GenerationsPage';
+export { DatasetDetailsPage } from './datasets/DatasetDetailsPage';
+export { DatasetsPage } from './datasets/DatasetsPage';
 export { LogsPage } from './logs/LogsPage';
 export { LorasPage } from './loras/LorasPage';
 export { PromptsPage } from './prompts/PromptsPage';
