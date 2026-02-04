@@ -153,7 +153,7 @@ const PAYMENTS_METRICS: AnalyticsMetricDefinition[] = [
     format: 'currency',
     section: 'payments',
     precision: 2,
-    currency: 'stars',
+    currency: 'usd',
   },
   {
     key: 'cohortLtvM0',
@@ -163,7 +163,7 @@ const PAYMENTS_METRICS: AnalyticsMetricDefinition[] = [
     format: 'currency',
     section: 'payments',
     precision: 2,
-    currency: 'stars',
+    currency: 'usd',
   },
   {
     key: 'averageRevenuePerUser',
@@ -172,7 +172,7 @@ const PAYMENTS_METRICS: AnalyticsMetricDefinition[] = [
     format: 'currency',
     section: 'payments',
     precision: 2,
-    currency: 'stars',
+    currency: 'usd',
   },
   {
     key: 'totalTransactions',

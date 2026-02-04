@@ -16,7 +16,6 @@ import {
   formatMetricDelta,
   formatMetricValue,
   formatMonthLabel,
-  formatStars,
   getDefaultRange,
   getLastFullMonthId,
   getMetricDefinition,
@@ -415,6 +414,10 @@ export function AnalyticsPage() {
     () => getMetricDefinition('conversionRate'),
     [],
   );
+  const paymentsRevenueMetric = useMemo(
+    () => getMetricDefinition('averagePurchaseValue'),
+    [],
+  );
 
   const conversionColumns = useMemo(
     () => [
@@ -588,7 +591,13 @@ export function AnalyticsPage() {
             className={s.alignRight}
             style={{ fontSize: 14 }}
           >
-            {Number.isFinite(item.revenue) ? formatStars(item.revenue, 2) : '—'}
+            {paymentsRevenueMetric && Number.isFinite(item.revenue)
+              ? formatMetricValue(
+                  paymentsRevenueMetric,
+                  item.revenue,
+                  'table',
+                )
+              : '—'}
           </Typography>
         ),
         transactions: (
@@ -605,7 +614,7 @@ export function AnalyticsPage() {
         ),
       };
     });
-  }, [revenueBreakdown]);
+  }, [revenueBreakdown, paymentsRevenueMetric]);
 
   const conversionGroupOptions = useMemo(
     () => [
