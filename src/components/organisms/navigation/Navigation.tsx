@@ -5,6 +5,7 @@ import {
   ChartIcon,
   CircleDotIcon,
   DollarSignIcon,
+  GiftIcon,
   ImageIcon,
   LayersIcon,
   LogsIcon,
@@ -28,14 +29,15 @@ const navItems: NavItem[] = [
   { label: 'Analytics', to: '/', icon: <ChartIcon /> },
   { label: 'Characters', to: '/characters', icon: <UsersRoundIcon /> },
   { label: 'LoRAs', to: '/loras', icon: <LayersIcon /> },
+  { label: 'Gifts', to: '/gifts', icon: <GiftIcon /> },
+  { label: 'Users', to: '/users', icon: <UserIcon /> },
+  { label: 'Plans', to: '/plans', icon: <DollarSignIcon /> },
   { label: 'Prompts', to: '/prompts', icon: <MessageSquareQuoteIcon /> },
   { label: 'Datasets', to: '/datasets', icon: <CircleDotIcon /> },
   { label: 'Images', to: '/character-images', icon: <ImageIcon /> },
   { label: 'Generations', to: '/generations', icon: <NewspaperIcon /> },
   { label: 'Logs', to: '/logs', icon: <LogsIcon /> },
   { label: 'Admins', to: '/admins', icon: <UserCogIcon /> },
-  { label: 'Plans', to: '/plans', icon: <DollarSignIcon /> },
-  { label: 'Users', to: '/users', icon: <UserIcon /> },
 ];
 
 export function Navigation() {

@@ -13,6 +13,8 @@ export { UsersPage } from './users/UsersPage';
 export { GenerationDetailsPage } from './generations/GenerationDetailsPage';
 export { GenerateImagePage } from './generations/GenerateImagePage';
 export { GenerationsPage } from './generations/GenerationsPage';
+export { GiftDetailsPage } from './gifts/GiftDetailsPage';
+export { GiftsPage } from './gifts/GiftsPage';
 export { DatasetDetailsPage } from './datasets/DatasetDetailsPage';
 export { DatasetsPage } from './datasets/DatasetsPage';
 export { LogsPage } from './logs/LogsPage';
