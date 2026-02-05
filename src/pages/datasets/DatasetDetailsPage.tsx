@@ -316,10 +316,14 @@ export function DatasetDetailsPage() {
                 </Typography>
               </Field>
               <Field label="Updated">
-                <Typography variant="body">{formatDate(data.updatedAt)}</Typography>
+                <Typography variant="body">
+                  {formatDate(data.updatedAt)}
+                </Typography>
               </Field>
               <Field label="Created">
-                <Typography variant="body">{formatDate(data.createdAt)}</Typography>
+                <Typography variant="body">
+                  {formatDate(data.createdAt)}
+                </Typography>
               </Field>
             </div>
 
@@ -375,6 +379,7 @@ export function DatasetDetailsPage() {
                             size="sm"
                             variant="ghost"
                             icon={<DownloadIcon />}
+                            // @ts-expect-error Radix types are wrong
                             onClick={(event) => event.stopPropagation()}
                           />
                         </div>
@@ -441,9 +446,7 @@ export function DatasetDetailsPage() {
               disabled={
                 !editIsValid ||
                 updateMutation.isPending ||
-                Boolean(
-                  editValidationErrors.name || editValidationErrors.type,
-                )
+                Boolean(editValidationErrors.name || editValidationErrors.type)
               }
             >
               Save
@@ -535,7 +538,7 @@ export function DatasetDetailsPage() {
                 createItemMutation.isPending ||
                 Boolean(
                   addItemValidationErrors.prompt ||
-                    addItemValidationErrors.fileId,
+                  addItemValidationErrors.fileId,
                 )
               }
             >
