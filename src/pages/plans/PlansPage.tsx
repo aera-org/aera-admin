@@ -22,7 +22,7 @@ import {
   Table,
   Typography,
 } from '@/atoms';
-import { type IPlan, PlanPeriod } from '@/common/types';
+import { type IPlan, PlanPeriod, PlanType } from '@/common/types';
 import { capitalize } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 
@@ -51,6 +51,11 @@ const PERIOD_OPTIONS = [
   { label: 'Day', value: PlanPeriod.Day },
   { label: 'Month', value: PlanPeriod.Month },
   { label: 'Year', value: PlanPeriod.Year },
+];
+
+const PLAN_TYPE_OPTIONS = [
+  { label: 'Subscription', value: PlanType.Subscription },
+  { label: 'Air', value: PlanType.Air },
 ];
 
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
@@ -96,6 +101,7 @@ function parsePositiveInteger(value: string) {
 }
 
 function formatPlanPeriod(plan: IPlan) {
+  if (!plan.period || !plan.periodCount) return '-';
   const label = capitalize(plan.period);
   return `${plan.periodCount} ${plan.periodCount === 1 ? label : `${label}s`}`;
 }
@@ -205,6 +211,7 @@ export function PlansPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createValues, setCreateValues] = useState({
     code: '',
+    type: PlanType.Subscription,
     period: PlanPeriod.Month,
     periodCount: '1',
     price: '',
@@ -213,6 +220,7 @@ export function PlansPage() {
     isRecommended: false,
   });
   const [createShowErrors, setCreateShowErrors] = useState(false);
+  const isAirPlan = createValues.type === PlanType.Air;
 
   const createErrors = useMemo(() => {
     if (!createShowErrors) return {};
@@ -228,7 +236,7 @@ export function PlansPage() {
     } else if (!CODE_PATTERN.test(code)) {
       errors.code = 'Use lowercase letters, numbers, and dashes only.';
     }
-    if (!parsePositiveInteger(createValues.periodCount)) {
+    if (!isAirPlan && !parsePositiveInteger(createValues.periodCount)) {
       errors.periodCount = 'Use a whole number greater than 0.';
     }
     if (!parsePositiveInteger(createValues.price)) {
@@ -241,6 +249,7 @@ export function PlansPage() {
   }, [
     createShowErrors,
     createValues.code,
+    createValues.type,
     createValues.periodCount,
     createValues.price,
     createValues.air,
@@ -251,13 +260,14 @@ export function PlansPage() {
     return Boolean(
       code &&
       CODE_PATTERN.test(code) &&
-      parsePositiveInteger(createValues.periodCount) &&
+      (isAirPlan || parsePositiveInteger(createValues.periodCount)) &&
       parsePositiveInteger(createValues.price) &&
       parsePositiveInteger(createValues.air),
     );
   }, [
     createValues.air,
     createValues.code,
+    createValues.type,
     createValues.periodCount,
     createValues.price,
   ]);
@@ -265,6 +275,7 @@ export function PlansPage() {
   const openCreateModal = () => {
     setCreateValues({
       code: '',
+      type: PlanType.Subscription,
       period: PlanPeriod.Month,
       periodCount: '1',
       price: '',
@@ -292,9 +303,10 @@ export function PlansPage() {
         : CODE_PATTERN.test(code)
           ? undefined
           : 'Use lowercase letters, numbers, and dashes only.',
-      periodCount: periodCount
-        ? undefined
-        : 'Use a whole number greater than 0.',
+      periodCount:
+        isAirPlan || periodCount
+          ? undefined
+          : 'Use a whole number greater than 0.',
       price: price ? undefined : 'Use a whole number greater than 0.',
       air: air ? undefined : 'Use a whole number greater than 0.',
     };
@@ -304,8 +316,13 @@ export function PlansPage() {
     }
     await createMutation.mutateAsync({
       code,
-      period: createValues.period,
-      periodCount: periodCount!,
+      ...(isAirPlan
+        ? { type: createValues.type }
+        : {
+            type: createValues.type,
+            period: createValues.period,
+            periodCount: periodCount!,
+          }),
       price: price!,
       air: air!,
       isActive: createValues.isActive,
@@ -347,6 +364,7 @@ export function PlansPage() {
   const columns = useMemo(
     () => [
       { key: 'plan', label: 'Plan' },
+      { key: 'type', label: 'Type' },
       { key: 'period', label: 'Period' },
       { key: 'air', label: 'Air' },
       { key: 'price', label: 'Price' },
@@ -377,6 +395,11 @@ export function PlansPage() {
                 {plan.id}
               </Typography>
             </div>
+          ),
+          type: (
+            <Typography variant="body" tone="muted">
+              {capitalize(plan.type)}
+            </Typography>
           ),
           period: (
             <Typography variant="body" tone="muted">
@@ -454,6 +477,7 @@ export function PlansPage() {
             <Skeleton width={120} height={10} />
           </div>
         ),
+        type: <Skeleton width={90} height={12} />,
         period: <Skeleton width={90} height={12} />,
         air: <Skeleton width={70} height={12} />,
         price: <Skeleton width={80} height={12} />,
@@ -650,45 +674,72 @@ export function PlansPage() {
                 fullWidth
               />
             </Field>
-            <Field label="Period" labelFor="plan-create-period">
+            <Field label="Type" labelFor="plan-create-type">
               <Select
-                id="plan-create-period"
+                id="plan-create-type"
                 size="sm"
-                options={PERIOD_OPTIONS}
-                value={createValues.period}
+                options={PLAN_TYPE_OPTIONS}
+                value={createValues.type}
                 onChange={(value) =>
-                  setCreateValues((prev) => ({
-                    ...prev,
-                    period: value as PlanPeriod,
-                  }))
+                  setCreateValues((prev) => {
+                    const nextType = value as PlanType;
+                    return {
+                      ...prev,
+                      type: nextType,
+                      periodCount:
+                        nextType === PlanType.Air
+                          ? ''
+                          : prev.periodCount || '1',
+                    };
+                  })
                 }
                 fullWidth
               />
             </Field>
           </FormRow>
 
+          {!isAirPlan ? (
+            <FormRow columns={2}>
+              <Field label="Period" labelFor="plan-create-period">
+                <Select
+                  id="plan-create-period"
+                  size="sm"
+                  options={PERIOD_OPTIONS}
+                  value={createValues.period}
+                  onChange={(value) =>
+                    setCreateValues((prev) => ({
+                      ...prev,
+                      period: value as PlanPeriod,
+                    }))
+                  }
+                  fullWidth
+                />
+              </Field>
+              <Field
+                label="Period count"
+                labelFor="plan-create-period-count"
+                error={createErrors.periodCount}
+              >
+                <Input
+                  id="plan-create-period-count"
+                  size="sm"
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={createValues.periodCount}
+                  onChange={(event) =>
+                    setCreateValues((prev) => ({
+                      ...prev,
+                      periodCount: event.target.value,
+                    }))
+                  }
+                  fullWidth
+                />
+              </Field>
+            </FormRow>
+          ) : null}
+
           <FormRow columns={2}>
-            <Field
-              label="Period count"
-              labelFor="plan-create-period-count"
-              error={createErrors.periodCount}
-            >
-              <Input
-                id="plan-create-period-count"
-                size="sm"
-                type="number"
-                min={1}
-                step={1}
-                value={createValues.periodCount}
-                onChange={(event) =>
-                  setCreateValues((prev) => ({
-                    ...prev,
-                    periodCount: event.target.value,
-                  }))
-                }
-                fullWidth
-              />
-            </Field>
             <Field
               label="Price"
               labelFor="plan-create-price"
@@ -710,9 +761,6 @@ export function PlansPage() {
                 fullWidth
               />
             </Field>
-          </FormRow>
-
-          <FormRow columns={2}>
             <Field
               label="Air"
               labelFor="plan-create-air"
@@ -734,6 +782,9 @@ export function PlansPage() {
                 fullWidth
               />
             </Field>
+          </FormRow>
+
+          <FormRow columns={2}>
             <Field label="Recommended" labelFor="plan-create-recommended">
               <Switch
                 id="plan-create-recommended"
@@ -749,21 +800,20 @@ export function PlansPage() {
                 }
               />
             </Field>
+            <Field label="Status" labelFor="plan-create-status">
+              <Switch
+                id="plan-create-status"
+                checked={createValues.isActive}
+                onChange={(event) =>
+                  setCreateValues((prev) => ({
+                    ...prev,
+                    isActive: event.target.checked,
+                  }))
+                }
+                label={createValues.isActive ? 'Active' : 'Inactive'}
+              />
+            </Field>
           </FormRow>
-
-          <Field label="Status" labelFor="plan-create-status">
-            <Switch
-              id="plan-create-status"
-              checked={createValues.isActive}
-              onChange={(event) =>
-                setCreateValues((prev) => ({
-                  ...prev,
-                  isActive: event.target.checked,
-                }))
-              }
-              label={createValues.isActive ? 'Active' : 'Inactive'}
-            />
-          </Field>
         </Stack>
       </Modal>
     </AppShell>
