@@ -118,161 +118,116 @@
   white-space: pre-wrap;
 }
 
-.phaseGrid {
-  margin-top: var(--space-2);
+.scenarioDrawer {
+  width: min(88vw, 760px);
 }
 
-.phaseCard {
-  border: 1px solid hsl(var(--border));
-  border-radius: var(--radius-sm);
-  padding: var(--space-3);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  background: hsl(var(--bg));
+.stageDrawer {
+  width: min(86vw, 720px);
 }
 
-.phaseHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+.giftDrawer {
+  width: min(80vw, 560px);
 }
 
-.phaseEdit {
-  opacity: 0;
-  transition: opacity var(--transition);
-}
-
-.phaseCard:hover .phaseEdit,
-.phaseCard:focus-within .phaseEdit {
-  opacity: 1;
-}
-
-.phaseTitle {
-  font-weight: 600;
-}
-
-.modal {
-  width: min(700px, 70vw);
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.phaseSection {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.scenesTitle {
-  margin: 0;
-}
-
-.scenesHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-  margin-top: var(--space-4);
-  margin-bottom: var(--space-4);
-}
-
-.sceneImage {
-  width: 140px;
-  height: 88px;
+.stageOpeningImage {
+  width: min(360px, 100%);
+  max-height: 220px;
   object-fit: cover;
   border-radius: var(--radius-sm);
   border: 1px solid hsl(var(--border));
   margin-top: var(--space-1);
 }
 
-.sceneCard {
-  border: 1px solid hsl(var(--border));
-  border-radius: var(--radius-base);
-  background: var(--color-surface);
-  padding: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.sceneHeader {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.sceneHeaderRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
-.sceneTitleBlock {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.sceneOrderRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid hsl(var(--border));
-}
-
-.sceneOrderInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.sceneOrderActions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.sceneImagePlaceholder {
-  width: 140px;
-  height: 88px;
+.stageOpeningImagePlaceholder {
+  width: min(360px, 100%);
+  height: 120px;
   border-radius: var(--radius-sm);
   border: 1px dashed hsl(var(--border));
   display: flex;
   align-items: center;
   justify-content: center;
   background: hsl(var(--bg));
+  margin-top: var(--space-1);
 }
 
-.sceneImageField {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--space-4);
+.stageLayout {
+  margin-top: var(--space-3);
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
 }
 
-.sceneRow {
+.stageNav {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
-.sceneEdit {
+.stageNavButton {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.stageCard {
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-sm);
+  background: hsl(var(--bg));
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.stageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.stageEdit {
   opacity: 0;
   transition: opacity var(--transition);
 }
 
-.sceneCard:hover .sceneEdit,
-.sceneCard:focus-within .sceneEdit {
+.stageCard:hover .stageEdit,
+.stageCard:focus-within .stageEdit {
   opacity: 1;
 }
 
-.sceneLabel {
-  letter-spacing: var(--ls-wide);
+.stageSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.stageGiftRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+@media (max-width: 900px) {
+  .stageLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stageNav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .stageNavButton {
+    width: auto;
+  }
+
+  .stageGiftRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 .modalActions {

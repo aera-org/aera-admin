@@ -6,7 +6,7 @@ import {
   useCharacterImages,
   useCreateCharacterImage,
 } from '@/app/character-images';
-import { useCharacters } from '@/app/characters';
+import { useCharacterDetails, useCharacters } from '@/app/characters';
 import { notifyError } from '@/app/toast';
 import { PlusIcon } from '@/assets/icons';
 import {
@@ -16,6 +16,7 @@ import {
   Container,
   EmptyState,
   Field,
+  FormRow,
   Input,
   Pagination,
   Select,
@@ -26,7 +27,12 @@ import {
   Textarea,
   Typography,
 } from '@/atoms';
-import { FileDir, type IFile } from '@/common/types';
+import {
+  FileDir,
+  RoleplayStage,
+  STAGES_IN_ORDER,
+  type IFile,
+} from '@/common/types';
 import { Drawer, FileUpload } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 import { SearchSelect } from '@/pages/generations/components/SearchSelect';
@@ -38,7 +44,6 @@ type QueryUpdate = {
   order?: string;
   page?: number;
   pageSize?: number;
-  isFree?: string;
   isPregenerated?: string;
   isPromotional?: string;
   characterId?: string;
@@ -53,16 +58,9 @@ const ORDER_VALUES = new Set(ORDER_OPTIONS.map((option) => option.value));
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
 const DEFAULT_ORDER = 'DESC';
 const DEFAULT_PAGE_SIZE = 20;
-const DEFAULT_FREE_FILTER = 'all';
 const DEFAULT_PREG_FILTER = 'true';
 const DEFAULT_PROMO_FILTER = 'all';
 const SEARCH_DEBOUNCE_MS = 400;
-
-const FREE_FILTER_OPTIONS = [
-  { label: 'All', value: 'all' },
-  { label: 'Free', value: 'true' },
-  { label: 'Paid', value: 'false' },
-];
 
 const PREG_FILTER_OPTIONS = [
   { label: 'Pregenerated', value: 'true' },
@@ -75,6 +73,17 @@ const PROMO_FILTER_OPTIONS = [
   { label: 'Promotional', value: 'true' },
   { label: 'Regular', value: 'false' },
 ];
+
+const STAGE_LABELS: Record<RoleplayStage, string> = {
+  [RoleplayStage.Acquaintance]: 'Acquaintance',
+  [RoleplayStage.Flirting]: 'Flirting',
+  [RoleplayStage.Seduction]: 'Seduction',
+  [RoleplayStage.Resistance]: 'Resistance',
+  [RoleplayStage.Undressing]: 'Undressing',
+  [RoleplayStage.Prelude]: 'Prelude',
+  [RoleplayStage.Sex]: 'Sex',
+  [RoleplayStage.Aftercare]: 'Aftercare',
+};
 
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -116,6 +125,11 @@ function resolveBooleanFilter(value: string | null, fallback: string) {
   return fallback;
 }
 
+function formatStage(value: RoleplayStage | null | undefined) {
+  if (!value) return '-';
+  return STAGE_LABELS[value] ?? value;
+}
+
 export function CharacterImagesPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -123,7 +137,6 @@ export function CharacterImagesPage() {
   const rawOrder = searchParams.get('order');
   const rawPage = searchParams.get('page');
   const rawPageSize = searchParams.get('pageSize');
-  const rawIsFree = searchParams.get('isFree');
   const rawIsPregenerated = searchParams.get('isPregenerated');
   const rawIsPromotional = searchParams.get('isPromotional');
   const rawCharacterId = searchParams.get('characterId') ?? '';
@@ -135,7 +148,6 @@ export function CharacterImagesPage() {
   const order = ORDER_VALUES.has(rawOrder ?? '') ? rawOrder! : DEFAULT_ORDER;
   const page = parsePositiveNumber(rawPage, 1);
   const pageSize = parsePageSize(rawPageSize);
-  const freeFilter = resolveBooleanFilter(rawIsFree, DEFAULT_FREE_FILTER);
   const pregFilter = resolveBooleanFilter(
     rawIsPregenerated,
     DEFAULT_PREG_FILTER,
@@ -180,14 +192,6 @@ export function CharacterImagesPage() {
           next.set('pageSize', String(update.pageSize));
         } else {
           next.delete('pageSize');
-        }
-      }
-
-      if (update.isFree !== undefined) {
-        if (update.isFree && update.isFree !== DEFAULT_FREE_FILTER) {
-          next.set('isFree', update.isFree);
-        } else {
-          next.delete('isFree');
         }
       }
 
@@ -238,7 +242,6 @@ export function CharacterImagesPage() {
   }, [rawIsPregenerated, updateSearchParams]);
 
   const queryParams = useMemo(() => {
-    const isFree = freeFilter === 'all' ? undefined : freeFilter === 'true';
     const isPregenerated =
       pregFilter === 'all' ? undefined : pregFilter === 'true';
     const isPromotional =
@@ -248,14 +251,12 @@ export function CharacterImagesPage() {
       order,
       skip: (page - 1) * pageSize,
       take: pageSize,
-      isFree,
       isPregenerated,
       isPromotional,
       characterId: characterFilter || undefined,
     };
   }, [
     characterFilter,
-    freeFilter,
     normalizedSearch,
     order,
     page,
@@ -354,7 +355,7 @@ export function CharacterImagesPage() {
               {image.description || 'Untitled image'}
             </Typography>
             <Typography variant="caption" tone="muted">
-              {image.id}
+              {image.scenario?.name || '-'} · {formatStage(image.stage)}
             </Typography>
           </div>
         ),
@@ -368,12 +369,6 @@ export function CharacterImagesPage() {
         ),
         flags: (
           <div className={s.badges}>
-            <Badge
-              tone={image.isFree ? 'success' : 'accent'}
-              outline={!image.isFree}
-            >
-              {image.isFree ? 'Free' : 'Paid'}
-            </Badge>
             <Badge
               tone={image.isPregenerated ? 'accent' : 'warning'}
               outline={!image.isPregenerated}
@@ -440,19 +435,42 @@ export function CharacterImagesPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [createValues, setCreateValues] = useState({
     characterId: '',
+    scenarioId: '',
+    stage: '' as RoleplayStage | '',
     description: '',
-    isFree: false,
     isPromotional: false,
     fileId: '',
   });
   const [mainFile, setMainFile] = useState<IFile | null>(null);
   const [createShowErrors, setCreateShowErrors] = useState(false);
+  const { data: selectedCharacterDetails } = useCharacterDetails(
+    createValues.characterId || null,
+  );
+
+  const scenarioOptions = useMemo(
+    () =>
+      (selectedCharacterDetails?.scenarios ?? []).map((scenario) => ({
+        label: scenario.name,
+        value: scenario.id,
+      })),
+    [selectedCharacterDetails?.scenarios],
+  );
+
+  const stageOptions = useMemo(
+    () =>
+      STAGES_IN_ORDER.map((stage) => ({
+        label: formatStage(stage),
+        value: stage,
+      })),
+    [],
+  );
 
   const openCreateDrawer = () => {
     setCreateValues({
       characterId: '',
+      scenarioId: '',
+      stage: '',
       description: '',
-      isFree: false,
       isPromotional: false,
       fileId: '',
     });
@@ -470,11 +488,19 @@ export function CharacterImagesPage() {
     if (!createShowErrors) return {};
     const errors: {
       characterId?: string;
+      scenarioId?: string;
+      stage?: string;
       description?: string;
       fileId?: string;
     } = {};
     if (!createValues.characterId) {
       errors.characterId = 'Select a character.';
+    }
+    if (!createValues.scenarioId) {
+      errors.scenarioId = 'Select a scenario.';
+    }
+    if (!createValues.stage) {
+      errors.stage = 'Select a stage.';
     }
     if (!createValues.description.trim()) {
       errors.description = 'Enter a description.';
@@ -486,6 +512,8 @@ export function CharacterImagesPage() {
   }, [
     createShowErrors,
     createValues.characterId,
+    createValues.scenarioId,
+    createValues.stage,
     createValues.description,
     createValues.fileId,
   ]);
@@ -494,28 +522,45 @@ export function CharacterImagesPage() {
     () =>
       Boolean(
         createValues.characterId &&
+        createValues.scenarioId &&
+        createValues.stage &&
         createValues.description.trim() &&
         createValues.fileId,
       ),
-    [createValues.characterId, createValues.description, createValues.fileId],
+    [
+      createValues.characterId,
+      createValues.scenarioId,
+      createValues.stage,
+      createValues.description,
+      createValues.fileId,
+    ],
   );
 
   const handleCreate = async () => {
     const errors = {
       characterId: createValues.characterId ? undefined : 'Select a character.',
+      scenarioId: createValues.scenarioId ? undefined : 'Select a scenario.',
+      stage: createValues.stage ? undefined : 'Select a stage.',
       description: createValues.description.trim()
         ? undefined
         : 'Enter a description.',
       fileId: createValues.fileId ? undefined : 'Upload an image.',
     };
-    if (errors.characterId || errors.description || errors.fileId) {
+    if (
+      errors.characterId ||
+      errors.scenarioId ||
+      errors.stage ||
+      errors.description ||
+      errors.fileId
+    ) {
       setCreateShowErrors(true);
       return;
     }
     await createMutation.mutateAsync({
       characterId: createValues.characterId,
+      scenarioId: createValues.scenarioId,
+      stage: createValues.stage as RoleplayStage,
       description: createValues.description.trim(),
-      isFree: createValues.isFree,
       isPregenerated: true,
       isPromotional: createValues.isPromotional,
       fileId: createValues.fileId,
@@ -567,18 +612,6 @@ export function CharacterImagesPage() {
                     : 'All characters'
                 }
                 loading={isCharactersLoading}
-              />
-            </Field>
-            <Field label="Free" labelFor="images-free">
-              <Select
-                id="images-free"
-                options={FREE_FILTER_OPTIONS}
-                value={freeFilter}
-                size="sm"
-                variant="ghost"
-                onChange={(value) =>
-                  updateSearchParams({ isFree: value, page: 1 })
-                }
               />
             </Field>
             <Field label="Pregenerated" labelFor="images-pregenerated">
@@ -736,7 +769,11 @@ export function CharacterImagesPage() {
               search={drawerCharacterSearch}
               onSearchChange={setDrawerCharacterSearch}
               onSelect={(value) =>
-                setCreateValues((prev) => ({ ...prev, characterId: value }))
+                setCreateValues((prev) => ({
+                  ...prev,
+                  characterId: value,
+                  scenarioId: '',
+                }))
               }
               placeholder={
                 isDrawerCharactersLoading
@@ -747,6 +784,58 @@ export function CharacterImagesPage() {
               invalid={Boolean(createErrors.characterId)}
             />
           </Field>
+
+          <FormRow columns={2}>
+            <Field
+              label="Scenario"
+              labelFor="images-create-scenario"
+              error={createErrors.scenarioId}
+            >
+              <Select
+                id="images-create-scenario"
+                size="sm"
+                options={scenarioOptions}
+                value={createValues.scenarioId}
+                placeholder={
+                  createValues.characterId
+                    ? 'Select scenario'
+                    : 'Select character first'
+                }
+                onChange={(value) =>
+                  setCreateValues((prev) => ({
+                    ...prev,
+                    scenarioId: value,
+                  }))
+                }
+                fullWidth
+                disabled={!createValues.characterId || createMutation.isPending}
+                invalid={Boolean(createErrors.scenarioId)}
+              />
+            </Field>
+
+            <Field
+              label="Stage"
+              labelFor="images-create-stage"
+              error={createErrors.stage}
+            >
+              <Select
+                id="images-create-stage"
+                size="sm"
+                options={stageOptions}
+                value={createValues.stage}
+                placeholder="Select stage"
+                onChange={(value) =>
+                  setCreateValues((prev) => ({
+                    ...prev,
+                    stage: value as RoleplayStage,
+                  }))
+                }
+                fullWidth
+                disabled={createMutation.isPending}
+                invalid={Boolean(createErrors.stage)}
+              />
+            </Field>
+          </FormRow>
 
           <Field
             label="Description"
@@ -799,21 +888,6 @@ export function CharacterImagesPage() {
             <div className={s.toggleGrid}>
               <div className={s.toggleRow}>
                 <Typography variant="meta" tone="muted">
-                  Free
-                </Typography>
-                <Switch
-                  checked={createValues.isFree}
-                  onChange={(event) =>
-                    setCreateValues((prev) => ({
-                      ...prev,
-                      isFree: event.target.checked,
-                    }))
-                  }
-                  aria-label="isFree"
-                />
-              </div>
-              <div className={s.toggleRow}>
-                <Typography variant="meta" tone="muted">
                   Promotional
                 </Typography>
                 <Switch
@@ -846,6 +920,8 @@ export function CharacterImagesPage() {
                 createMutation.isPending ||
                 Boolean(
                   createErrors.characterId ||
+                  createErrors.scenarioId ||
+                  createErrors.stage ||
                   createErrors.description ||
                   createErrors.fileId,
                 )

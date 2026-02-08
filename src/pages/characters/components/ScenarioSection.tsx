@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import { useCreateScenario, useUpdateScenario } from '@/app/characters';
+import { notifyError } from '@/app/toast';
 import { PlusIcon } from '@/assets/icons';
 import {
   Button,
@@ -8,14 +9,14 @@ import {
   Field,
   FormRow,
   Input,
-  Modal,
   Skeleton,
   Stack,
   Tabs,
   Textarea,
   Typography,
 } from '@/atoms';
-import type { ICharacterDetails } from '@/common/types';
+import { FileDir, type ICharacterDetails, type IFile } from '@/common/types';
+import { Drawer, FileUpload } from '@/components/molecules';
 
 import s from '../CharacterDetailsPage.module.scss';
 import { ScenarioDetails } from './ScenarioDetails';
@@ -51,8 +52,12 @@ export function ScenarioSection({
     messagingStyle: '',
     appearance: '',
     situation: '',
+    openingMessage: '',
+    openingImageId: '',
   });
   const [editValues, setEditValues] = useState(formValues);
+  const [openingFile, setOpeningFile] = useState<IFile | null>(null);
+  const [editOpeningFile, setEditOpeningFile] = useState<IFile | null>(null);
 
   const scenarioTabs = scenarios.map((scenario) => ({
     value: scenario.id,
@@ -74,6 +79,9 @@ export function ScenarioSection({
     if (!values.appearance.trim())
       errors.appearance = 'Enter an appearance.';
     if (!values.situation.trim()) errors.situation = 'Enter a situation.';
+    if (!values.openingMessage.trim())
+      errors.openingMessage = 'Enter an opening message.';
+    if (!values.openingImageId) errors.openingImageId = 'Upload an image.';
     return errors;
   };
 
@@ -103,7 +111,10 @@ export function ScenarioSection({
       messagingStyle: '',
       appearance: '',
       situation: '',
+      openingMessage: '',
+      openingImageId: '',
     });
+    setOpeningFile(null);
     setShowErrors(false);
     setIsCreateOpen(true);
   };
@@ -123,7 +134,10 @@ export function ScenarioSection({
       messagingStyle: selectedScenario.messagingStyle ?? '',
       appearance: selectedScenario.appearance ?? '',
       situation: selectedScenario.situation ?? '',
+      openingMessage: selectedScenario.openingMessage ?? '',
+      openingImageId: selectedScenario.openingImage?.id ?? '',
     });
+    setEditOpeningFile(selectedScenario.openingImage ?? null);
     setEditShowErrors(false);
     setIsEditOpen(true);
   };
@@ -151,6 +165,12 @@ export function ScenarioSection({
         ? undefined
         : 'Enter an appearance.',
       situation: formValues.situation.trim() ? undefined : 'Enter a situation.',
+      openingMessage: formValues.openingMessage.trim()
+        ? undefined
+        : 'Enter an opening message.',
+      openingImageId: formValues.openingImageId
+        ? undefined
+        : 'Upload an image.',
     };
     if (Object.values(errors).some(Boolean)) {
       setShowErrors(true);
@@ -166,6 +186,8 @@ export function ScenarioSection({
         messagingStyle: formValues.messagingStyle.trim(),
         appearance: formValues.appearance.trim(),
         situation: formValues.situation.trim(),
+        openingMessage: formValues.openingMessage.trim(),
+        openingImageId: formValues.openingImageId,
       },
     });
     setIsCreateOpen(false);
@@ -192,6 +214,8 @@ export function ScenarioSection({
         messagingStyle: editValues.messagingStyle.trim(),
         appearance: editValues.appearance.trim(),
         situation: editValues.situation.trim(),
+        openingMessage: editValues.openingMessage.trim(),
+        openingImageId: editValues.openingImageId,
       },
     });
     setIsEditOpen(false);
@@ -242,29 +266,17 @@ export function ScenarioSection({
         </Stack>
       )}
 
-      <Modal
+      <Drawer
         open={isCreateOpen}
         title="New scenario"
-        className={s.modal}
-        onClose={closeCreateModal}
-        actions={
-          <div className={s.modalActions}>
-            <Button
-              variant="secondary"
-              onClick={closeCreateModal}
-              disabled={createMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreate}
-              loading={createMutation.isPending}
-              disabled={!isValid || createMutation.isPending}
-            >
-              Create
-            </Button>
-          </div>
-        }
+        className={s.scenarioDrawer}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeCreateModal();
+          } else {
+            setIsCreateOpen(true);
+          }
+        }}
       >
         <Stack gap="16px">
           <FormRow columns={2}>
@@ -400,32 +412,79 @@ export function ScenarioSection({
               fullWidth
             />
           </Field>
-        </Stack>
-      </Modal>
 
-      <Modal
-        open={isEditOpen}
-        title="Edit scenario"
-        className={s.modal}
-        onClose={closeEditModal}
-        actions={
+          <Field
+            label="Opening message"
+            labelFor="scenario-create-opening-message"
+            error={validationErrors.openingMessage}
+          >
+            <Textarea
+              id="scenario-create-opening-message"
+              value={formValues.openingMessage}
+              onChange={(event) =>
+                setFormValues((prev) => ({
+                  ...prev,
+                  openingMessage: event.target.value,
+                }))
+              }
+              rows={3}
+              fullWidth
+            />
+          </Field>
+
+          <div>
+            <FileUpload
+              label="Opening image"
+              folder={FileDir.Public}
+              value={openingFile}
+              onChange={(file) => {
+                setOpeningFile(file);
+                setFormValues((prev) => ({
+                  ...prev,
+                  openingImageId: file?.id ?? '',
+                }));
+              }}
+              onError={(message) =>
+                notifyError(new Error(message), 'Unable to upload image.')
+              }
+            />
+            {validationErrors.openingImageId ? (
+              <Typography variant="caption" tone="warning">
+                {validationErrors.openingImageId}
+              </Typography>
+            ) : null}
+          </div>
+
           <div className={s.modalActions}>
             <Button
               variant="secondary"
-              onClick={closeEditModal}
-              disabled={updateMutation.isPending}
+              onClick={closeCreateModal}
+              disabled={createMutation.isPending}
             >
               Cancel
             </Button>
             <Button
-              onClick={handleEdit}
-              loading={updateMutation.isPending}
-              disabled={!isEditValid || updateMutation.isPending}
+              onClick={handleCreate}
+              loading={createMutation.isPending}
+              disabled={!isValid || createMutation.isPending}
             >
-              Save
+              Create
             </Button>
           </div>
-        }
+        </Stack>
+      </Drawer>
+
+      <Drawer
+        open={isEditOpen}
+        title="Edit scenario"
+        className={s.scenarioDrawer}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeEditModal();
+          } else {
+            setIsEditOpen(true);
+          }
+        }}
       >
         <Stack gap="16px">
           <FormRow columns={2}>
@@ -561,8 +620,67 @@ export function ScenarioSection({
               fullWidth
             />
           </Field>
+
+          <Field
+            label="Opening message"
+            labelFor="scenario-edit-opening-message"
+            error={editValidationErrors.openingMessage}
+          >
+            <Textarea
+              id="scenario-edit-opening-message"
+              value={editValues.openingMessage}
+              onChange={(event) =>
+                setEditValues((prev) => ({
+                  ...prev,
+                  openingMessage: event.target.value,
+                }))
+              }
+              rows={3}
+              fullWidth
+            />
+          </Field>
+
+          <div>
+            <FileUpload
+              label="Opening image"
+              folder={FileDir.Public}
+              value={editOpeningFile}
+              onChange={(file) => {
+                setEditOpeningFile(file);
+                setEditValues((prev) => ({
+                  ...prev,
+                  openingImageId: file?.id ?? '',
+                }));
+              }}
+              onError={(message) =>
+                notifyError(new Error(message), 'Unable to upload image.')
+              }
+            />
+            {editValidationErrors.openingImageId ? (
+              <Typography variant="caption" tone="warning">
+                {editValidationErrors.openingImageId}
+              </Typography>
+            ) : null}
+          </div>
+
+          <div className={s.modalActions}>
+            <Button
+              variant="secondary"
+              onClick={closeEditModal}
+              disabled={updateMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEdit}
+              loading={updateMutation.isPending}
+              disabled={!isEditValid || updateMutation.isPending}
+            >
+              Save
+            </Button>
+          </div>
         </Stack>
-      </Modal>
+      </Drawer>
     </div>
   );
 }

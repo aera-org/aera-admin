@@ -1,30 +1,31 @@
 import { useMemo, useState } from 'react';
 
 import {
-  useCreateScene,
-  useUpdateScenario,
-  useUpdateScenarioPhase,
-  useUpdateScene,
+  useCreateScenarioStageGift,
+  useDeleteScenarioStageGift,
+  useUpdateScenarioStage,
+  useUpdateScenarioStageGift,
 } from '@/app/characters';
-import { notifyError } from '@/app/toast';
-import { PencilLineIcon, PlusIcon } from '@/assets/icons';
+import { useGifts } from '@/app/gifts';
+import { PencilLineIcon } from '@/assets/icons';
 import {
   Button,
   Field,
-  Grid,
   IconButton,
-  Input,
-  Modal,
+  Select,
   Stack,
   Textarea,
   Typography,
 } from '@/atoms';
-import type { ICharacterDetails, IFile } from '@/common/types';
-import { FileDir } from '@/common/types';
-import { FileUpload } from '@/components/molecules';
+import {
+  type ICharacterDetails,
+  RoleplayStage,
+  type StageDirectives,
+  STAGES_IN_ORDER,
+} from '@/common/types';
+import { ConfirmModal, Drawer } from '@/components/molecules';
 
 import s from '../CharacterDetailsPage.module.scss';
-import { SceneCardList } from './SceneCardList';
 
 type ScenarioDetailsProps = {
   characterId: string | null;
@@ -34,6 +35,26 @@ type ScenarioDetailsProps = {
   canEdit: boolean;
 };
 
+const EMPTY_STAGE: StageDirectives = {
+  toneAndBehavior: '',
+  restrictions: '',
+  environment: '',
+  characterLook: '',
+  goal: '',
+  escalationTrigger: '',
+};
+
+const STAGE_LABELS: Record<RoleplayStage, string> = {
+  [RoleplayStage.Acquaintance]: 'Acquaintance',
+  [RoleplayStage.Flirting]: 'Flirting',
+  [RoleplayStage.Seduction]: 'Seduction',
+  [RoleplayStage.Resistance]: 'Resistance',
+  [RoleplayStage.Undressing]: 'Undressing',
+  [RoleplayStage.Prelude]: 'Prelude',
+  [RoleplayStage.Sex]: 'Sex',
+  [RoleplayStage.Aftercare]: 'Aftercare',
+};
+
 export function ScenarioDetails({
   characterId,
   scenario,
@@ -41,303 +62,236 @@ export function ScenarioDetails({
   onEdit,
   canEdit,
 }: ScenarioDetailsProps) {
-  const updatePhaseMutation = useUpdateScenarioPhase();
-  const updateScenarioMutation = useUpdateScenario();
-  const createSceneMutation = useCreateScene();
-  const updateSceneMutation = useUpdateScene();
-  const [isPhaseModalOpen, setIsPhaseModalOpen] = useState(false);
-  const [activePhase, setActivePhase] = useState<
-    'hook' | 'resistance' | 'retention' | null
-  >(null);
-  const [phaseValues, setPhaseValues] = useState({
-    toneAndBehavior: '',
-    photoSendingRules: '',
-    restrictions: '',
-    goal: '',
-  });
+  const updateStageMutation = useUpdateScenarioStage();
+  const createGiftMutation = useCreateScenarioStageGift();
+  const updateGiftMutation = useUpdateScenarioStageGift();
+  const deleteGiftMutation = useDeleteScenarioStageGift();
+  const { data: giftsData, error: giftsError, isLoading: isGiftsLoading } =
+    useGifts({
+      order: 'ASC',
+      skip: 0,
+      take: 500,
+    });
+  const [selectedStage, setSelectedStage] = useState<RoleplayStage>(
+    STAGES_IN_ORDER[0] ?? RoleplayStage.Acquaintance,
+  );
+  const [activeStage, setActiveStage] = useState<RoleplayStage | null>(null);
+  const [isStageDrawerOpen, setIsStageDrawerOpen] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
-  const [isSceneCreateOpen, setIsSceneCreateOpen] = useState(false);
-  const [isSceneEditOpen, setIsSceneEditOpen] = useState(false);
-  const [isSceneOrderOpen, setIsSceneOrderOpen] = useState(false);
-  const [sceneOrderIds, setSceneOrderIds] = useState<string[]>([]);
-  const [sceneShowErrors, setSceneShowErrors] = useState(false);
-  const [sceneEditShowErrors, setSceneEditShowErrors] = useState(false);
-  const [activeScene, setActiveScene] = useState<
-    ICharacterDetails['scenarios'][number]['scenes'][number] | null
-  >(null);
-  const [sceneValues, setSceneValues] = useState({
-    name: '',
-    openingMessage: '',
-    openingImageId: '',
-    description: '',
-    goal: '',
-    visualChange: '',
+  const [stageValues, setStageValues] = useState<StageDirectives>(EMPTY_STAGE);
+  const [isGiftAddDrawerOpen, setIsGiftAddDrawerOpen] = useState(false);
+  const [isGiftEditDrawerOpen, setIsGiftEditDrawerOpen] = useState(false);
+  const [giftShowErrors, setGiftShowErrors] = useState(false);
+  const [giftEditShowErrors, setGiftEditShowErrors] = useState(false);
+  const [giftValues, setGiftValues] = useState({
+    giftId: '',
+    reason: '',
   });
-  const [sceneEditValues, setSceneEditValues] = useState(sceneValues);
-  const [sceneFile, setSceneFile] = useState<IFile | null>(null);
-  const [sceneEditFile, setSceneEditFile] = useState<IFile | null>(null);
-  const phases = scenario.phases;
-  const scenes = scenario.scenes;
-  const phaseLabels = useMemo(
-    () => ({
-      hook: 'Hook',
-      resistance: 'Resistance',
-      retention: 'Retention',
-    }),
-    [],
+  const [giftEditReason, setGiftEditReason] = useState('');
+  const [giftToEditId, setGiftToEditId] = useState<string | null>(null);
+  const [giftToDeleteId, setGiftToDeleteId] = useState<string | null>(null);
+
+  const selectedStageContent = scenario.stages?.[selectedStage] ?? EMPTY_STAGE;
+  const stageGift = useMemo(
+    () => scenario.gifts.find((gift) => gift.stage === selectedStage) ?? null,
+    [scenario.gifts, selectedStage],
+  );
+  const giftOptions = useMemo(
+    () =>
+      (giftsData?.data ?? [])
+        .filter((gift) => gift.isActive)
+        .map((gift) => ({
+          label: gift.name,
+          value: gift.id,
+        })),
+    [giftsData?.data],
+  );
+  const giftValidationErrors = useMemo(() => {
+    if (!giftShowErrors) return {};
+    const errors: { giftId?: string; reason?: string } = {};
+    if (!giftValues.giftId) errors.giftId = 'Select a gift.';
+    if (!giftValues.reason.trim()) errors.reason = 'Enter a reason.';
+    return errors;
+  }, [giftShowErrors, giftValues.giftId, giftValues.reason]);
+  const giftEditValidationErrors = useMemo(() => {
+    if (!giftEditShowErrors) return {};
+    const errors: { reason?: string } = {};
+    if (!giftEditReason.trim()) errors.reason = 'Enter a reason.';
+    return errors;
+  }, [giftEditReason, giftEditShowErrors]);
+  const isGiftValid = useMemo(
+    () => Boolean(giftValues.giftId && giftValues.reason.trim()),
+    [giftValues.giftId, giftValues.reason],
+  );
+  const isGiftEditValid = useMemo(
+    () => Boolean(giftEditReason.trim()),
+    [giftEditReason],
   );
 
   const validationErrors = useMemo(() => {
     if (!showErrors) return {};
-    const errors: Record<string, string> = {};
-    if (!phaseValues.toneAndBehavior.trim())
+    const errors: Partial<Record<keyof StageDirectives, string>> = {};
+    if (!stageValues.toneAndBehavior.trim()) {
       errors.toneAndBehavior = 'Enter tone and behavior.';
-    if (!phaseValues.photoSendingRules.trim())
-      errors.photoSendingRules = 'Enter photo sending rules.';
-    if (!phaseValues.restrictions.trim())
+    }
+    if (!stageValues.restrictions.trim()) {
       errors.restrictions = 'Enter restrictions.';
-    if (!phaseValues.goal.trim()) errors.goal = 'Enter a goal.';
+    }
+    if (!stageValues.environment.trim()) {
+      errors.environment = 'Enter an environment.';
+    }
+    if (!stageValues.characterLook.trim()) {
+      errors.characterLook = 'Enter a character look.';
+    }
+    if (!stageValues.goal.trim()) {
+      errors.goal = 'Enter a goal.';
+    }
+    if (!stageValues.escalationTrigger.trim()) {
+      errors.escalationTrigger = 'Enter an escalation trigger.';
+    }
     return errors;
-  }, [phaseValues, showErrors]);
+  }, [showErrors, stageValues]);
 
-  const isValid = useMemo(
+  const isStageValid = useMemo(
     () =>
       Boolean(
-        phaseValues.toneAndBehavior.trim() &&
-        phaseValues.photoSendingRules.trim() &&
-        phaseValues.restrictions.trim() &&
-        phaseValues.goal.trim(),
+        stageValues.toneAndBehavior.trim() &&
+        stageValues.restrictions.trim() &&
+        stageValues.environment.trim() &&
+        stageValues.characterLook.trim() &&
+        stageValues.goal.trim() &&
+        stageValues.escalationTrigger.trim(),
       ),
-    [phaseValues],
+    [stageValues],
   );
 
-  const getSceneErrors = (values: typeof sceneValues) => {
-    const errors: Record<string, string> = {};
-    const trimmedName = values.name.trim();
-    if (!trimmedName) {
-      errors.name = 'Enter a name.';
-    } else if (!/^[a-z0-9_]+$/.test(trimmedName)) {
-      errors.name = 'Use lowercase snake_case only.';
-    }
-    if (!values.description.trim()) errors.description = 'Enter a description.';
-    if (!values.goal.trim()) errors.goal = 'Enter a goal.';
-    if (!values.openingMessage.trim())
-      errors.openingMessage = 'Enter opening messages.';
-    if (!values.visualChange.trim())
-      errors.visualChange = 'Enter a visual change.';
-    if (!values.openingImageId) errors.openingImageId = 'Upload an image.';
-    return errors;
-  };
-
-  const sceneValidationErrors = useMemo(
-    () => (sceneShowErrors ? getSceneErrors(sceneValues) : {}),
-    [sceneShowErrors, sceneValues],
-  );
-  const sceneEditValidationErrors = useMemo(
-    () => (sceneEditShowErrors ? getSceneErrors(sceneEditValues) : {}),
-    [sceneEditShowErrors, sceneEditValues],
-  );
-
-  const isSceneValid = useMemo(
-    () => Object.keys(getSceneErrors(sceneValues)).length === 0,
-    [sceneValues],
-  );
-  const isSceneEditValid = useMemo(
-    () => Object.keys(getSceneErrors(sceneEditValues)).length === 0,
-    [sceneEditValues],
-  );
-
-  const openPhaseModal = (phase: 'hook' | 'resistance' | 'retention') => {
-    const content = phases ? phases[phase] : null;
-    setPhaseValues({
-      toneAndBehavior: content?.toneAndBehavior ?? '',
-      photoSendingRules: content?.photoSendingRules ?? '',
-      restrictions: content?.restrictions ?? '',
-      goal: content?.goal ?? '',
+  const openStageModal = (stage: RoleplayStage) => {
+    const content = scenario.stages?.[stage] ?? EMPTY_STAGE;
+    setStageValues({
+      toneAndBehavior: content.toneAndBehavior ?? '',
+      restrictions: content.restrictions ?? '',
+      environment: content.environment ?? '',
+      characterLook: content.characterLook ?? '',
+      goal: content.goal ?? '',
+      escalationTrigger: content.escalationTrigger ?? '',
     });
+    setActiveStage(stage);
     setShowErrors(false);
-    setActivePhase(phase);
-    setIsPhaseModalOpen(true);
+    setIsStageDrawerOpen(true);
   };
 
-  const closePhaseModal = () => {
-    if (updatePhaseMutation.isPending) return;
-    setIsPhaseModalOpen(false);
+  const closeStageDrawer = () => {
+    if (updateStageMutation.isPending) return;
+    setIsStageDrawerOpen(false);
   };
 
-  const openSceneCreateModal = () => {
-    setSceneValues({
-      name: '',
-      openingMessage: '',
-      openingImageId: '',
-      description: '',
-      goal: '',
-      visualChange: '',
-    });
-    setSceneFile(null);
-    setSceneShowErrors(false);
-    setIsSceneCreateOpen(true);
-  };
-
-  const resolveSceneOrder = () => {
-    const sceneIds = scenes.map((scene) => scene.id);
-    const ordered = scenario.scenesOrder?.length
-      ? scenario.scenesOrder.filter((id) => sceneIds.includes(id))
-      : sceneIds;
-    const missing = sceneIds.filter((id) => !ordered.includes(id));
-    return [...ordered, ...missing];
-  };
-
-  const openSceneOrderModal = () => {
-    setSceneOrderIds(resolveSceneOrder());
-    setIsSceneOrderOpen(true);
-  };
-
-  const closeSceneOrderModal = () => {
-    if (updateScenarioMutation.isPending) return;
-    setIsSceneOrderOpen(false);
-  };
-
-  const closeSceneCreateModal = () => {
-    if (createSceneMutation.isPending) return;
-    setIsSceneCreateOpen(false);
-  };
-
-  const openSceneEditModal = (
-    scene: ICharacterDetails['scenarios'][number]['scenes'][number],
-  ) => {
-    setActiveScene(scene);
-    setSceneEditValues({
-      name: scene.name ?? '',
-      openingMessage: scene.openingMessage ?? '',
-      openingImageId: scene.openingImageId ?? '',
-      description: scene.description ?? '',
-      goal: scene.goal ?? '',
-      visualChange: scene.visualChange ?? '',
-    });
-    setSceneEditFile(null);
-    setSceneEditShowErrors(false);
-    setIsSceneEditOpen(true);
-  };
-
-  const closeSceneEditModal = () => {
-    if (updateSceneMutation.isPending) return;
-    setIsSceneEditOpen(false);
-  };
-
-  const moveSceneOrder = (index: number, direction: -1 | 1) => {
-    setSceneOrderIds((prev) => {
-      const nextIndex = index + direction;
-      if (nextIndex < 0 || nextIndex >= prev.length) return prev;
-      const next = [...prev];
-      const [item] = next.splice(index, 1);
-      next.splice(nextIndex, 0, item);
-      return next;
-    });
-  };
-
-  const handlePhaseSave = async () => {
-    if (!characterId || !activePhase) return;
-    const errors = {
-      toneAndBehavior: phaseValues.toneAndBehavior.trim()
-        ? undefined
-        : 'Enter tone and behavior.',
-      photoSendingRules: phaseValues.photoSendingRules.trim()
-        ? undefined
-        : 'Enter photo sending rules.',
-      restrictions: phaseValues.restrictions.trim()
-        ? undefined
-        : 'Enter restrictions.',
-      goal: phaseValues.goal.trim() ? undefined : 'Enter a goal.',
-    };
-    if (Object.values(errors).some(Boolean)) {
+  const handleStageSave = async () => {
+    if (!characterId || !activeStage) return;
+    if (!isStageValid) {
       setShowErrors(true);
       return;
     }
-    await updatePhaseMutation.mutateAsync({
+
+    await updateStageMutation.mutateAsync({
       characterId,
       scenarioId: scenario.id,
-      phase: activePhase,
+      stage: activeStage,
       payload: {
-        toneAndBehavior: phaseValues.toneAndBehavior.trim(),
-        photoSendingRules: phaseValues.photoSendingRules.trim(),
-        restrictions: phaseValues.restrictions.trim(),
-        goal: phaseValues.goal.trim(),
+        toneAndBehavior: stageValues.toneAndBehavior.trim(),
+        restrictions: stageValues.restrictions.trim(),
+        environment: stageValues.environment.trim(),
+        characterLook: stageValues.characterLook.trim(),
+        goal: stageValues.goal.trim(),
+        escalationTrigger: stageValues.escalationTrigger.trim(),
       },
     });
-    setIsPhaseModalOpen(false);
+
+    setIsStageDrawerOpen(false);
   };
 
-  const handleSceneCreate = async () => {
-    if (!characterId) return;
-    const errors = getSceneErrors(sceneValues);
-    if (Object.values(errors).some(Boolean)) {
-      setSceneShowErrors(true);
-      return;
-    }
-    await createSceneMutation.mutateAsync({
-      characterId,
-      scenarioId: scenario.id,
-      payload: {
-        name: sceneValues.name.trim(),
-        description: sceneValues.description.trim(),
-        goal: sceneValues.goal.trim(),
-        openingMessage: sceneValues.openingMessage.trim(),
-        visualChange: sceneValues.visualChange.trim(),
-        openingImageId: sceneValues.openingImageId,
-      },
-    });
-    setIsSceneCreateOpen(false);
+  const openGiftAddDrawer = () => {
+    setGiftValues({ giftId: '', reason: '' });
+    setGiftShowErrors(false);
+    setIsGiftAddDrawerOpen(true);
   };
 
-  const handleSceneEdit = async () => {
-    if (!characterId || !activeScene) return;
-    const errors = getSceneErrors(sceneEditValues);
-    if (Object.values(errors).some(Boolean)) {
-      setSceneEditShowErrors(true);
-      return;
-    }
-    await updateSceneMutation.mutateAsync({
-      characterId,
-      scenarioId: scenario.id,
-      sceneId: activeScene.id,
-      payload: {
-        name: sceneEditValues.name.trim(),
-        description: sceneEditValues.description.trim(),
-        goal: sceneEditValues.goal.trim(),
-        openingMessage: sceneEditValues.openingMessage.trim(),
-        visualChange: sceneEditValues.visualChange.trim(),
-        openingImageId: sceneEditValues.openingImageId,
-      },
-    });
-    setIsSceneEditOpen(false);
+  const closeGiftAddDrawer = () => {
+    if (createGiftMutation.isPending) return;
+    setIsGiftAddDrawerOpen(false);
   };
 
-  const handleSceneOrderSave = async () => {
-    if (!characterId) return;
-    const baseOrder = resolveSceneOrder();
-    const isDirty =
-      sceneOrderIds.length !== baseOrder.length ||
-      sceneOrderIds.some((id, index) => id !== baseOrder[index]);
-    if (!isDirty) {
-      setIsSceneOrderOpen(false);
+  const openGiftEditDrawer = () => {
+    if (!stageGift) return;
+    setGiftToEditId(stageGift.id);
+    setGiftEditReason(stageGift.reason ?? '');
+    setGiftEditShowErrors(false);
+    setIsGiftEditDrawerOpen(true);
+  };
+
+  const closeGiftEditDrawer = () => {
+    if (updateGiftMutation.isPending) return;
+    setIsGiftEditDrawerOpen(false);
+  };
+
+  const openGiftDeleteModal = () => {
+    if (!stageGift) return;
+    setGiftToDeleteId(stageGift.id);
+  };
+
+  const closeGiftDeleteModal = () => {
+    if (deleteGiftMutation.isPending) return;
+    setGiftToDeleteId(null);
+  };
+
+  const handleGiftAdd = async () => {
+    if (!characterId || !isGiftValid) {
+      setGiftShowErrors(true);
       return;
     }
-    await updateScenarioMutation.mutateAsync({
+
+    await createGiftMutation.mutateAsync({
       characterId,
       scenarioId: scenario.id,
+      stage: selectedStage,
       payload: {
-        name: scenario.name ?? '',
-        emoji: scenario.emoji ?? '',
-        description: scenario.description ?? '',
-        personality: scenario.personality ?? '',
-        messagingStyle: scenario.messagingStyle ?? '',
-        appearance: scenario.appearance ?? '',
-        situation: scenario.situation ?? '',
-        scenesOrder: sceneOrderIds,
+        giftId: giftValues.giftId,
+        reason: giftValues.reason.trim(),
       },
     });
-    setIsSceneOrderOpen(false);
+
+    setIsGiftAddDrawerOpen(false);
+  };
+
+  const handleGiftEdit = async () => {
+    if (!characterId || !giftToEditId || !isGiftEditValid) {
+      setGiftEditShowErrors(true);
+      return;
+    }
+
+    await updateGiftMutation.mutateAsync({
+      characterId,
+      scenarioId: scenario.id,
+      stage: selectedStage,
+      characterGiftId: giftToEditId,
+      payload: {
+        reason: giftEditReason.trim(),
+      },
+    });
+
+    setIsGiftEditDrawerOpen(false);
+  };
+
+  const handleGiftDelete = async () => {
+    if (!characterId || !giftToDeleteId) return;
+
+    await deleteGiftMutation.mutateAsync({
+      characterId,
+      scenarioId: scenario.id,
+      stage: selectedStage,
+      characterGiftId: giftToDeleteId,
+    });
+
+    setGiftToDeleteId(null);
   };
 
   return (
@@ -366,6 +320,26 @@ export function ScenarioDetails({
       </div>
 
       <Stack gap="16px">
+        <div className={s.detailBlock}>
+          <Typography variant="caption" tone="muted">
+            Opening image
+          </Typography>
+          {scenario.openingImage?.url ? (
+            <img
+              className={s.stageOpeningImage}
+              src={scenario.openingImage.url}
+              alt={`${scenario.name} opening`}
+              loading="lazy"
+            />
+          ) : (
+            <div className={s.stageOpeningImagePlaceholder}>
+              <Typography variant="caption" tone="muted">
+                No image
+              </Typography>
+            </div>
+          )}
+        </div>
+
         <div className={s.detailBlock}>
           <Typography variant="caption" tone="muted">
             Description
@@ -406,144 +380,175 @@ export function ScenarioDetails({
             {scenario.situation || '-'}
           </Typography>
         </div>
-
-        <div>
-          <Typography variant="h3">Phases</Typography>
-          <Grid columns={3} gap="16px" className={s.phaseGrid}>
-            {(
-              [
-                { key: 'hook', label: 'Hook' },
-                { key: 'resistance', label: 'Resistance' },
-                { key: 'retention', label: 'Retention' },
-              ] as const
-            ).map((phase) => {
-              const content = phases ? phases[phase.key] : null;
-              return (
-                <div key={phase.key} className={s.phaseCard}>
-                  <div className={s.phaseHeader}>
-                    <Typography variant="body" className={s.phaseTitle}>
-                      {phase.label}
-                    </Typography>
-                    <span className={s.phaseEdit}>
-                      <IconButton
-                        aria-label={`Edit ${phase.label} phase`}
-                        icon={<PencilLineIcon />}
-                        tooltip={`Edit ${phase.label} phase`}
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openPhaseModal(phase.key)}
-                        disabled={!characterId}
-                      />
-                    </span>
-                  </div>
-                  <div className={s.phaseSection}>
-                    <Typography variant="caption" tone="muted">
-                      Tone and behavior
-                    </Typography>
-                    <Typography variant="body" className={s.multiline}>
-                      {content?.toneAndBehavior || '-'}
-                    </Typography>
-                  </div>
-                  <div className={s.phaseSection}>
-                    <Typography variant="caption" tone="muted">
-                      Photo sending rules
-                    </Typography>
-                    <Typography variant="body" className={s.multiline}>
-                      {content?.photoSendingRules || '-'}
-                    </Typography>
-                  </div>
-                  <div className={s.phaseSection}>
-                    <Typography variant="caption" tone="muted">
-                      Restrictions
-                    </Typography>
-                    <Typography variant="body" className={s.multiline}>
-                      {content?.restrictions || '-'}
-                    </Typography>
-                  </div>
-                  <div className={s.phaseSection}>
-                    <Typography variant="caption" tone="muted">
-                      Goal
-                    </Typography>
-                    <Typography variant="body" className={s.multiline}>
-                      {content?.goal || '-'}
-                    </Typography>
-                  </div>
-                </div>
-              );
-            })}
-          </Grid>
+        <div className={s.detailBlock}>
+          <Typography variant="caption" tone="muted">
+            Opening message
+          </Typography>
+          <Typography variant="body" className={s.multiline}>
+            {scenario.openingMessage || '-'}
+          </Typography>
         </div>
 
         <div>
-          <div className={s.scenesHeader}>
-            <Typography variant="h3" className={s.scenesTitle}>
-              Scenes
-            </Typography>
-            <Stack direction="horizontal" gap="8px">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={openSceneOrderModal}
-                disabled={!characterId || scenes.length === 0}
-              >
-                Change order
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                iconLeft={<PlusIcon />}
-                onClick={openSceneCreateModal}
-                disabled={!characterId}
-              >
-                New scene
-              </Button>
-            </Stack>
+          <Typography variant="h3">Stages</Typography>
+          <div className={s.stageLayout}>
+            <div className={s.stageNav}>
+              {STAGES_IN_ORDER.map((stage) => {
+                const isActive = selectedStage === stage;
+                return (
+                  <Button
+                    key={stage}
+                    variant={isActive ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className={s.stageNavButton}
+                    onClick={() => setSelectedStage(stage)}
+                  >
+                    {STAGE_LABELS[stage]}
+                  </Button>
+                );
+              })}
+            </div>
+
+            <div className={s.stageCard}>
+              <div className={s.stageHeader}>
+                <Typography variant="h3">
+                  {STAGE_LABELS[selectedStage]}
+                </Typography>
+                <span className={s.stageEdit}>
+                  <IconButton
+                    aria-label={`Edit ${STAGE_LABELS[selectedStage]} stage`}
+                    icon={<PencilLineIcon />}
+                    tooltip={`Edit ${STAGE_LABELS[selectedStage]} stage`}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openStageModal(selectedStage)}
+                    disabled={!characterId}
+                  />
+                </span>
+              </div>
+
+              <div className={s.stageSection}>
+                <Typography variant="caption" tone="muted">
+                  Tone and behavior
+                </Typography>
+                <Typography variant="body" className={s.multiline}>
+                  {selectedStageContent.toneAndBehavior || '-'}
+                </Typography>
+              </div>
+              <div className={s.stageSection}>
+                <Typography variant="caption" tone="muted">
+                  Restrictions
+                </Typography>
+                <Typography variant="body" className={s.multiline}>
+                  {selectedStageContent.restrictions || '-'}
+                </Typography>
+              </div>
+              <div className={s.stageSection}>
+                <Typography variant="caption" tone="muted">
+                  Environment
+                </Typography>
+                <Typography variant="body" className={s.multiline}>
+                  {selectedStageContent.environment || '-'}
+                </Typography>
+              </div>
+              <div className={s.stageSection}>
+                <Typography variant="caption" tone="muted">
+                  Character look
+                </Typography>
+                <Typography variant="body" className={s.multiline}>
+                  {selectedStageContent.characterLook || '-'}
+                </Typography>
+              </div>
+              <div className={s.stageSection}>
+                <Typography variant="caption" tone="muted">
+                  Goal
+                </Typography>
+                <Typography variant="body" className={s.multiline}>
+                  {selectedStageContent.goal || '-'}
+                </Typography>
+              </div>
+              <div className={s.stageSection}>
+                <Typography variant="caption" tone="muted">
+                  Escalation trigger
+                </Typography>
+                <Typography variant="body" className={s.multiline}>
+                  {selectedStageContent.escalationTrigger || '-'}
+                </Typography>
+              </div>
+              <div className={s.stageSection}>
+                <Typography variant="caption" tone="muted">
+                  Gift
+                </Typography>
+                <div className={s.stageGiftRow}>
+                  <Typography variant="body" className={s.multiline}>
+                    {stageGift
+                      ? `${stageGift.gift?.name || '-'} - ${stageGift.reason || '-'}`
+                      : '-'}
+                  </Typography>
+                  <Stack direction="horizontal" gap="8px">
+                    {stageGift ? (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={openGiftEditDrawer}
+                          disabled={!characterId}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          tone="danger"
+                          onClick={openGiftDeleteModal}
+                          disabled={!characterId}
+                        >
+                          Delete
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={openGiftAddDrawer}
+                        disabled={!characterId}
+                      >
+                        Add
+                      </Button>
+                    )}
+                  </Stack>
+                </div>
+              </div>
+            </div>
           </div>
-          <SceneCardList
-            scenes={scenario.scenes}
-            onEdit={openSceneEditModal}
-            canEdit={Boolean(characterId)}
-          />
         </div>
       </Stack>
 
-      <Modal
-        open={isPhaseModalOpen}
+      <Drawer
+        open={isStageDrawerOpen}
         title={
-          activePhase ? `Edit ${phaseLabels[activePhase]} phase` : 'Edit phase'
+          activeStage ? `Edit ${STAGE_LABELS[activeStage]} stage` : 'Edit stage'
         }
-        className={s.modal}
-        onClose={closePhaseModal}
-        actions={
-          <div className={s.modalActions}>
-            <Button
-              variant="secondary"
-              onClick={closePhaseModal}
-              disabled={updatePhaseMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handlePhaseSave}
-              loading={updatePhaseMutation.isPending}
-              disabled={!isValid || updatePhaseMutation.isPending}
-            >
-              Save
-            </Button>
-          </div>
-        }
+        className={s.stageDrawer}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeStageDrawer();
+          } else {
+            setIsStageDrawerOpen(true);
+          }
+        }}
       >
         <Stack gap="16px">
           <Field
             label="Tone and behavior"
-            labelFor="phase-edit-tone"
+            labelFor="stage-edit-tone"
             error={validationErrors.toneAndBehavior}
           >
             <Textarea
-              id="phase-edit-tone"
-              value={phaseValues.toneAndBehavior}
+              id="stage-edit-tone"
+              value={stageValues.toneAndBehavior}
               onChange={(event) =>
-                setPhaseValues((prev) => ({
+                setStageValues((prev) => ({
                   ...prev,
                   toneAndBehavior: event.target.value,
                 }))
@@ -552,34 +557,36 @@ export function ScenarioDetails({
               fullWidth
             />
           </Field>
+
           <Field
-            label="Photo sending rules"
-            labelFor="phase-edit-photo-rules"
-            error={validationErrors.photoSendingRules}
+            label="Goal"
+            labelFor="stage-edit-goal"
+            error={validationErrors.goal}
           >
             <Textarea
-              id="phase-edit-photo-rules"
-              value={phaseValues.photoSendingRules}
+              id="stage-edit-goal"
+              value={stageValues.goal}
               onChange={(event) =>
-                setPhaseValues((prev) => ({
+                setStageValues((prev) => ({
                   ...prev,
-                  photoSendingRules: event.target.value,
+                  goal: event.target.value,
                 }))
               }
-              rows={3}
+              rows={2}
               fullWidth
             />
           </Field>
+
           <Field
             label="Restrictions"
-            labelFor="phase-edit-restrictions"
+            labelFor="stage-edit-restrictions"
             error={validationErrors.restrictions}
           >
             <Textarea
-              id="phase-edit-restrictions"
-              value={phaseValues.restrictions}
+              id="stage-edit-restrictions"
+              value={stageValues.restrictions}
               onChange={(event) =>
-                setPhaseValues((prev) => ({
+                setStageValues((prev) => ({
                   ...prev,
                   restrictions: event.target.value,
                 }))
@@ -588,384 +595,215 @@ export function ScenarioDetails({
               fullWidth
             />
           </Field>
+
           <Field
-            label="Goal"
-            labelFor="phase-edit-goal"
-            error={validationErrors.goal}
+            label="Environment"
+            labelFor="stage-edit-environment"
+            error={validationErrors.environment}
           >
             <Textarea
-              id="phase-edit-goal"
-              value={phaseValues.goal}
+              id="stage-edit-environment"
+              value={stageValues.environment}
               onChange={(event) =>
-                setPhaseValues((prev) => ({
+                setStageValues((prev) => ({
                   ...prev,
-                  goal: event.target.value,
+                  environment: event.target.value,
                 }))
               }
-              rows={3}
+              rows={2}
               fullWidth
             />
           </Field>
-        </Stack>
-      </Modal>
 
-      <Modal
-        open={isSceneCreateOpen}
-        title="New scene"
-        className={s.modal}
-        onClose={closeSceneCreateModal}
-        actions={
+          <Field
+            label="Character look"
+            labelFor="stage-edit-look"
+            error={validationErrors.characterLook}
+          >
+            <Textarea
+              id="stage-edit-look"
+              value={stageValues.characterLook}
+              onChange={(event) =>
+                setStageValues((prev) => ({
+                  ...prev,
+                  characterLook: event.target.value,
+                }))
+              }
+              rows={2}
+              fullWidth
+            />
+          </Field>
+
+          <Field
+            label="Escalation trigger"
+            labelFor="stage-edit-trigger"
+            error={validationErrors.escalationTrigger}
+          >
+            <Textarea
+              id="stage-edit-trigger"
+              value={stageValues.escalationTrigger}
+              onChange={(event) =>
+                setStageValues((prev) => ({
+                  ...prev,
+                  escalationTrigger: event.target.value,
+                }))
+              }
+              rows={2}
+              fullWidth
+            />
+          </Field>
+
           <div className={s.modalActions}>
             <Button
               variant="secondary"
-              onClick={closeSceneCreateModal}
-              disabled={createSceneMutation.isPending}
+              onClick={closeStageDrawer}
+              disabled={updateStageMutation.isPending}
             >
               Cancel
             </Button>
             <Button
-              onClick={handleSceneCreate}
-              loading={createSceneMutation.isPending}
-              disabled={!isSceneValid || createSceneMutation.isPending}
-            >
-              Create
-            </Button>
-          </div>
-        }
-      >
-        <Stack gap="16px">
-          <Field
-            label="Name"
-            labelFor="scene-create-name"
-            error={sceneValidationErrors.name}
-          >
-            <Input
-              id="scene-create-name"
-              size="sm"
-              value={sceneValues.name}
-              onChange={(event) =>
-                setSceneValues((prev) => ({
-                  ...prev,
-                  name: event.target.value,
-                }))
-              }
-              fullWidth
-            />
-          </Field>
-
-          <div>
-            <FileUpload
-              label="Opening image"
-              folder={FileDir.Public}
-              value={sceneFile}
-              onChange={(file) => {
-                setSceneFile(file);
-                setSceneValues((prev) => ({
-                  ...prev,
-                  openingImageId: file?.id ?? '',
-                }));
-              }}
-              onError={(message) =>
-                notifyError(new Error(message), 'Unable to upload image.')
-              }
-            />
-            {sceneValidationErrors.openingImageId ? (
-              <Typography variant="caption" tone="warning">
-                {sceneValidationErrors.openingImageId}
-              </Typography>
-            ) : null}
-          </div>
-
-          <Field
-            label="Description"
-            labelFor="scene-create-description"
-            error={sceneValidationErrors.description}
-          >
-            <Textarea
-              id="scene-create-description"
-              value={sceneValues.description}
-              onChange={(event) =>
-                setSceneValues((prev) => ({
-                  ...prev,
-                  description: event.target.value,
-                }))
-              }
-              rows={3}
-              fullWidth
-            />
-          </Field>
-
-          <Field
-            label="Goal"
-            labelFor="scene-create-goal"
-            error={sceneValidationErrors.goal}
-          >
-            <Textarea
-              id="scene-create-goal"
-              value={sceneValues.goal}
-              onChange={(event) =>
-                setSceneValues((prev) => ({
-                  ...prev,
-                  goal: event.target.value,
-                }))
-              }
-              rows={3}
-              fullWidth
-            />
-          </Field>
-
-          <Field
-            label="Opening message"
-            labelFor="scene-create-opening-messages"
-            error={sceneValidationErrors.openingMessage}
-          >
-            <Textarea
-              id="scene-create-opening-messages"
-              value={sceneValues.openingMessage}
-              onChange={(event) =>
-                setSceneValues((prev) => ({
-                  ...prev,
-                  openingMessage: event.target.value,
-                }))
-              }
-              rows={3}
-              fullWidth
-            />
-          </Field>
-
-          <Field
-            label="Visual change"
-            labelFor="scene-create-visual"
-            error={sceneValidationErrors.visualChange}
-          >
-            <Textarea
-              id="scene-create-visual"
-              value={sceneValues.visualChange}
-              onChange={(event) =>
-                setSceneValues((prev) => ({
-                  ...prev,
-                  visualChange: event.target.value,
-                }))
-              }
-              rows={3}
-              fullWidth
-            />
-          </Field>
-        </Stack>
-      </Modal>
-
-      <Modal
-        open={isSceneEditOpen}
-        title="Edit scene"
-        className={s.modal}
-        onClose={closeSceneEditModal}
-        actions={
-          <div className={s.modalActions}>
-            <Button
-              variant="secondary"
-              onClick={closeSceneEditModal}
-              disabled={updateSceneMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSceneEdit}
-              loading={updateSceneMutation.isPending}
-              disabled={!isSceneEditValid || updateSceneMutation.isPending}
+              onClick={handleStageSave}
+              loading={updateStageMutation.isPending}
+              disabled={!isStageValid || updateStageMutation.isPending}
             >
               Save
             </Button>
           </div>
-        }
+        </Stack>
+      </Drawer>
+
+      <Drawer
+        open={isGiftAddDrawerOpen}
+        title={`Add gift for ${STAGE_LABELS[selectedStage]}`}
+        className={s.giftDrawer}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeGiftAddDrawer();
+          } else {
+            setIsGiftAddDrawerOpen(true);
+          }
+        }}
       >
         <Stack gap="16px">
-          <Field
-            label="Name"
-            labelFor="scene-edit-name"
-            error={sceneEditValidationErrors.name}
-          >
-            <Input
-              id="scene-edit-name"
+          <Field label="Gift" labelFor="stage-gift-create" error={giftValidationErrors.giftId}>
+            <Select
+              id="stage-gift-create"
               size="sm"
-              value={sceneEditValues.name}
-              onChange={(event) =>
-                setSceneEditValues((prev) => ({
+              options={giftOptions}
+              value={giftValues.giftId}
+              placeholder={isGiftsLoading ? 'Loading gifts...' : 'Select gift'}
+              onChange={(value) =>
+                setGiftValues((prev) => ({
                   ...prev,
-                  name: event.target.value,
+                  giftId: value,
                 }))
               }
               fullWidth
+              disabled={isGiftsLoading || createGiftMutation.isPending}
+              invalid={Boolean(giftValidationErrors.giftId)}
             />
           </Field>
-
-          <div className={s.sceneImageField}>
-            <FileUpload
-              label="Opening image"
-              folder={FileDir.Public}
-              value={sceneEditFile}
-              onChange={(file) => {
-                setSceneEditFile(file);
-                setSceneEditValues((prev) => ({
-                  ...prev,
-                  openingImageId: file?.id ?? '',
-                }));
-              }}
-              onError={(message) =>
-                notifyError(new Error(message), 'Unable to upload image.')
-              }
-            />
-            {sceneEditValidationErrors.openingImageId ? (
-              <Typography variant="caption" tone="warning">
-                {sceneEditValidationErrors.openingImageId}
-              </Typography>
-            ) : null}
-          </div>
-
-          <Field
-            label="Description"
-            labelFor="scene-edit-description"
-            error={sceneEditValidationErrors.description}
-          >
-            <Textarea
-              id="scene-edit-description"
-              value={sceneEditValues.description}
-              onChange={(event) =>
-                setSceneEditValues((prev) => ({
-                  ...prev,
-                  description: event.target.value,
-                }))
-              }
-              rows={3}
-              fullWidth
-            />
-          </Field>
-
-          <Field
-            label="Goal"
-            labelFor="scene-edit-goal"
-            error={sceneEditValidationErrors.goal}
-          >
-            <Textarea
-              id="scene-edit-goal"
-              value={sceneEditValues.goal}
-              onChange={(event) =>
-                setSceneEditValues((prev) => ({
-                  ...prev,
-                  goal: event.target.value,
-                }))
-              }
-              rows={3}
-              fullWidth
-            />
-          </Field>
-
-          <Field
-            label="Opening message"
-            labelFor="scene-edit-opening-messages"
-            error={sceneEditValidationErrors.openingMessage}
-          >
-            <Textarea
-              id="scene-edit-opening-messages"
-              value={sceneEditValues.openingMessage}
-              onChange={(event) =>
-                setSceneEditValues((prev) => ({
-                  ...prev,
-                  openingMessage: event.target.value,
-                }))
-              }
-              rows={3}
-              fullWidth
-            />
-          </Field>
-
-          <Field
-            label="Visual change"
-            labelFor="scene-edit-visual"
-            error={sceneEditValidationErrors.visualChange}
-          >
-            <Textarea
-              id="scene-edit-visual"
-              value={sceneEditValues.visualChange}
-              onChange={(event) =>
-                setSceneEditValues((prev) => ({
-                  ...prev,
-                  visualChange: event.target.value,
-                }))
-              }
-              rows={3}
-              fullWidth
-            />
-          </Field>
-        </Stack>
-      </Modal>
-
-      <Modal
-        open={isSceneOrderOpen}
-        title="Change scene order"
-        className={s.modal}
-        onClose={closeSceneOrderModal}
-        actions={
-          <div className={s.modalActions}>
-            <Button
-              variant="secondary"
-              onClick={closeSceneOrderModal}
-              disabled={updateScenarioMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSceneOrderSave}
-              loading={updateScenarioMutation.isPending}
-              disabled={
-                updateScenarioMutation.isPending || sceneOrderIds.length === 0
-              }
-            >
-              Save
-            </Button>
-          </div>
-        }
-      >
-        <Stack gap="12px">
-          {sceneOrderIds.map((sceneId, index) => {
-            const scene = scenes.find((item) => item.id === sceneId);
-            return (
-              <div key={sceneId} className={s.sceneOrderRow}>
-                <div className={s.sceneOrderInfo}>
-                  <Typography variant="body">
-                    {index + 1}. {scene?.name || 'Untitled scene'}
-                  </Typography>
-                  <Typography variant="caption" tone="muted">
-                    {sceneId}
-                  </Typography>
-                </div>
-                <div className={s.sceneOrderActions}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => moveSceneOrder(index, -1)}
-                    disabled={index === 0}
-                  >
-                    Up
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => moveSceneOrder(index, 1)}
-                    disabled={index === sceneOrderIds.length - 1}
-                  >
-                    Down
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
-          {sceneOrderIds.length === 0 ? (
-            <Typography variant="body" tone="muted">
-              No scenes to reorder.
+          {giftsError ? (
+            <Typography variant="caption" tone="warning">
+              {giftsError instanceof Error
+                ? giftsError.message
+                : 'Unable to load gifts.'}
             </Typography>
           ) : null}
+          <Field
+            label="Reason"
+            labelFor="stage-gift-create-reason"
+            error={giftValidationErrors.reason}
+          >
+            <Textarea
+              id="stage-gift-create-reason"
+              value={giftValues.reason}
+              onChange={(event) =>
+                setGiftValues((prev) => ({
+                  ...prev,
+                  reason: event.target.value,
+                }))
+              }
+              rows={2}
+              fullWidth
+              invalid={Boolean(giftValidationErrors.reason)}
+            />
+          </Field>
+          <div className={s.modalActions}>
+            <Button
+              variant="secondary"
+              onClick={closeGiftAddDrawer}
+              disabled={createGiftMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleGiftAdd}
+              loading={createGiftMutation.isPending}
+              disabled={!isGiftValid || createGiftMutation.isPending}
+            >
+              Save
+            </Button>
+          </div>
         </Stack>
-      </Modal>
+      </Drawer>
+
+      <Drawer
+        open={isGiftEditDrawerOpen}
+        title={`Edit gift for ${STAGE_LABELS[selectedStage]}`}
+        className={s.giftDrawer}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeGiftEditDrawer();
+          } else {
+            setIsGiftEditDrawerOpen(true);
+          }
+        }}
+      >
+        <Stack gap="16px">
+          <Field
+            label="Reason"
+            labelFor="stage-gift-edit-reason"
+            error={giftEditValidationErrors.reason}
+          >
+            <Textarea
+              id="stage-gift-edit-reason"
+              value={giftEditReason}
+              onChange={(event) => setGiftEditReason(event.target.value)}
+              rows={2}
+              fullWidth
+              invalid={Boolean(giftEditValidationErrors.reason)}
+            />
+          </Field>
+          <div className={s.modalActions}>
+            <Button
+              variant="secondary"
+              onClick={closeGiftEditDrawer}
+              disabled={updateGiftMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleGiftEdit}
+              loading={updateGiftMutation.isPending}
+              disabled={!isGiftEditValid || updateGiftMutation.isPending}
+            >
+              Save
+            </Button>
+          </div>
+        </Stack>
+      </Drawer>
+
+      <ConfirmModal
+        open={Boolean(giftToDeleteId)}
+        title="Delete gift?"
+        description="This will remove the gift from this stage."
+        confirmLabel="Delete"
+        tone="danger"
+        isConfirming={deleteGiftMutation.isPending}
+        onConfirm={handleGiftDelete}
+        onClose={closeGiftDeleteModal}
+      />
     </div>
   );
 }

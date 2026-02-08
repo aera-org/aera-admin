@@ -1,5 +1,9 @@
 import type { IAdmin } from './admin.type.ts';
-import type { ICharacter, IScenario, IScene } from './character.type.ts';
+import {
+  type ICharacter,
+  type IScenario,
+  RoleplayStage,
+} from './character.type.ts';
 import type { IFile } from './file.type.ts';
 import type { ILora } from './lora.type.ts';
 
@@ -13,7 +17,6 @@ export interface ImgGenerationRequest {
   loraId: string;
   characterId: string;
   scenarioId: string;
-  sceneId: string;
   seed: number;
   userRequest: string;
 }
@@ -24,7 +27,7 @@ export interface IImgGeneration {
   character: ICharacter;
   lora: ILora;
   scenario: IScenario;
-  scene: IScene;
+  stage: RoleplayStage;
   status: ImgGenerationStatus;
   createdAt: string;
   updatedAt: string;

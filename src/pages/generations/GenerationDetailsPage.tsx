@@ -41,6 +41,15 @@ function formatLatency(value: number | undefined) {
   return `${seconds.toFixed(2)}s`;
 }
 
+function formatStage(value: string | null | undefined) {
+  if (!value) return '-';
+  return value
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
 export function GenerationDetailsPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -178,9 +187,9 @@ export function GenerationDetailsPage() {
                 </div>
                 <div>
                   <Typography variant="meta" tone="muted">
-                    Scene
+                    Stage
                   </Typography>
-                  <Typography variant="body">{data.scene.name}</Typography>
+                  <Typography variant="body">{formatStage(data.stage)}</Typography>
                 </div>
                 <div>
                   <Typography variant="meta" tone="muted">

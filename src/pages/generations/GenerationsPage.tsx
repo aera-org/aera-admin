@@ -78,8 +78,12 @@ function parsePageSize(value: string | null) {
 
 function buildContext(generation: IImgGeneration) {
   const scenario = generation.scenario?.name?.trim();
-  const scene = generation.scene?.name?.trim();
-  return [scenario, scene].filter(Boolean).join(' · ');
+  const stage = generation.stage
+    ?.toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+  return [scenario, stage].filter(Boolean).join(' · ');
 }
 
 export function GenerationsPage() {

@@ -28,6 +28,15 @@ function formatDate(value: string | null | undefined) {
   return dateTimeFormatter.format(parsed);
 }
 
+function formatStage(value: string | null | undefined) {
+  if (!value) return '-';
+  return value
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
 export function CharacterImageDetailsPage() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -37,11 +46,6 @@ export function CharacterImageDetailsPage() {
   const flags = useMemo(() => {
     if (!data) return [];
     return [
-      {
-        label: data.isFree ? 'Free' : 'Paid',
-        tone: data.isFree ? 'success' : 'accent',
-        outline: !data.isFree,
-      },
       {
         label: data.isPregenerated ? 'Pregenerated' : 'Generated',
         tone: data.isPregenerated ? 'accent' : 'warning',
@@ -154,6 +158,15 @@ export function CharacterImageDetailsPage() {
                 <Typography variant="caption" tone="muted">
                   {data.character?.id}
                 </Typography>
+              </Field>
+              <Field label="Scenario">
+                <Typography variant="body">{data.scenario?.name || '-'}</Typography>
+                <Typography variant="caption" tone="muted">
+                  {data.scenario?.id || '-'}
+                </Typography>
+              </Field>
+              <Field label="Stage">
+                <Typography variant="body">{formatStage(data.stage)}</Typography>
               </Field>
               <Field label="Flags">
                 <div className={s.badges}>

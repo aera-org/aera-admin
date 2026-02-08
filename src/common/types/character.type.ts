@@ -1,3 +1,5 @@
+import type { IGift } from '@/common/types/gift.type.ts';
+
 import type { IFile } from './file.type.ts';
 import type { ILora } from './lora.type';
 
@@ -13,30 +15,51 @@ export interface ICharacter {
   updatedAt: string;
 }
 
-export enum ChatPhase {
-  Hook = 'hook',
-  Resistance = 'resistance',
-  Retention = 'retention',
+export enum RoleplayStage {
+  // hook
+  Acquaintance = 'ACQUAINTANCE',
+  Flirting = 'FLIRTING',
+  Seduction = 'SEDUCTION',
+
+  // resistance
+  Resistance = 'RESISTANCE',
+
+  // retention
+  Undressing = 'UNDRESSING',
+  Prelude = 'PRELUDE',
+  Sex = 'SEX',
+  Aftercare = 'AFTERCARE',
 }
 
-export type PhaseBehavior = {
+export const STAGES_IN_ORDER = [
+  RoleplayStage.Acquaintance,
+  RoleplayStage.Flirting,
+  RoleplayStage.Seduction,
+  RoleplayStage.Resistance,
+  RoleplayStage.Undressing,
+  RoleplayStage.Prelude,
+  RoleplayStage.Sex,
+  RoleplayStage.Aftercare,
+];
+
+export interface StageDirectives {
   toneAndBehavior: string;
-  photoSendingRules: string;
   restrictions: string;
+  environment: string;
+  characterLook: string;
   goal: string;
-};
+  escalationTrigger: string;
+}
 
-export type PhaseBehaviourMap = Record<ChatPhase, PhaseBehavior>;
+export type StageDirectivesMap = Record<RoleplayStage, StageDirectives>;
 
-export interface IScene {
+interface ICharacterGift {
   id: string;
-  name: string;
-  description: string;
-  goal: string;
-  openingMessage: string;
-  visualChange: string;
-  openingImageId: string;
-  openingImageUrl: string;
+  scenarioId: string;
+  giftId: string;
+  gift: IGift;
+  stage: RoleplayStage;
+  reason: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -50,9 +73,10 @@ export interface IScenario {
   messagingStyle: string;
   appearance: string;
   situation: string;
-  phases: PhaseBehaviourMap;
-  scenesOrder: string[];
-  scenes: IScene[];
+  openingMessage: string;
+  openingImage: IFile;
+  stages: StageDirectivesMap;
+  gifts: ICharacterGift[];
   createdAt: string;
   updatedAt: string;
 }

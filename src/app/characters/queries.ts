@@ -1,24 +1,26 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { notifyError, notifySuccess } from '@/app/toast';
+import type { RoleplayStage } from '@/common/types';
 import {
+  addScenarioStageGift,
+  deleteScenarioStageGift,
   type CharacterUpdateDto,
   type CharactersListParams,
   type ScenarioCreateDto,
   type ScenarioUpdateDto,
-  type PhaseUpdateDto,
-  type SceneCreateDto,
-  type SceneUpdateDto,
+  type StageGiftCreateDto,
+  type StageGiftUpdateDto,
+  type StageUpdateDto,
   createCharacter,
   createScenario,
-  createScene,
   deleteCharacter,
   getCharacterDetails,
   getCharacters,
   updateCharacter,
   updateScenario,
-  updateScene,
-  updateScenarioPhase,
+  updateScenarioStage,
+  updateScenarioStageGift,
 } from './charactersApi';
 
 const characterKeys = {
@@ -106,81 +108,120 @@ export function useUpdateScenario() {
   });
 }
 
-export function useUpdateScenarioPhase() {
+export function useUpdateScenarioStage() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({
       characterId,
       scenarioId,
-      phase,
+      stage,
       payload,
     }: {
       characterId: string;
       scenarioId: string;
-      phase: string;
-      payload: PhaseUpdateDto;
-    }) => updateScenarioPhase(characterId, scenarioId, phase, payload),
+      stage: RoleplayStage;
+      payload: StageUpdateDto;
+    }) => updateScenarioStage(characterId, scenarioId, stage, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: characterKeys.details(variables.characterId),
       });
-      notifySuccess('Phase updated.', 'Phase updated.');
+      notifySuccess('Stage updated.', 'Stage updated.');
     },
     onError: (error) => {
-      notifyError(error, 'Unable to update the phase.');
+      notifyError(error, 'Unable to update the stage.');
     },
   });
 }
 
-export function useCreateScene() {
+export function useCreateScenarioStageGift() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({
       characterId,
       scenarioId,
+      stage,
       payload,
     }: {
       characterId: string;
       scenarioId: string;
-      payload: SceneCreateDto;
-    }) => createScene(characterId, scenarioId, payload),
+      stage: RoleplayStage;
+      payload: StageGiftCreateDto;
+    }) => addScenarioStageGift(characterId, scenarioId, stage, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: characterKeys.details(variables.characterId),
       });
-      notifySuccess('Scene created.', 'Scene created.');
+      notifySuccess('Gift added.', 'Gift added.');
     },
     onError: (error) => {
-      notifyError(error, 'Unable to create the scene.');
+      notifyError(error, 'Unable to add the gift.');
     },
   });
 }
 
-export function useUpdateScene() {
+export function useUpdateScenarioStageGift() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({
       characterId,
       scenarioId,
-      sceneId,
+      stage,
+      characterGiftId,
       payload,
     }: {
       characterId: string;
       scenarioId: string;
-      sceneId: string;
-      payload: SceneUpdateDto;
-    }) => updateScene(characterId, scenarioId, sceneId, payload),
+      stage: RoleplayStage;
+      characterGiftId: string;
+      payload: StageGiftUpdateDto;
+    }) =>
+      updateScenarioStageGift(
+        characterId,
+        scenarioId,
+        stage,
+        characterGiftId,
+        payload,
+      ),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: characterKeys.details(variables.characterId),
       });
-      notifySuccess('Scene updated.', 'Scene updated.');
+      notifySuccess('Gift updated.', 'Gift updated.');
     },
     onError: (error) => {
-      notifyError(error, 'Unable to update the scene.');
+      notifyError(error, 'Unable to update the gift.');
+    },
+  });
+}
+
+export function useDeleteScenarioStageGift() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      scenarioId,
+      stage,
+      characterGiftId,
+    }: {
+      characterId: string;
+      scenarioId: string;
+      stage: RoleplayStage;
+      characterGiftId: string;
+    }) =>
+      deleteScenarioStageGift(characterId, scenarioId, stage, characterGiftId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Gift deleted.', 'Gift deleted.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to delete the gift.');
     },
   });
 }

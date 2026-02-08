@@ -50,7 +50,6 @@ export function GenerateImagePage() {
   const [values, setValues] = useState({
     characterId: '',
     scenarioId: '',
-    sceneId: '',
     loraId: '',
     seed: '',
     userRequest: '',
@@ -93,45 +92,25 @@ export function GenerateImagePage() {
     setValues((prev) => ({
       ...prev,
       scenarioId: '',
-      sceneId: '',
     }));
   }, [values.characterId]);
-
-  useEffect(() => {
-    if (!values.scenarioId) return;
-    setValues((prev) => ({
-      ...prev,
-      sceneId: '',
-    }));
-  }, [values.scenarioId]);
 
   const scenarios = useMemo(
     () => (characterDetails ? characterDetails.scenarios : []),
     [characterDetails],
   );
 
-  const sceneOptions = useMemo(() => {
-    if (!characterDetails) return [];
-    const scenario = characterDetails.scenarios.find(
-      (item) => item.id === values.scenarioId,
-    );
-    if (!scenario) return [];
-    return scenario.scenes;
-  }, [characterDetails, values.scenarioId]);
-
   const errors = useMemo(() => {
     if (!showErrors) return {};
     const result: {
       characterId?: string;
       scenarioId?: string;
-      sceneId?: string;
       loraId?: string;
       seed?: string;
       userRequest?: string;
     } = {};
     if (!values.characterId) result.characterId = 'Select a character.';
     if (!values.scenarioId) result.scenarioId = 'Select a scenario.';
-    if (!values.sceneId) result.sceneId = 'Select a scene.';
     if (!values.loraId) result.loraId = 'Select a LoRA.';
     if (resolveSeed(values.seed) === null) result.seed = 'Enter a seed.';
     if (!values.userRequest.trim()) result.userRequest = 'Enter a request.';
@@ -143,7 +122,6 @@ export function GenerateImagePage() {
       Boolean(
         values.characterId &&
         values.scenarioId &&
-        values.sceneId &&
         values.loraId &&
         resolveSeed(values.seed) !== null &&
         values.userRequest.trim(),
@@ -161,7 +139,6 @@ export function GenerateImagePage() {
     const response = await createMutation.mutateAsync({
       characterId: values.characterId,
       scenarioId: values.scenarioId,
-      sceneId: values.sceneId,
       loraId: values.loraId,
       seed: seedValue,
       userRequest: values.userRequest.trim(),
@@ -198,10 +175,6 @@ export function GenerateImagePage() {
   const scenarioOptions = scenarios.map((scenario) => ({
     label: scenario.name,
     value: scenario.id,
-  }));
-  const sceneSelectOptions = sceneOptions.map((scene) => ({
-    label: scene.name,
-    value: scene.id,
   }));
 
   return (
@@ -271,52 +244,27 @@ export function GenerateImagePage() {
             </Field>
           </FormRow>
 
-          <FormRow columns={2}>
-            <Field
-              label="Scenario"
-              labelFor="generation-scenario"
-              error={errors.scenarioId}
-            >
-              <Select
-                id="generation-scenario"
-                size="sm"
-                options={scenarioOptions}
-                value={values.scenarioId}
-                placeholder={
-                  values.characterId
-                    ? 'Select scenario'
-                    : 'Select character first'
-                }
-                onChange={(value) =>
-                  setValues((prev) => ({ ...prev, scenarioId: value }))
-                }
-                fullWidth
-                disabled={!values.characterId || createMutation.isPending}
-                invalid={Boolean(errors.scenarioId)}
-              />
-            </Field>
-            <Field
-              label="Scene"
-              labelFor="generation-scene"
-              error={errors.sceneId}
-            >
-              <Select
-                id="generation-scene"
-                size="sm"
-                options={sceneSelectOptions}
-                value={values.sceneId}
-                placeholder={
-                  values.scenarioId ? 'Select scene' : 'Select scenario first'
-                }
-                onChange={(value) =>
-                  setValues((prev) => ({ ...prev, sceneId: value }))
-                }
-                fullWidth
-                disabled={!values.scenarioId || createMutation.isPending}
-                invalid={Boolean(errors.sceneId)}
-              />
-            </Field>
-          </FormRow>
+          <Field
+            label="Scenario"
+            labelFor="generation-scenario"
+            error={errors.scenarioId}
+          >
+            <Select
+              id="generation-scenario"
+              size="sm"
+              options={scenarioOptions}
+              value={values.scenarioId}
+              placeholder={
+                values.characterId ? 'Select scenario' : 'Select character first'
+              }
+              onChange={(value) =>
+                setValues((prev) => ({ ...prev, scenarioId: value }))
+              }
+              fullWidth
+              disabled={!values.characterId || createMutation.isPending}
+              invalid={Boolean(errors.scenarioId)}
+            />
+          </Field>
 
           <FormRow columns={2}>
             <Field label="Seed" labelFor="generation-seed" error={errors.seed}>

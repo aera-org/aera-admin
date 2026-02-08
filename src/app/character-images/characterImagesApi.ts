@@ -13,7 +13,6 @@ export type CharacterImagesListParams = {
   order?: string;
   skip?: number;
   take?: number;
-  isFree?: boolean;
   isPregenerated?: boolean;
   isPromotional?: boolean;
   characterId?: string;
@@ -29,9 +28,6 @@ export async function getCharacterImages(params: CharacterImagesListParams) {
   if (params.order) query.set('order', params.order);
   if (typeof params.skip === 'number') query.set('skip', String(params.skip));
   if (typeof params.take === 'number') query.set('take', String(params.take));
-  if (typeof params.isFree === 'boolean') {
-    query.set('isFree', String(params.isFree));
-  }
   if (typeof params.isPregenerated === 'boolean') {
     query.set('isPregenerated', String(params.isPregenerated));
   }

@@ -1,6 +1,11 @@
 import { apiFetch } from '@/app/api';
 import { buildApiError } from '@/app/api/apiErrors';
-import type { ICharacter, ICharacterDetails } from '@/common/types';
+import type {
+  ICharacter,
+  ICharacterDetails,
+  RoleplayStage,
+  StageDirectives,
+} from '@/common/types';
 
 import type { PaginatedResponse } from '../paginated-response.type.ts';
 
@@ -16,7 +21,9 @@ const createFallbackError = 'Unable to create the character.';
 const updateFallbackError = 'Unable to update the character.';
 const deleteFallbackError = 'Unable to delete the character.';
 const createScenarioFallbackError = 'Unable to create the scenario.';
-const createSceneFallbackError = 'Unable to create the scene.';
+const createScenarioGiftFallbackError = 'Unable to add the gift.';
+const updateScenarioGiftFallbackError = 'Unable to update the gift.';
+const deleteScenarioGiftFallbackError = 'Unable to delete the gift.';
 
 export type CharacterUpdateDto = {
   name: string;
@@ -45,29 +52,25 @@ export type ScenarioCreateDto = {
   messagingStyle: string;
   appearance: string;
   situation: string;
-};
-
-export type ScenarioUpdateDto = ScenarioCreateDto & {
-  scenesOrder?: string[];
-};
-
-export type PhaseUpdateDto = {
-  toneAndBehavior: string;
-  photoSendingRules: string;
-  restrictions: string;
-  goal: string;
-};
-
-export type SceneCreateDto = {
-  name: string;
-  description: string;
-  goal: string;
   openingMessage: string;
-  visualChange: string;
   openingImageId: string;
 };
 
-export type SceneUpdateDto = SceneCreateDto;
+export type ScenarioUpdateDto = ScenarioCreateDto;
+export type StageUpdateDto = StageDirectives;
+export type StageGiftCreateDto = {
+  giftId: string;
+  reason: string;
+};
+export type StageGiftUpdateDto = {
+  reason: string;
+};
+
+async function parseJsonIfPresent(res: Response) {
+  if (res.status === 204) return null;
+  const text = await res.text();
+  return text ? (JSON.parse(text) as unknown) : null;
+}
 
 export async function getCharacters(params: CharactersListParams) {
   const query = new URLSearchParams();
@@ -138,14 +141,14 @@ export async function updateScenario(
   return (await res.json()) as ICharacterDetails['scenarios'][number];
 }
 
-export async function updateScenarioPhase(
+export async function updateScenarioStage(
   characterId: string,
   scenarioId: string,
-  phase: string,
-  payload: PhaseUpdateDto,
+  stage: RoleplayStage,
+  payload: StageUpdateDto,
 ) {
   const res = await apiFetch(
-    `/admin/characters/${characterId}/scenarios/${scenarioId}/phases/${phase}`,
+    `/admin/characters/${characterId}/scenarios/${scenarioId}/stages/${stage}`,
     {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
@@ -158,13 +161,14 @@ export async function updateScenarioPhase(
   return (await res.json()) as ICharacterDetails['scenarios'][number];
 }
 
-export async function createScene(
+export async function addScenarioStageGift(
   characterId: string,
   scenarioId: string,
-  payload: SceneCreateDto,
+  stage: RoleplayStage,
+  payload: StageGiftCreateDto,
 ) {
   const res = await apiFetch(
-    `/admin/characters/${characterId}/scenarios/${scenarioId}/scenes`,
+    `/admin/characters/${characterId}/scenarios/${scenarioId}/stages/${stage}/gifts`,
     {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -172,19 +176,20 @@ export async function createScene(
     },
   );
   if (!res.ok) {
-    throw await buildApiError(res, createSceneFallbackError);
+    throw await buildApiError(res, createScenarioGiftFallbackError);
   }
-  return (await res.json()) as ICharacterDetails['scenarios'][number];
+  return await parseJsonIfPresent(res);
 }
 
-export async function updateScene(
+export async function updateScenarioStageGift(
   characterId: string,
   scenarioId: string,
-  sceneId: string,
-  payload: SceneUpdateDto,
+  stage: RoleplayStage,
+  characterGiftId: string,
+  payload: StageGiftUpdateDto,
 ) {
   const res = await apiFetch(
-    `/admin/characters/${characterId}/scenarios/${scenarioId}/scenes/${sceneId}`,
+    `/admin/characters/${characterId}/scenarios/${scenarioId}/stages/${stage}/gifts/${characterGiftId}`,
     {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
@@ -192,9 +197,27 @@ export async function updateScene(
     },
   );
   if (!res.ok) {
-    throw await buildApiError(res, updateFallbackError);
+    throw await buildApiError(res, updateScenarioGiftFallbackError);
   }
-  return (await res.json()) as ICharacterDetails['scenarios'][number];
+  return await parseJsonIfPresent(res);
+}
+
+export async function deleteScenarioStageGift(
+  characterId: string,
+  scenarioId: string,
+  stage: RoleplayStage,
+  characterGiftId: string,
+) {
+  const res = await apiFetch(
+    `/admin/characters/${characterId}/scenarios/${scenarioId}/stages/${stage}/gifts/${characterGiftId}`,
+    {
+      method: 'DELETE',
+    },
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, deleteScenarioGiftFallbackError);
+  }
+  return await parseJsonIfPresent(res);
 }
 
 export async function updateCharacter(id: string, payload: CharacterUpdateDto) {
