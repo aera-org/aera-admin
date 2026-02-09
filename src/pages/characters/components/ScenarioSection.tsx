@@ -1,13 +1,23 @@
-import { useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { type ChangeEvent, useMemo, useRef, useState } from 'react';
 
 import { useCreateScenario, useUpdateScenario } from '@/app/characters';
-import { notifyError } from '@/app/toast';
-import { PlusIcon } from '@/assets/icons';
+import {
+  addScenarioStageGift,
+  createScenario as createScenarioApi,
+  updateScenarioStage as updateScenarioStageApi,
+} from '@/app/characters/charactersApi';
+import { copyFile } from '@/app/files/filesApi';
+import { getGifts } from '@/app/gifts';
+import { notifyError, notifySuccess } from '@/app/toast';
+import { DownloadIcon, PlusIcon, UploadIcon } from '@/assets/icons';
 import {
   Button,
+  ButtonGroup,
   EmptyState,
   Field,
   FormRow,
+  IconButton,
   Input,
   Skeleton,
   Stack,
@@ -15,14 +25,27 @@ import {
   Textarea,
   Typography,
 } from '@/atoms';
-import { FileDir, type ICharacterDetails, type IFile } from '@/common/types';
+import {
+  FileDir,
+  type ICharacterDetails,
+  type IFile,
+  type StageDirectives,
+  STAGES_IN_ORDER,
+} from '@/common/types';
 import { Drawer, FileUpload } from '@/components/molecules';
 
 import s from '../CharacterDetailsPage.module.scss';
 import { ScenarioDetails } from './ScenarioDetails';
+import {
+  buildScenarioTransferFileName,
+  buildScenarioTransferPayload,
+  downloadScenarioTransferFile,
+  parseScenarioTransferFile,
+} from './scenarioTransfer';
 
 type ScenarioSectionProps = {
   characterId: string | null;
+  characterName: string;
   scenarios: ICharacterDetails['scenarios'];
   selectedScenarioId: string | null;
   onSelectScenario: (id: string) => void;
@@ -30,18 +53,34 @@ type ScenarioSectionProps = {
   formatDate: (value: string | null | undefined) => string;
 };
 
+function isStageDirectivesEmpty(stage: StageDirectives) {
+  return (
+    !stage.toneAndBehavior.trim() &&
+    !stage.restrictions.trim() &&
+    !stage.environment.trim() &&
+    !stage.characterLook.trim() &&
+    !stage.goal.trim() &&
+    !stage.escalationTrigger.trim()
+  );
+}
+
 export function ScenarioSection({
   characterId,
+  characterName,
   scenarios,
   selectedScenarioId,
   onSelectScenario,
   isLoading,
   formatDate,
 }: ScenarioSectionProps) {
+  const queryClient = useQueryClient();
   const createMutation = useCreateScenario();
   const updateMutation = useUpdateScenario();
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const [editShowErrors, setEditShowErrors] = useState(false);
   const [formValues, setFormValues] = useState({
@@ -221,19 +260,237 @@ export function ScenarioSection({
     setIsEditOpen(false);
   };
 
+  const resolveGiftIdsByName = async (giftNames: string[]) => {
+    const requiredNames = Array.from(
+      new Set(giftNames.map((name) => name.trim()).filter(Boolean)),
+    );
+    if (requiredNames.length === 0) {
+      return new Map<string, string>();
+    }
+
+    const giftsByName = new Map<string, string[]>();
+    for (const name of requiredNames) {
+      giftsByName.set(name, []);
+    }
+
+    let skip = 0;
+    const take = 200;
+    while (true) {
+      const page = await getGifts({
+        order: 'ASC',
+        skip,
+        take,
+      });
+
+      for (const gift of page.data) {
+        const trimmedName = gift.name.trim();
+        if (!trimmedName || !giftsByName.has(trimmedName)) {
+          continue;
+        }
+        giftsByName.get(trimmedName)?.push(gift.id);
+      }
+
+      skip += page.data.length;
+      if (skip >= page.total || page.data.length === 0) {
+        break;
+      }
+    }
+
+    const missing: string[] = [];
+    const ambiguous: string[] = [];
+    const resolved = new Map<string, string>();
+
+    for (const name of requiredNames) {
+      const ids = giftsByName.get(name) ?? [];
+      if (ids.length === 0) {
+        missing.push(name);
+        continue;
+      }
+      if (ids.length > 1) {
+        ambiguous.push(name);
+        continue;
+      }
+      resolved.set(name, ids[0]);
+    }
+
+    if (missing.length > 0) {
+      throw new Error(
+        `Missing gifts in target environment: ${missing.join(', ')}.`,
+      );
+    }
+    if (ambiguous.length > 0) {
+      throw new Error(
+        `Gift names are not unique in target environment: ${ambiguous.join(', ')}.`,
+      );
+    }
+
+    return resolved;
+  };
+
+  const handleExportScenario = async () => {
+    if (!characterId || !selectedScenario) return;
+
+    try {
+      setIsExporting(true);
+      const payload = buildScenarioTransferPayload({
+        characterId,
+        characterName,
+        scenario: selectedScenario,
+      });
+      const fileName = buildScenarioTransferFileName(
+        characterName,
+        selectedScenario.name,
+      );
+      downloadScenarioTransferFile(payload, fileName);
+      notifySuccess('Scenario exported.', 'Scenario exported.');
+    } catch (error) {
+      notifyError(error, 'Unable to export scenario.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportButtonClick = () => {
+    if (!characterId || isImporting) return;
+    importInputRef.current?.click();
+  };
+
+  const handleImportFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    event.target.value = '';
+    if (!file || !characterId) return;
+
+    setIsImporting(true);
+    try {
+      const imported = await parseScenarioTransferFile(file);
+      const scenarioPayload = imported.scenario;
+      const requiredFields: Array<[string, string]> = [
+        ['name', scenarioPayload.name],
+        ['emoji', scenarioPayload.emoji],
+        ['description', scenarioPayload.description],
+        ['personality', scenarioPayload.personality],
+        ['messagingStyle', scenarioPayload.messagingStyle],
+        ['appearance', scenarioPayload.appearance],
+        ['situation', scenarioPayload.situation],
+        ['openingMessage', scenarioPayload.openingMessage],
+      ];
+      for (const [field, value] of requiredFields) {
+        if (!value.trim()) {
+          throw new Error(
+            `Invalid import file: "scenario.${field}" must not be empty.`,
+          );
+        }
+      }
+
+      const giftIdsByName = await resolveGiftIdsByName(
+        scenarioPayload.gifts.map((gift) => gift.giftName),
+      );
+
+      await copyFile({
+        id: scenarioPayload.openingImage.id,
+        name: scenarioPayload.openingImage.name,
+        dir: scenarioPayload.openingImage.dir,
+        status: scenarioPayload.openingImage.status,
+        mime: scenarioPayload.openingImage.mime,
+        url: scenarioPayload.openingImage.url ?? undefined,
+      });
+
+      const createdScenario = await createScenarioApi(characterId, {
+        name: scenarioPayload.name.trim(),
+        emoji: scenarioPayload.emoji.trim(),
+        description: scenarioPayload.description.trim(),
+        personality: scenarioPayload.personality.trim(),
+        messagingStyle: scenarioPayload.messagingStyle.trim(),
+        appearance: scenarioPayload.appearance.trim(),
+        situation: scenarioPayload.situation.trim(),
+        openingMessage: scenarioPayload.openingMessage.trim(),
+        openingImageId: scenarioPayload.openingImage.id,
+      });
+
+      for (const stage of STAGES_IN_ORDER) {
+        const stagePayload = scenarioPayload.stages[stage];
+        if (isStageDirectivesEmpty(stagePayload)) {
+          continue;
+        }
+        await updateScenarioStageApi(
+          characterId,
+          createdScenario.id,
+          stage,
+          stagePayload,
+        );
+      }
+
+      for (const gift of scenarioPayload.gifts) {
+        const resolvedGiftId = giftIdsByName.get(gift.giftName.trim());
+        if (!resolvedGiftId) {
+          throw new Error(`Gift "${gift.giftName}" was not resolved.`);
+        }
+        await addScenarioStageGift(characterId, createdScenario.id, gift.stage, {
+          giftId: resolvedGiftId,
+          reason: gift.reason.trim(),
+          buyText: gift.buyText,
+        });
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey: ['character', characterId],
+      });
+      onSelectScenario(createdScenario.id);
+      notifySuccess('Scenario imported.', 'Scenario imported.');
+    } catch (error) {
+      notifyError(error, 'Unable to import scenario.');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
     <div className={s.section}>
       <div className={s.sectionHeader}>
         <Typography variant="h3">Scenarios</Typography>
-        <Button
-          variant="ghost"
-          size="sm"
-          iconLeft={<PlusIcon />}
-          onClick={openCreateModal}
-          disabled={!characterId}
-        >
-          New scenario
-        </Button>
+        <ButtonGroup>
+          <IconButton
+            aria-label="Export scenario"
+            tooltip="Export scenario"
+            icon={<DownloadIcon />}
+            variant="ghost"
+            size="sm"
+            onClick={handleExportScenario}
+            loading={isExporting}
+            disabled={!characterId || !selectedScenario || isImporting}
+          />
+          <IconButton
+            aria-label="Import scenario"
+            tooltip="Import scenario"
+            icon={<UploadIcon />}
+            variant="ghost"
+            size="sm"
+            onClick={handleImportButtonClick}
+            loading={isImporting}
+            disabled={
+              !characterId ||
+              isExporting ||
+              createMutation.isPending ||
+              updateMutation.isPending
+            }
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            iconLeft={<PlusIcon />}
+            onClick={openCreateModal}
+            disabled={!characterId || isImporting}
+          >
+            New scenario
+          </Button>
+        </ButtonGroup>
+        <input
+          ref={importInputRef}
+          className={s.hiddenInput}
+          type="file"
+          accept="application/json,.json"
+          onChange={handleImportFileChange}
+        />
       </div>
       {isLoading ? (
         <Stack gap="16px">

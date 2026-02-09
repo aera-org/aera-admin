@@ -250,6 +250,7 @@ export function CharacterDetailsPage() {
         />
         <ScenarioSection
           characterId={id ?? null}
+          characterName={data?.name ?? ''}
           scenarios={scenarios}
           selectedScenarioId={selectedScenarioId}
           onSelectScenario={setSelectedScenarioId}

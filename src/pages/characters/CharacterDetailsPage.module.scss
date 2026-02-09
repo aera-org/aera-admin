@@ -52,6 +52,10 @@
   flex-wrap: wrap;
 }
 
+.hiddenInput {
+  display: none;
+}
+
 .sectionEdit {
   opacity: 0;
   transition: opacity var(--transition);

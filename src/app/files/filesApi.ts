@@ -1,6 +1,6 @@
 import { apiFetch } from '@/app/api';
 import { buildApiError } from '@/app/api/apiErrors';
-import type { IFile, SignUploadDto } from '@/common/types';
+import type { FileDir, FileStatus, IFile, SignUploadDto } from '@/common/types';
 
 type PresignedPayload = {
   url: string;
@@ -18,6 +18,16 @@ type MarkUploadedResponse = {
 
 const signFallbackError = 'Unable to prepare upload.';
 const markFallbackError = 'Unable to finalize upload.';
+const copyFallbackError = 'Unable to copy file.';
+
+export type CopyFileDto = {
+  id: string;
+  name: string;
+  dir: FileDir;
+  status: FileStatus;
+  mime: string;
+  url?: string | null;
+};
 
 export async function signUpload(payload: SignUploadDto) {
   const res = await apiFetch('/admin/files/upload-url', {
@@ -40,4 +50,15 @@ export async function markFileUploaded(fileId: string) {
   }
   const payload = (await res.json()) as MarkUploadedResponse;
   return payload.success;
+}
+
+export async function copyFile(payload: CopyFileDto) {
+  const res = await apiFetch('/admin/files/copy', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, copyFallbackError);
+  }
 }

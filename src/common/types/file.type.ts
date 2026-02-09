@@ -17,6 +17,7 @@ export enum FileStatus {
 export interface IFile {
   id: string;
   name: string;
+  dir: FileDir;
   status: FileStatus;
   mime: string;
   url: string | null;
