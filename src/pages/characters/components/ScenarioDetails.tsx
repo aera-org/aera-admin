@@ -86,8 +86,10 @@ export function ScenarioDetails({
   const [giftValues, setGiftValues] = useState({
     giftId: '',
     reason: '',
+    buyText: '',
   });
   const [giftEditReason, setGiftEditReason] = useState('');
+  const [giftEditBuyText, setGiftEditBuyText] = useState('');
   const [giftToEditId, setGiftToEditId] = useState<string | null>(null);
   const [giftToDeleteId, setGiftToDeleteId] = useState<string | null>(null);
 
@@ -210,7 +212,7 @@ export function ScenarioDetails({
   };
 
   const openGiftAddDrawer = () => {
-    setGiftValues({ giftId: '', reason: '' });
+    setGiftValues({ giftId: '', reason: '', buyText: '' });
     setGiftShowErrors(false);
     setIsGiftAddDrawerOpen(true);
   };
@@ -224,6 +226,7 @@ export function ScenarioDetails({
     if (!stageGift) return;
     setGiftToEditId(stageGift.id);
     setGiftEditReason(stageGift.reason ?? '');
+    setGiftEditBuyText(stageGift.buyText ?? '');
     setGiftEditShowErrors(false);
     setIsGiftEditDrawerOpen(true);
   };
@@ -256,6 +259,7 @@ export function ScenarioDetails({
       payload: {
         giftId: giftValues.giftId,
         reason: giftValues.reason.trim(),
+        buyText: giftValues.buyText.trim(),
       },
     });
 
@@ -275,6 +279,7 @@ export function ScenarioDetails({
       characterGiftId: giftToEditId,
       payload: {
         reason: giftEditReason.trim(),
+        buyText: giftEditBuyText.trim(),
       },
     });
 
@@ -729,6 +734,20 @@ export function ScenarioDetails({
               invalid={Boolean(giftValidationErrors.reason)}
             />
           </Field>
+          <Field label="Buy text" labelFor="stage-gift-create-buy-text">
+            <Textarea
+              id="stage-gift-create-buy-text"
+              value={giftValues.buyText}
+              onChange={(event) =>
+                setGiftValues((prev) => ({
+                  ...prev,
+                  buyText: event.target.value,
+                }))
+              }
+              rows={2}
+              fullWidth
+            />
+          </Field>
           <div className={s.modalActions}>
             <Button
               variant="secondary"
@@ -773,6 +792,15 @@ export function ScenarioDetails({
               rows={2}
               fullWidth
               invalid={Boolean(giftEditValidationErrors.reason)}
+            />
+          </Field>
+          <Field label="Buy text" labelFor="stage-gift-edit-buy-text">
+            <Textarea
+              id="stage-gift-edit-buy-text"
+              value={giftEditBuyText}
+              onChange={(event) => setGiftEditBuyText(event.target.value)}
+              rows={2}
+              fullWidth
             />
           </Field>
           <div className={s.modalActions}>

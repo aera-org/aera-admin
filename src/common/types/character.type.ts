@@ -60,6 +60,7 @@ interface ICharacterGift {
   gift: IGift;
   stage: RoleplayStage;
   reason: string;
+  buyText: string;
   createdAt: string;
   updatedAt: string;
 }

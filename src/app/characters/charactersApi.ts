@@ -61,9 +61,11 @@ export type StageUpdateDto = StageDirectives;
 export type StageGiftCreateDto = {
   giftId: string;
   reason: string;
+  buyText: string;
 };
 export type StageGiftUpdateDto = {
   reason: string;
+  buyText: string;
 };
 
 async function parseJsonIfPresent(res: Response) {
