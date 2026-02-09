@@ -19,6 +19,7 @@ export type ScenarioTransferFile = {
   id: string;
   name: string;
   dir: FileDir;
+  path: string;
   status: FileStatus;
   mime: string;
   url?: string | null;
@@ -89,7 +90,9 @@ function ensureNonEmptyString(value: unknown, path: string) {
 function ensureStage(value: unknown, path: string): RoleplayStage {
   const stage = ensureString(value, path);
   if (!STAGES_IN_ORDER.includes(stage as RoleplayStage)) {
-    throw new Error(`Invalid import file: "${path}" has unknown stage "${stage}".`);
+    throw new Error(
+      `Invalid import file: "${path}" has unknown stage "${stage}".`,
+    );
   }
   return stage as RoleplayStage;
 }
@@ -99,7 +102,9 @@ function sanitizeString(value: unknown) {
 }
 
 function sanitizeStageDirectives(
-  value: ICharacterDetails['scenarios'][number]['stages'][RoleplayStage] | undefined,
+  value:
+    | ICharacterDetails['scenarios'][number]['stages'][RoleplayStage]
+    | undefined,
 ): StageDirectives {
   return {
     toneAndBehavior: sanitizeString(value?.toneAndBehavior),
@@ -135,10 +140,14 @@ function parseTransferFile(value: unknown, path: string): ScenarioTransferFile {
   const status = ensureString(obj.status, `${path}.status`);
 
   if (!Object.values(FileDir).includes(dir as FileDir)) {
-    throw new Error(`Invalid import file: "${path}.dir" has unsupported value.`);
+    throw new Error(
+      `Invalid import file: "${path}.dir" has unsupported value.`,
+    );
   }
   if (!Object.values(FileStatus).includes(status as FileStatus)) {
-    throw new Error(`Invalid import file: "${path}.status" has unsupported value.`);
+    throw new Error(
+      `Invalid import file: "${path}.status" has unsupported value.`,
+    );
   }
 
   const urlValue = obj.url;
@@ -156,6 +165,7 @@ function parseTransferFile(value: unknown, path: string): ScenarioTransferFile {
     id: ensureNonEmptyString(obj.id, `${path}.id`),
     name: ensureNonEmptyString(obj.name, `${path}.name`),
     dir: dir as FileDir,
+    path: ensureNonEmptyString(obj.path, `${path}.path`),
     status: status as FileStatus,
     mime: ensureNonEmptyString(obj.mime, `${path}.mime`),
     url: (urlValue as string | null | undefined) ?? undefined,
@@ -184,7 +194,9 @@ export function buildScenarioTransferPayload({
 }: BuildScenarioTransferPayloadParams): ScenarioTransferPayload {
   const openingImage = scenario.openingImage;
   if (!openingImage?.id || !openingImage?.name || !openingImage?.mime) {
-    throw new Error('Unable to export scenario: opening image metadata is missing.');
+    throw new Error(
+      'Unable to export scenario: opening image metadata is missing.',
+    );
   }
 
   const gifts = scenario.gifts.map((gift, index) => {
@@ -242,6 +254,7 @@ export function buildScenarioTransferPayload({
         id: openingImage.id,
         name: openingImage.name,
         dir: openingImage.dir,
+        path: openingImage.path,
         status: openingImage.status,
         mime: openingImage.mime,
         url: openingImage.url ?? undefined,
@@ -360,8 +373,14 @@ export async function parseScenarioTransferFile(file: File) {
       id: ensureNonEmptyString(scenarioObj.id, 'scenario.id'),
       name: ensureString(scenarioObj.name, 'scenario.name'),
       emoji: ensureString(scenarioObj.emoji, 'scenario.emoji'),
-      description: ensureString(scenarioObj.description, 'scenario.description'),
-      personality: ensureString(scenarioObj.personality, 'scenario.personality'),
+      description: ensureString(
+        scenarioObj.description,
+        'scenario.description',
+      ),
+      personality: ensureString(
+        scenarioObj.personality,
+        'scenario.personality',
+      ),
       messagingStyle: ensureString(
         scenarioObj.messagingStyle,
         'scenario.messagingStyle',

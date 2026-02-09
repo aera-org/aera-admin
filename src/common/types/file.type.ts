@@ -18,6 +18,7 @@ export interface IFile {
   id: string;
   name: string;
   dir: FileDir;
+  path: string;
   status: FileStatus;
   mime: string;
   url: string | null;

@@ -109,14 +109,11 @@ export function ScenarioSection({
     const errors: Record<string, string> = {};
     if (!values.name.trim()) errors.name = 'Enter a name.';
     if (!values.emoji.trim()) errors.emoji = 'Enter an emoji.';
-    if (!values.description.trim())
-      errors.description = 'Enter a description.';
-    if (!values.personality.trim())
-      errors.personality = 'Enter a personality.';
+    if (!values.description.trim()) errors.description = 'Enter a description.';
+    if (!values.personality.trim()) errors.personality = 'Enter a personality.';
     if (!values.messagingStyle.trim())
       errors.messagingStyle = 'Enter a messaging style.';
-    if (!values.appearance.trim())
-      errors.appearance = 'Enter an appearance.';
+    if (!values.appearance.trim()) errors.appearance = 'Enter an appearance.';
     if (!values.situation.trim()) errors.situation = 'Enter a situation.';
     if (!values.openingMessage.trim())
       errors.openingMessage = 'Enter an opening message.';
@@ -133,9 +130,10 @@ export function ScenarioSection({
     [editShowErrors, editValues],
   );
 
-  const isValid = useMemo(() => Object.keys(getErrors(formValues)).length === 0, [
-    formValues,
-  ]);
+  const isValid = useMemo(
+    () => Object.keys(getErrors(formValues)).length === 0,
+    [formValues],
+  );
   const isEditValid = useMemo(
     () => Object.keys(getErrors(editValues)).length === 0,
     [editValues],
@@ -327,6 +325,8 @@ export function ScenarioSection({
     return resolved;
   };
 
+  console.log('file', selectedScenario?.openingImage);
+
   const handleExportScenario = async () => {
     if (!characterId || !selectedScenario) return;
 
@@ -355,7 +355,9 @@ export function ScenarioSection({
     importInputRef.current?.click();
   };
 
-  const handleImportFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleImportFileChange = async (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0] ?? null;
     event.target.value = '';
     if (!file || !characterId) return;
@@ -390,6 +392,7 @@ export function ScenarioSection({
         id: scenarioPayload.openingImage.id,
         name: scenarioPayload.openingImage.name,
         dir: scenarioPayload.openingImage.dir,
+        path: scenarioPayload.openingImage.path,
         status: scenarioPayload.openingImage.status,
         mime: scenarioPayload.openingImage.mime,
         url: scenarioPayload.openingImage.url ?? undefined,
@@ -425,11 +428,16 @@ export function ScenarioSection({
         if (!resolvedGiftId) {
           throw new Error(`Gift "${gift.giftName}" was not resolved.`);
         }
-        await addScenarioStageGift(characterId, createdScenario.id, gift.stage, {
-          giftId: resolvedGiftId,
-          reason: gift.reason.trim(),
-          buyText: gift.buyText,
-        });
+        await addScenarioStageGift(
+          characterId,
+          createdScenario.id,
+          gift.stage,
+          {
+            giftId: resolvedGiftId,
+            reason: gift.reason.trim(),
+            buyText: gift.buyText,
+          },
+        );
       }
 
       await queryClient.invalidateQueries({

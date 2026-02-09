@@ -23,6 +23,7 @@ const copyFallbackError = 'Unable to copy file.';
 export type CopyFileDto = {
   id: string;
   name: string;
+  path: string;
   dir: FileDir;
   status: FileStatus;
   mime: string;
