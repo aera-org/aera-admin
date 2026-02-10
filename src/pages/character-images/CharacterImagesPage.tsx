@@ -29,9 +29,9 @@ import {
 } from '@/atoms';
 import {
   FileDir,
+  type IFile,
   RoleplayStage,
   STAGES_IN_ORDER,
-  type IFile,
 } from '@/common/types';
 import { Drawer, FileUpload } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
@@ -47,6 +47,8 @@ type QueryUpdate = {
   isPregenerated?: string;
   isPromotional?: string;
   characterId?: string;
+  scenarioId?: string;
+  stage?: string;
 };
 
 const ORDER_OPTIONS = [
@@ -60,6 +62,7 @@ const DEFAULT_ORDER = 'DESC';
 const DEFAULT_PAGE_SIZE = 20;
 const DEFAULT_PREG_FILTER = 'true';
 const DEFAULT_PROMO_FILTER = 'all';
+const DEFAULT_STAGE_FILTER = 'all';
 const SEARCH_DEBOUNCE_MS = 400;
 
 const PREG_FILTER_OPTIONS = [
@@ -125,6 +128,14 @@ function resolveBooleanFilter(value: string | null, fallback: string) {
   return fallback;
 }
 
+function resolveStageFilter(value: string | null) {
+  if (!value || value === DEFAULT_STAGE_FILTER) return DEFAULT_STAGE_FILTER;
+  if (STAGES_IN_ORDER.includes(value as RoleplayStage)) {
+    return value;
+  }
+  return DEFAULT_STAGE_FILTER;
+}
+
 function formatStage(value: RoleplayStage | null | undefined) {
   if (!value) return '-';
   return STAGE_LABELS[value] ?? value;
@@ -140,6 +151,8 @@ export function CharacterImagesPage() {
   const rawIsPregenerated = searchParams.get('isPregenerated');
   const rawIsPromotional = searchParams.get('isPromotional');
   const rawCharacterId = searchParams.get('characterId') ?? '';
+  const rawScenarioId = searchParams.get('scenarioId') ?? '';
+  const rawStage = searchParams.get('stage');
 
   const [searchInput, setSearchInput] = useState(rawSearch);
   const debouncedSearch = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
@@ -157,6 +170,8 @@ export function CharacterImagesPage() {
     DEFAULT_PROMO_FILTER,
   );
   const characterFilter = rawCharacterId;
+  const scenarioFilter = rawScenarioId;
+  const stageFilter = resolveStageFilter(rawStage);
 
   const updateSearchParams = useCallback(
     (update: QueryUpdate, replace = false) => {
@@ -222,6 +237,22 @@ export function CharacterImagesPage() {
         }
       }
 
+      if (update.scenarioId !== undefined) {
+        if (update.scenarioId) {
+          next.set('scenarioId', update.scenarioId);
+        } else {
+          next.delete('scenarioId');
+        }
+      }
+
+      if (update.stage !== undefined) {
+        if (update.stage && update.stage !== DEFAULT_STAGE_FILTER) {
+          next.set('stage', update.stage);
+        } else {
+          next.delete('stage');
+        }
+      }
+
       setSearchParams(next, { replace });
     },
     [searchParams, setSearchParams],
@@ -241,11 +272,37 @@ export function CharacterImagesPage() {
     updateSearchParams({ isPregenerated: DEFAULT_PREG_FILTER }, true);
   }, [rawIsPregenerated, updateSearchParams]);
 
+  const {
+    data: filterCharacterDetails,
+    isLoading: isFilterCharacterLoading,
+  } = useCharacterDetails(characterFilter || null);
+
+  useEffect(() => {
+    if (!scenarioFilter) return;
+    if (!characterFilter) {
+      updateSearchParams({ scenarioId: '', page: 1 }, true);
+      return;
+    }
+    if (!filterCharacterDetails) return;
+    const exists = filterCharacterDetails.scenarios.some(
+      (scenario) => scenario.id === scenarioFilter,
+    );
+    if (!exists) {
+      updateSearchParams({ scenarioId: '', page: 1 }, true);
+    }
+  }, [
+    characterFilter,
+    filterCharacterDetails,
+    scenarioFilter,
+    updateSearchParams,
+  ]);
+
   const queryParams = useMemo(() => {
     const isPregenerated =
       pregFilter === 'all' ? undefined : pregFilter === 'true';
     const isPromotional =
       promoFilter === 'all' ? undefined : promoFilter === 'true';
+    const stage = stageFilter === DEFAULT_STAGE_FILTER ? undefined : stageFilter;
     return {
       search: normalizedSearch || undefined,
       order,
@@ -254,6 +311,8 @@ export function CharacterImagesPage() {
       isPregenerated,
       isPromotional,
       characterId: characterFilter || undefined,
+      scenarioId: scenarioFilter || undefined,
+      stage: stage as RoleplayStage | undefined,
     };
   }, [
     characterFilter,
@@ -263,6 +322,8 @@ export function CharacterImagesPage() {
     pageSize,
     pregFilter,
     promoFilter,
+    scenarioFilter,
+    stageFilter,
   ]);
 
   const { data, error, isLoading, refetch } = useCharacterImages(queryParams);
@@ -334,6 +395,28 @@ export function CharacterImagesPage() {
   const filterCharacterOptions = useMemo(
     () => [{ id: '', label: 'All characters' }, ...characterOptions],
     [characterOptions],
+  );
+
+  const filterScenarioOptions = useMemo(
+    () => [
+      { label: 'All scenarios', value: '' },
+      ...(filterCharacterDetails?.scenarios ?? []).map((scenario) => ({
+        label: scenario.name || 'Untitled',
+        value: scenario.id,
+      })),
+    ],
+    [filterCharacterDetails?.scenarios],
+  );
+
+  const filterStageOptions = useMemo(
+    () => [
+      { label: 'All stages', value: DEFAULT_STAGE_FILTER },
+      ...STAGES_IN_ORDER.map((stage) => ({
+        label: formatStage(stage),
+        value: stage,
+      })),
+    ],
+    [],
   );
 
   const columns = useMemo(
@@ -604,7 +687,11 @@ export function CharacterImagesPage() {
                 search={characterSearch}
                 onSearchChange={setCharacterSearch}
                 onSelect={(value) =>
-                  updateSearchParams({ characterId: value, page: 1 })
+                  updateSearchParams({
+                    characterId: value,
+                    scenarioId: '',
+                    page: 1,
+                  })
                 }
                 placeholder={
                   isCharactersLoading
@@ -623,6 +710,38 @@ export function CharacterImagesPage() {
                 variant="ghost"
                 onChange={(value) =>
                   updateSearchParams({ isPregenerated: value, page: 1 })
+                }
+              />
+            </Field>
+            <Field label="Scenario" labelFor="images-scenario">
+              <Select
+                id="images-scenario"
+                options={filterScenarioOptions}
+                value={scenarioFilter}
+                size="sm"
+                variant="ghost"
+                placeholder={
+                  characterFilter
+                    ? isFilterCharacterLoading
+                      ? 'Loading scenarios...'
+                      : 'All scenarios'
+                    : 'Select character first'
+                }
+                disabled={!characterFilter || isFilterCharacterLoading}
+                onChange={(value) =>
+                  updateSearchParams({ scenarioId: value, page: 1 })
+                }
+              />
+            </Field>
+            <Field label="Stage" labelFor="images-stage">
+              <Select
+                id="images-stage"
+                options={filterStageOptions}
+                value={stageFilter}
+                size="sm"
+                variant="ghost"
+                onChange={(value) =>
+                  updateSearchParams({ stage: value, page: 1 })
                 }
               />
             </Field>

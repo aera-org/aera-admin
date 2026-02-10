@@ -4,6 +4,7 @@ import type {
   CreateCharacterImageDto,
   ICharacterImage,
   ICharacterImageDetails,
+  RoleplayStage,
 } from '@/common/types';
 
 import type { PaginatedResponse } from '../paginated-response.type';
@@ -16,6 +17,8 @@ export type CharacterImagesListParams = {
   isPregenerated?: boolean;
   isPromotional?: boolean;
   characterId?: string;
+  scenarioId?: string;
+  stage?: RoleplayStage;
 };
 
 const fallbackError = 'Unable to load images.';
@@ -35,6 +38,8 @@ export async function getCharacterImages(params: CharacterImagesListParams) {
     query.set('isPromotional', String(params.isPromotional));
   }
   if (params.characterId) query.set('characterId', params.characterId);
+  if (params.scenarioId) query.set('scenarioId', params.scenarioId);
+  if (params.stage) query.set('stage', params.stage);
 
   const suffix = query.toString();
   const res = await apiFetch(
