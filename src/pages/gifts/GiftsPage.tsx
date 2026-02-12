@@ -1,18 +1,37 @@
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  type ChangeEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import { useCreateGift, useGifts } from '@/app/gifts';
-import { notifyError } from '@/app/toast';
-import { PlusIcon } from '@/assets/icons';
+import { copyFile } from '@/app/files/filesApi';
+import {
+  createGift as createGiftApi,
+  deleteGift as deleteGiftApi,
+  getGiftDetails,
+  getGifts,
+  updateGift as updateGiftApi,
+  useCreateGift,
+  useGifts,
+} from '@/app/gifts';
+import { notifyError, notifySuccess } from '@/app/toast';
+import { DownloadIcon, PlusIcon, UploadIcon } from '@/assets/icons';
 import {
   Alert,
   Badge,
   Button,
+  ButtonGroup,
   Container,
   EmptyState,
   Field,
   FormRow,
+  IconButton,
   Input,
   Modal,
   Pagination,
@@ -24,11 +43,18 @@ import {
   Textarea,
   Typography,
 } from '@/atoms';
-import { FileDir, type IGift, type IFile } from '@/common/types';
+import { FileDir, type IFile,type IGift } from '@/common/types';
 import { FileUpload } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 
 import s from './GiftsPage.module.scss';
+import {
+  buildGiftsTransferFileName,
+  buildGiftsTransferPayload,
+  downloadGiftsTransferFile,
+  type GiftTransferItem,
+  parseGiftsTransferFile,
+} from './giftTransfer';
 
 type QueryUpdate = {
   search?: string;
@@ -83,7 +109,12 @@ function parsePageSize(value: string | null) {
   return PAGE_SIZE_OPTIONS.includes(parsed) ? parsed : DEFAULT_PAGE_SIZE;
 }
 
+function normalizeGiftName(value: string) {
+  return value.trim();
+}
+
 export function GiftsPage() {
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSearch = searchParams.get('search') ?? '';
@@ -98,6 +129,9 @@ export function GiftsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createShowErrors, setCreateShowErrors] = useState(false);
   const [createFile, setCreateFile] = useState<IFile | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const [createValues, setCreateValues] = useState({
     name: '',
     description: '',
@@ -341,6 +375,165 @@ export function GiftsPage() {
     }
   };
 
+  const fetchAllGiftSummaries = useCallback(async () => {
+    const all: IGift[] = [];
+    let skip = 0;
+    const take = 200;
+
+    while (true) {
+      const pageData = await getGifts({
+        order: 'ASC',
+        skip,
+        take,
+      });
+      all.push(...pageData.data);
+      skip += pageData.data.length;
+      if (skip >= pageData.total || pageData.data.length === 0) {
+        break;
+      }
+    }
+
+    return all;
+  }, []);
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const allGifts = await fetchAllGiftSummaries();
+      const details = await Promise.all(
+        allGifts.map((gift) => getGiftDetails(gift.id)),
+      );
+      const payload = buildGiftsTransferPayload(details);
+      downloadGiftsTransferFile(payload, buildGiftsTransferFileName());
+      notifySuccess('Gifts exported.', 'Gifts exported.');
+    } catch (error) {
+      notifyError(error, 'Unable to export gifts.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportButtonClick = () => {
+    if (isImporting || isExporting) return;
+    importInputRef.current?.click();
+  };
+
+  const handleImportFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    event.target.value = '';
+    if (!file) return;
+
+    setIsImporting(true);
+    try {
+      const imported = await parseGiftsTransferFile(file);
+
+      const importedByName = new Map<string, GiftTransferItem>();
+      for (const gift of imported.gifts) {
+        const name = normalizeGiftName(gift.name);
+        importedByName.set(name, gift);
+      }
+
+      const existing = await fetchAllGiftSummaries();
+      const existingByName = new Map<string, string[]>();
+      for (const gift of existing) {
+        const name = normalizeGiftName(gift.name);
+        if (!name) continue;
+        const ids = existingByName.get(name) ?? [];
+        ids.push(gift.id);
+        existingByName.set(name, ids);
+      }
+
+      const ambiguousNames: string[] = [];
+      for (const name of importedByName.keys()) {
+        const ids = existingByName.get(name) ?? [];
+        if (ids.length > 1) {
+          ambiguousNames.push(name);
+        }
+      }
+      if (ambiguousNames.length > 0) {
+        throw new Error(
+          `Gift names are not unique in target environment: ${ambiguousNames.join(', ')}.`,
+        );
+      }
+
+      const toUpdate: Array<{ id: string; gift: GiftTransferItem }> = [];
+      const toCreate: GiftTransferItem[] = [];
+      for (const [name, gift] of importedByName.entries()) {
+        const ids = existingByName.get(name) ?? [];
+        if (ids.length === 1) {
+          toUpdate.push({ id: ids[0], gift });
+        } else {
+          toCreate.push(gift);
+        }
+      }
+
+      const importedNames = new Set(importedByName.keys());
+      const toDelete = existing
+        .filter((gift) => !importedNames.has(normalizeGiftName(gift.name)))
+        .map((gift) => gift.id);
+
+      const fileById = new Map<string, GiftTransferItem['img']>();
+      for (const gift of imported.gifts) {
+        const existingFile = fileById.get(gift.img.id);
+        if (
+          existingFile &&
+          (existingFile.path !== gift.img.path ||
+            existingFile.name !== gift.img.name ||
+            existingFile.mime !== gift.img.mime ||
+            existingFile.dir !== gift.img.dir)
+        ) {
+          throw new Error(
+            `Conflicting file metadata for image id "${gift.img.id}" in import file.`,
+          );
+        }
+        fileById.set(gift.img.id, gift.img);
+      }
+
+      for (const img of fileById.values()) {
+        await copyFile({
+          id: img.id,
+          name: img.name,
+          path: img.path,
+          dir: img.dir,
+          status: img.status,
+          mime: img.mime,
+          url: img.url ?? undefined,
+        });
+      }
+
+      for (const item of toUpdate) {
+        await updateGiftApi(item.id, {
+          name: item.gift.name,
+          description: item.gift.description,
+          price: item.gift.price,
+          isActive: item.gift.isActive,
+          imgId: item.gift.img.id,
+        });
+      }
+
+      for (const gift of toCreate) {
+        await createGiftApi({
+          name: gift.name,
+          description: gift.description,
+          price: gift.price,
+          isActive: gift.isActive,
+          imgId: gift.img.id,
+        });
+      }
+
+      for (const id of toDelete) {
+        await deleteGiftApi(id);
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['gifts'] });
+      notifySuccess('Gifts imported.', 'Gifts imported.');
+    } catch (error) {
+      notifyError(error, 'Unable to import gifts.');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const openDetails = (gift: IGift) => {
     navigate(`/gifts/${gift.id}`);
   };
@@ -352,9 +545,36 @@ export function GiftsPage() {
           <div className={s.titleBlock}>
             <Typography variant="h2">Gifts</Typography>
           </div>
-          <Button iconLeft={<PlusIcon />} onClick={openCreateModal}>
-            New gift
-          </Button>
+          <ButtonGroup>
+            <IconButton
+              aria-label="Export gifts"
+              tooltip="Export gifts"
+              icon={<DownloadIcon />}
+              variant="ghost"
+              onClick={handleExport}
+              loading={isExporting}
+              disabled={isImporting || createMutation.isPending}
+            />
+            <IconButton
+              aria-label="Import gifts"
+              tooltip="Import gifts"
+              icon={<UploadIcon />}
+              variant="ghost"
+              onClick={handleImportButtonClick}
+              loading={isImporting}
+              disabled={isExporting || createMutation.isPending}
+            />
+            <Button iconLeft={<PlusIcon />} onClick={openCreateModal}>
+              New gift
+            </Button>
+          </ButtonGroup>
+          <input
+            ref={importInputRef}
+            className={s.hiddenInput}
+            type="file"
+            accept="application/json,.json"
+            onChange={handleImportFileChange}
+          />
         </div>
 
         <div className={s.filters}>
