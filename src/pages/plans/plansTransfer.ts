@@ -1,4 +1,9 @@
-import { type IPlan, type PlanItem,PlanPeriod, PlanType } from '@/common/types';
+import {
+  type IPlan,
+  type PlanItem,
+  PlanPeriod,
+  PlanType,
+} from '@/common/types';
 
 const PLANS_TRANSFER_SCHEMA = 'aera-plans';
 const PLANS_TRANSFER_VERSION = 1;
@@ -80,6 +85,7 @@ function ensurePlanType(value: unknown, path: string) {
 }
 
 function ensurePlanPeriod(value: unknown, path: string) {
+  if (value === undefined) return undefined;
   const period = ensureString(value, path);
   if (!Object.values(PlanPeriod).includes(period as PlanPeriod)) {
     throw new Error(`Invalid import file: "${path}" has unsupported value.`);
@@ -127,7 +133,10 @@ function parseTransferPlan(value: unknown, path: string): PlanTransferItem {
   const type = ensurePlanType(obj.type, `${path}.type`);
   const periodRaw = obj.period;
   const periodCountRaw = obj.periodCount;
-  const period = periodRaw === undefined ? undefined : ensurePlanPeriod(periodRaw, `${path}.period`);
+  const period =
+    periodRaw === undefined
+      ? undefined
+      : ensurePlanPeriod(periodRaw, `${path}.period`);
   const periodCount =
     periodCountRaw === undefined
       ? undefined
