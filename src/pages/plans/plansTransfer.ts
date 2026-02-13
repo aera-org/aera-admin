@@ -86,6 +86,7 @@ function ensurePlanType(value: unknown, path: string) {
 
 function ensurePlanPeriod(value: unknown, path: string) {
   if (value === undefined) return undefined;
+  if (value === null) return undefined;
   const period = ensureString(value, path);
   if (!Object.values(PlanPeriod).includes(period as PlanPeriod)) {
     throw new Error(`Invalid import file: "${path}" has unsupported value.`);
