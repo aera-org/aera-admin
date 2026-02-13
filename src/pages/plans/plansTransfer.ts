@@ -141,7 +141,9 @@ function parseTransferPlan(value: unknown, path: string): PlanTransferItem {
   const periodCount =
     periodCountRaw === undefined
       ? undefined
-      : ensurePositiveInteger(periodCountRaw, `${path}.periodCount`);
+      : periodCountRaw === null
+        ? undefined
+        : ensurePositiveInteger(periodCountRaw, `${path}.periodCount`);
 
   const parsed: PlanTransferItem = {
     code,
