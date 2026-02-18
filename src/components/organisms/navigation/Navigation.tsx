@@ -15,7 +15,9 @@ import {
   UserIcon,
   UsersRoundIcon,
 } from '@/assets/icons';
+import { useAuth } from '@/app/auth';
 import { Button } from '@/atoms';
+import { UserRole } from '@/common/types';
 
 import s from './Navigation.module.scss';
 
@@ -42,10 +44,15 @@ const navItems: NavItem[] = [
 
 export function Navigation() {
   const location = useLocation();
+  const { user } = useAuth();
+  const isTargetUser = user?.role === UserRole.Target;
+  const visibleItems = isTargetUser
+    ? navItems.filter((item) => item.to === '/')
+    : navItems;
 
   return (
     <nav className={s.nav} aria-label="Primary">
-      {navItems.map((item) => {
+      {visibleItems.map((item) => {
         const isActive =
           location.pathname === item.to ||
           (item.to !== '/' && location.pathname.startsWith(item.to));

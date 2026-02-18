@@ -9,6 +9,7 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import { useAuth } from '@/app/auth';
 import {
   addMonths,
   compareMonthIds,
@@ -55,6 +56,7 @@ import {
   Tooltip,
   Typography,
 } from '@/atoms';
+import { UserRole } from '@/common/types';
 import { cn } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 
@@ -195,6 +197,7 @@ function isValidDeeplinkSort(
 }
 
 export function AnalyticsPage() {
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSection = searchParams.get('section');
   const rawStart = searchParams.get('start');
@@ -213,7 +216,12 @@ export function AnalyticsPage() {
     useState<PaymentsConversionGroupBy>('character');
   const [revenueGroupBy, setRevenueGroupBy] =
     useState<PaymentsRevenueGroupBy>('character');
-  const section = isValidSection(rawSection) ? rawSection : 'main';
+  const isTargetUser = user?.role === UserRole.Target;
+  const section = isTargetUser
+    ? 'deeplinks'
+    : isValidSection(rawSection)
+      ? rawSection
+      : 'main';
   const isDeeplinksSection = section === 'deeplinks';
   const {
     start: startMonth,
@@ -625,7 +633,11 @@ export function AnalyticsPage() {
     );
   }, [chartSeries]);
 
-  const sectionOptions = useMemo(() => getSectionOptions(), []);
+  const sectionOptions = useMemo(() => {
+    const options = getSectionOptions();
+    if (!isTargetUser) return options;
+    return options.filter((option) => option.value === 'deeplinks');
+  }, [isTargetUser]);
   const conversionMetric = useMemo(
     () => getMetricDefinition('conversionRate'),
     [],
