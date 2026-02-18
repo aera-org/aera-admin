@@ -47,6 +47,7 @@ export type CharacterCreateDto = {
 export type ScenarioCreateDto = {
   name: string;
   emoji: string;
+  slug?: string;
   description: string;
   personality: string;
   messagingStyle: string;

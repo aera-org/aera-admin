@@ -35,7 +35,7 @@ import {
   usePaymentsConversionBreakdown,
   usePaymentsRevenueBreakdown,
 } from '@/app/analytics';
-import { useCharacterDetails, useCharacters } from '@/app/characters';
+import { useCharacters } from '@/app/characters';
 import {
   Alert,
   Button,
@@ -481,9 +481,6 @@ export function AnalyticsPage() {
     },
     { enabled: isDeeplinksSection },
   );
-  const { data: characterDetails } = useCharacterDetails(
-    deeplinkCharacterId || null,
-  );
 
   const {
     data: deeplinkData,
@@ -505,30 +502,19 @@ export function AnalyticsPage() {
     },
   );
 
-  useEffect(() => {
-    if (!isDeeplinksSection) return;
-    if (!deeplinkCharacterId) {
-      if (deeplinkScenarioId) {
-        updateSearchParams({ scenarioId: '' });
-      }
-      return;
-    }
-
-    if (
-      deeplinkScenarioId &&
-      !characterDetails?.scenarios?.some(
-        (scenario) => scenario.id === deeplinkScenarioId,
-      )
-    ) {
-      updateSearchParams({ scenarioId: '' });
-    }
-  }, [
-    deeplinkCharacterId,
-    deeplinkScenarioId,
-    characterDetails,
-    isDeeplinksSection,
-    updateSearchParams,
-  ]);
+  const { data: deeplinkScenarioData } = useAnalyticsDeeplinks(
+    {
+      startDate: deeplinkStart,
+      endDate: deeplinkEnd,
+      ref: deeplinkRef.trim() || undefined,
+    },
+    {
+      enabled:
+        isDeeplinksSection &&
+        isValidDateId(deeplinkStart) &&
+        isValidDateId(deeplinkEnd),
+    },
+  );
 
   const kpiCards = sectionConfig.metrics.map((metric) => {
     const value = currentRow?.[metric.key] ?? null;
@@ -872,17 +858,38 @@ export function AnalyticsPage() {
     return [{ value: '', label: 'All characters' }, ...options];
   }, [characters, deeplinkCharacterId]);
 
-  const scenarios = deeplinkCharacterId
-    ? (characterDetails?.scenarios ?? [])
-    : [];
   const scenarioOptions = useMemo(() => {
-    const baseLabel = deeplinkCharacterId
-      ? 'All scenarios'
-      : 'Select character first';
-    const options = scenarios.map((scenario) => ({
-      value: scenario.id,
-      label: scenario.name,
-    }));
+    const baseLabel = 'All scenarios';
+    const scenarioMap = new Map<
+      string,
+      { id: string; name?: string | null; slug?: string | null }
+    >();
+    const source = deeplinkScenarioData ?? [];
+    source.forEach((item) => {
+      const scenario = item.scenario;
+      if (!scenario?.id) return;
+      if (!scenarioMap.has(scenario.id)) {
+        scenarioMap.set(scenario.id, {
+          id: scenario.id,
+          name: scenario.name,
+          slug: scenario.slug,
+        });
+      }
+    });
+    const options = Array.from(scenarioMap.values())
+      .map((scenario) => {
+        const baseLabelText =
+          scenario.name || scenario.slug || scenario.id || 'Unknown';
+        const label =
+          scenario.name && scenario.slug
+            ? `${scenario.name} · ${scenario.slug}`
+            : baseLabelText;
+        return {
+          value: scenario.id,
+          label,
+        };
+      })
+      .sort((a, b) => String(a.label).localeCompare(String(b.label)));
     if (
       deeplinkScenarioId &&
       !options.some((option) => option.value === deeplinkScenarioId)
@@ -893,7 +900,7 @@ export function AnalyticsPage() {
       });
     }
     return [{ value: '', label: baseLabel }, ...options];
-  }, [scenarios, deeplinkScenarioId, deeplinkCharacterId]);
+  }, [deeplinkScenarioData, deeplinkScenarioId]);
 
   const sortedDeeplinkRows = useMemo(() => {
     const entries = deeplinkData ?? [];
@@ -1296,7 +1303,6 @@ export function AnalyticsPage() {
                       onChange={(value) =>
                         updateSearchParams({
                           characterId: value,
-                          scenarioId: '',
                         })
                       }
                       size="sm"
@@ -1312,7 +1318,6 @@ export function AnalyticsPage() {
                       }
                       size="sm"
                       fullWidth
-                      disabled={!deeplinkCharacterId}
                     />
                   </Field>
                 </FormRow>

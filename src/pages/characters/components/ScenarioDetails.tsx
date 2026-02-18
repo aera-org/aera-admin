@@ -327,6 +327,12 @@ export function ScenarioDetails({
       <Stack gap="16px">
         <div className={s.detailBlock}>
           <Typography variant="caption" tone="muted">
+            Slug
+          </Typography>
+          <Typography variant="body">{scenario.slug || '-'}</Typography>
+        </div>
+        <div className={s.detailBlock}>
+          <Typography variant="caption" tone="muted">
             Opening image
           </Typography>
           {scenario.openingImage?.url ? (

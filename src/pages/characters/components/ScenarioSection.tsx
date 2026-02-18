@@ -86,6 +86,7 @@ export function ScenarioSection({
   const [formValues, setFormValues] = useState({
     name: '',
     emoji: '',
+    slug: '',
     description: '',
     personality: '',
     messagingStyle: '',
@@ -143,6 +144,7 @@ export function ScenarioSection({
     setFormValues({
       name: '',
       emoji: '',
+      slug: '',
       description: '',
       personality: '',
       messagingStyle: '',
@@ -166,6 +168,7 @@ export function ScenarioSection({
     setEditValues({
       name: selectedScenario.name ?? '',
       emoji: selectedScenario.emoji ?? '',
+      slug: selectedScenario.slug ?? '',
       description: selectedScenario.description ?? '',
       personality: selectedScenario.personality ?? '',
       messagingStyle: selectedScenario.messagingStyle ?? '',
@@ -218,6 +221,7 @@ export function ScenarioSection({
       payload: {
         name: formValues.name.trim(),
         emoji: formValues.emoji.trim(),
+        slug: formValues.slug.trim() || undefined,
         description: formValues.description.trim(),
         personality: formValues.personality.trim(),
         messagingStyle: formValues.messagingStyle.trim(),
@@ -246,6 +250,7 @@ export function ScenarioSection({
       payload: {
         name: editValues.name.trim(),
         emoji: editValues.emoji.trim(),
+        slug: editValues.slug.trim() || undefined,
         description: editValues.description.trim(),
         personality: editValues.personality.trim(),
         messagingStyle: editValues.messagingStyle.trim(),
@@ -583,6 +588,22 @@ export function ScenarioSection({
             </Field>
           </FormRow>
 
+          <Field label="Slug" labelFor="scenario-create-slug">
+            <Input
+              id="scenario-create-slug"
+              size="sm"
+              value={formValues.slug}
+              onChange={(event) =>
+                setFormValues((prev) => ({
+                  ...prev,
+                  slug: event.target.value,
+                }))
+              }
+              placeholder="Optional"
+              fullWidth
+            />
+          </Field>
+
           <Field
             label="Description"
             labelFor="scenario-create-description"
@@ -790,6 +811,21 @@ export function ScenarioSection({
               />
             </Field>
           </FormRow>
+
+          <Field label="Slug" labelFor="scenario-edit-slug">
+            <Input
+              id="scenario-edit-slug"
+              size="sm"
+              value={editValues.slug}
+              onChange={(event) =>
+                setEditValues((prev) => ({
+                  ...prev,
+                  slug: event.target.value,
+                }))
+              }
+              fullWidth
+            />
+          </Field>
 
           <Field
             label="Description"
