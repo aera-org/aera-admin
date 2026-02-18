@@ -1,4 +1,4 @@
-export type AnalyticsSection = 'main' | 'payments' | 'technical';
+export type AnalyticsSection = 'main' | 'payments' | 'technical' | 'deeplinks';
 
 export type AnalyticsMetricKey =
   | 'bounceRate'
@@ -265,6 +265,13 @@ const SECTIONS: AnalyticsSectionConfig[] = [
     metrics: TECHNICAL_METRICS,
     defaultMetric: 'errorRate',
   },
+  {
+    key: 'deeplinks',
+    label: 'Deeplinks',
+    available: true,
+    metrics: [],
+    defaultMetric: null,
+  },
 ];
 
 const METRIC_MAP = new Map(
@@ -290,7 +297,12 @@ export function getMetricDefinition(
 export function isValidSection(
   value: string | null | undefined,
 ): value is AnalyticsSection {
-  return value === 'main' || value === 'payments' || value === 'technical';
+  return (
+    value === 'main' ||
+    value === 'payments' ||
+    value === 'technical' ||
+    value === 'deeplinks'
+  );
 }
 
 export function isMetricForSection(

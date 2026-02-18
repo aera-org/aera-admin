@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 
 import {
+  getAnalyticsDeeplinks,
   getAnalyticsMainRange,
   getAnalyticsMetrics,
   getPaymentsConversionBreakdown,
   getPaymentsRevenueBreakdown,
+  type DeeplinkAnalyticsItem,
   type AnalyticsMainRangeResponse,
   type AnalyticsMetricsResponse,
   type PaymentsConversionBreakdownItem,
@@ -34,6 +36,13 @@ const analyticsKeys = {
     groupBy: PaymentsRevenueGroupBy;
     month: string;
   }) => ['analytics', 'payments', 'revenue-breakdown', params] as const,
+  deeplinks: (params: {
+    startDate: string;
+    endDate: string;
+    ref?: string;
+    characterId?: string;
+    scenarioId?: string;
+  }) => ['analytics', 'deeplinks', params] as const,
 };
 
 type AnalyticsQueryOptions<T> = {
@@ -99,6 +108,25 @@ export function usePaymentsRevenueBreakdown(
   return useQuery({
     queryKey: analyticsKeys.paymentsRevenueBreakdown(params),
     queryFn: () => getPaymentsRevenueBreakdown(params),
+    placeholderData: options.placeholderData ?? ((previous) => previous),
+    staleTime: options.staleTime ?? DEFAULT_STALE_TIME,
+    enabled: options.enabled ?? true,
+  });
+}
+
+export function useAnalyticsDeeplinks(
+  params: {
+    startDate: string;
+    endDate: string;
+    ref?: string;
+    characterId?: string;
+    scenarioId?: string;
+  },
+  options: AnalyticsQueryOptions<DeeplinkAnalyticsItem[]> = {},
+) {
+  return useQuery({
+    queryKey: analyticsKeys.deeplinks(params),
+    queryFn: () => getAnalyticsDeeplinks(params),
     placeholderData: options.placeholderData ?? ((previous) => previous),
     staleTime: options.staleTime ?? DEFAULT_STALE_TIME,
     enabled: options.enabled ?? true,

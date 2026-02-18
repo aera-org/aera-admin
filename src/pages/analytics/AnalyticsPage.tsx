@@ -29,11 +29,13 @@ import {
   normalizeRange,
   type PaymentsConversionGroupBy,
   type PaymentsRevenueGroupBy,
+  useAnalyticsDeeplinks,
   useAnalyticsMainRange,
   useAnalyticsMetrics,
   usePaymentsConversionBreakdown,
   usePaymentsRevenueBreakdown,
 } from '@/app/analytics';
+import { useCharacterDetails, useCharacters } from '@/app/characters';
 import {
   Alert,
   Button,
@@ -42,6 +44,7 @@ import {
   Container,
   EmptyState,
   Field,
+  FormRow,
   Grid,
   Input,
   Section,
@@ -63,6 +66,12 @@ type QueryUpdate = {
   end?: string;
   metric?: string;
   kpi?: string;
+  startDate?: string;
+  endDate?: string;
+  ref?: string;
+  characterId?: string;
+  scenarioId?: string;
+  sort?: string;
 };
 
 type ChartDatum = {
@@ -70,7 +79,17 @@ type ChartDatum = {
   value: number;
 };
 
+type DeeplinkSortKey =
+  | 'total'
+  | 'revenue'
+  | 'visits'
+  | 'unique'
+  | 'purchased'
+  | 'conversion';
+
 const MAX_RANGE_MONTHS = 24;
+const DEFAULT_DEEPLINK_RANGE_DAYS = 30;
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 function useElementWidth<T extends HTMLElement>() {
   const [node, setNode] = useState<T | null>(null);
@@ -111,6 +130,70 @@ function useElementWidth<T extends HTMLElement>() {
   return { ref: setNode, width };
 }
 
+function toUtcDateId(date: Date) {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function parseUtcDateId(value: string) {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function isValidDateId(value: string | null | undefined): value is string {
+  if (!value || !ISO_DATE_PATTERN.test(value)) return false;
+  const parsed = parseUtcDateId(value);
+  return toUtcDateId(parsed) === value;
+}
+
+function addDaysToDateId(value: string, delta: number) {
+  const date = parseUtcDateId(value);
+  date.setUTCDate(date.getUTCDate() + delta);
+  return toUtcDateId(date);
+}
+
+function normalizeDateRange(
+  rawStart: string | null,
+  rawEnd: string | null,
+  fallbackStart: string,
+  fallbackEnd: string,
+) {
+  let start = isValidDateId(rawStart) ? rawStart : fallbackStart;
+  let end = isValidDateId(rawEnd) ? rawEnd : fallbackEnd;
+  let adjusted = false;
+
+  if (start > end) {
+    const temp = start;
+    start = end;
+    end = temp;
+    adjusted = true;
+  }
+
+  return { start, end, adjusted };
+}
+
+function formatDeeplinkConversion(value: number | null | undefined) {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return '—';
+  }
+  return `${formatCount(value, 1)}%`;
+}
+
+function isValidDeeplinkSort(
+  value: string | null | undefined,
+): value is DeeplinkSortKey {
+  return (
+    value === 'total' ||
+    value === 'revenue' ||
+    value === 'visits' ||
+    value === 'unique' ||
+    value === 'purchased' ||
+    value === 'conversion'
+  );
+}
+
 export function AnalyticsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSection = searchParams.get('section');
@@ -118,6 +201,12 @@ export function AnalyticsPage() {
   const rawEnd = searchParams.get('end');
   const rawMetric = searchParams.get('metric');
   const rawKpi = searchParams.get('kpi');
+  const rawStartDate = searchParams.get('startDate');
+  const rawEndDate = searchParams.get('endDate');
+  const rawRef = searchParams.get('ref');
+  const rawCharacterId = searchParams.get('characterId');
+  const rawScenarioId = searchParams.get('scenarioId');
+  const rawSort = searchParams.get('sort');
 
   const fallbackRange = useMemo(() => getDefaultRange(), []);
   const [conversionGroupBy, setConversionGroupBy] =
@@ -125,6 +214,7 @@ export function AnalyticsPage() {
   const [revenueGroupBy, setRevenueGroupBy] =
     useState<PaymentsRevenueGroupBy>('character');
   const section = isValidSection(rawSection) ? rawSection : 'main';
+  const isDeeplinksSection = section === 'deeplinks';
   const {
     start: startMonth,
     end: endMonth,
@@ -139,6 +229,27 @@ export function AnalyticsPage() {
   const metricOptions = useMemo(() => getMetricOptions(section), [section]);
   const defaultKpiMonth = useMemo(() => getLastFullMonthId(), []);
   const kpiMonth = isValidMonthId(rawKpi) ? rawKpi : defaultKpiMonth;
+
+  const defaultDeeplinkEnd = useMemo(() => toUtcDateId(new Date()), []);
+  const defaultDeeplinkStart = useMemo(
+    () =>
+      addDaysToDateId(defaultDeeplinkEnd, -(DEFAULT_DEEPLINK_RANGE_DAYS - 1)),
+    [defaultDeeplinkEnd],
+  );
+  const { start: deeplinkStart, end: deeplinkEnd } = useMemo(
+    () =>
+      normalizeDateRange(
+        rawStartDate,
+        rawEndDate,
+        defaultDeeplinkStart,
+        defaultDeeplinkEnd,
+      ),
+    [rawStartDate, rawEndDate, defaultDeeplinkStart, defaultDeeplinkEnd],
+  );
+  const deeplinkRef = rawRef ?? '';
+  const deeplinkCharacterId = rawCharacterId ?? '';
+  const deeplinkScenarioId = rawScenarioId ?? '';
+  const deeplinkSort = isValidDeeplinkSort(rawSort) ? rawSort : 'total';
 
   const updateSearchParams = useCallback(
     (update: QueryUpdate, replace = false) => {
@@ -184,6 +295,54 @@ export function AnalyticsPage() {
         }
       }
 
+      if (update.startDate !== undefined) {
+        if (update.startDate) {
+          next.set('startDate', update.startDate);
+        } else {
+          next.delete('startDate');
+        }
+      }
+
+      if (update.endDate !== undefined) {
+        if (update.endDate) {
+          next.set('endDate', update.endDate);
+        } else {
+          next.delete('endDate');
+        }
+      }
+
+      if (update.ref !== undefined) {
+        if (update.ref) {
+          next.set('ref', update.ref);
+        } else {
+          next.delete('ref');
+        }
+      }
+
+      if (update.characterId !== undefined) {
+        if (update.characterId) {
+          next.set('characterId', update.characterId);
+        } else {
+          next.delete('characterId');
+        }
+      }
+
+      if (update.scenarioId !== undefined) {
+        if (update.scenarioId) {
+          next.set('scenarioId', update.scenarioId);
+        } else {
+          next.delete('scenarioId');
+        }
+      }
+
+      if (update.sort !== undefined) {
+        if (update.sort) {
+          next.set('sort', update.sort);
+        } else {
+          next.delete('sort');
+        }
+      }
+
       setSearchParams(next, { replace });
     },
     [searchParams, setSearchParams],
@@ -192,11 +351,17 @@ export function AnalyticsPage() {
   useEffect(() => {
     const updates: QueryUpdate = {};
     if (rawSection !== section) updates.section = section;
-    if (rawStart !== startMonth) updates.start = startMonth;
-    if (rawEnd !== endMonth) updates.end = endMonth;
-    if (metricKey && rawMetric !== metricKey) updates.metric = metricKey;
-    if (!metricKey && rawMetric) updates.metric = '';
-    if (rawKpi !== kpiMonth) updates.kpi = kpiMonth;
+    if (!isDeeplinksSection) {
+      if (rawStart !== startMonth) updates.start = startMonth;
+      if (rawEnd !== endMonth) updates.end = endMonth;
+      if (metricKey && rawMetric !== metricKey) updates.metric = metricKey;
+      if (!metricKey && rawMetric) updates.metric = '';
+      if (rawKpi !== kpiMonth) updates.kpi = kpiMonth;
+    } else {
+      if (rawStartDate !== deeplinkStart) updates.startDate = deeplinkStart;
+      if (rawEndDate !== deeplinkEnd) updates.endDate = deeplinkEnd;
+      if (rawSort !== deeplinkSort) updates.sort = deeplinkSort;
+    }
     if (Object.keys(updates).length > 0) {
       updateSearchParams(updates, true);
     }
@@ -206,11 +371,18 @@ export function AnalyticsPage() {
     rawEnd,
     rawMetric,
     rawKpi,
+    rawStartDate,
+    rawEndDate,
+    rawSort,
     section,
     startMonth,
     endMonth,
     metricKey,
     kpiMonth,
+    deeplinkStart,
+    deeplinkEnd,
+    deeplinkSort,
+    isDeeplinksSection,
     updateSearchParams,
   ]);
 
@@ -233,7 +405,7 @@ export function AnalyticsPage() {
       endMonth,
     },
     {
-      enabled: isSectionAvailable,
+      enabled: isSectionAvailable && !isDeeplinksSection,
     },
   );
 
@@ -249,7 +421,8 @@ export function AnalyticsPage() {
       endMonth: kpiMonth,
     },
     {
-      enabled: isSectionAvailable && isValidMonthId(kpiMonth),
+      enabled:
+        isSectionAvailable && !isDeeplinksSection && isValidMonthId(kpiMonth),
     },
   );
 
@@ -265,7 +438,7 @@ export function AnalyticsPage() {
       endMonth,
     },
     {
-      enabled: isSectionAvailable && Boolean(metricKey),
+      enabled: isSectionAvailable && !isDeeplinksSection && Boolean(metricKey),
     },
   );
 
@@ -299,6 +472,63 @@ export function AnalyticsPage() {
     { groupBy: revenueGroupBy, month: kpiMonth },
     { enabled: section === 'payments' && isValidMonthId(kpiMonth) },
   );
+
+  const { data: characterData } = useCharacters(
+    {
+      order: 'ASC',
+      skip: 0,
+      take: 200,
+    },
+    { enabled: isDeeplinksSection },
+  );
+  const { data: characterDetails } = useCharacterDetails(
+    deeplinkCharacterId || null,
+  );
+
+  const {
+    data: deeplinkData,
+    isLoading: isDeeplinksLoading,
+    error: deeplinksError,
+  } = useAnalyticsDeeplinks(
+    {
+      startDate: deeplinkStart,
+      endDate: deeplinkEnd,
+      ref: deeplinkRef.trim() || undefined,
+      characterId: deeplinkCharacterId || undefined,
+      scenarioId: deeplinkScenarioId || undefined,
+    },
+    {
+      enabled:
+        isDeeplinksSection &&
+        isValidDateId(deeplinkStart) &&
+        isValidDateId(deeplinkEnd),
+    },
+  );
+
+  useEffect(() => {
+    if (!isDeeplinksSection) return;
+    if (!deeplinkCharacterId) {
+      if (deeplinkScenarioId) {
+        updateSearchParams({ scenarioId: '' });
+      }
+      return;
+    }
+
+    if (
+      deeplinkScenarioId &&
+      !characterDetails?.scenarios?.some(
+        (scenario) => scenario.id === deeplinkScenarioId,
+      )
+    ) {
+      updateSearchParams({ scenarioId: '' });
+    }
+  }, [
+    deeplinkCharacterId,
+    deeplinkScenarioId,
+    characterDetails,
+    isDeeplinksSection,
+    updateSearchParams,
+  ]);
 
   const kpiCards = sectionConfig.metrics.map((metric) => {
     const value = currentRow?.[metric.key] ?? null;
@@ -592,11 +822,7 @@ export function AnalyticsPage() {
             style={{ fontSize: 14 }}
           >
             {paymentsRevenueMetric && Number.isFinite(item.revenue)
-              ? formatMetricValue(
-                  paymentsRevenueMetric,
-                  item.revenue,
-                  'table',
-                )
+              ? formatMetricValue(paymentsRevenueMetric, item.revenue, 'table')
               : '—'}
           </Typography>
         ),
@@ -615,6 +841,343 @@ export function AnalyticsPage() {
       };
     });
   }, [revenueBreakdown, paymentsRevenueMetric]);
+
+  const deeplinkSortOptions = useMemo(
+    () => [
+      { value: 'total', label: 'Total' },
+      { value: 'revenue', label: 'Revenue' },
+      { value: 'visits', label: 'Visits' },
+      { value: 'purchased', label: 'Purchased' },
+      { value: 'unique', label: 'Unique' },
+      { value: 'conversion', label: 'Conversion' },
+    ],
+    [],
+  );
+
+  const characters = characterData?.data ?? [];
+  const characterOptions = useMemo(() => {
+    const options = characters.map((character) => ({
+      value: character.id,
+      label: character.name,
+    }));
+    if (
+      deeplinkCharacterId &&
+      !options.some((option) => option.value === deeplinkCharacterId)
+    ) {
+      options.unshift({
+        value: deeplinkCharacterId,
+        label: deeplinkCharacterId,
+      });
+    }
+    return [{ value: '', label: 'All characters' }, ...options];
+  }, [characters, deeplinkCharacterId]);
+
+  const scenarios = deeplinkCharacterId
+    ? (characterDetails?.scenarios ?? [])
+    : [];
+  const scenarioOptions = useMemo(() => {
+    const baseLabel = deeplinkCharacterId
+      ? 'All scenarios'
+      : 'Select character first';
+    const options = scenarios.map((scenario) => ({
+      value: scenario.id,
+      label: scenario.name,
+    }));
+    if (
+      deeplinkScenarioId &&
+      !options.some((option) => option.value === deeplinkScenarioId)
+    ) {
+      options.unshift({
+        value: deeplinkScenarioId,
+        label: deeplinkScenarioId,
+      });
+    }
+    return [{ value: '', label: baseLabel }, ...options];
+  }, [scenarios, deeplinkScenarioId, deeplinkCharacterId]);
+
+  const sortedDeeplinkRows = useMemo(() => {
+    const entries = deeplinkData ?? [];
+    const valueForSort = (item: (typeof entries)[number]) => {
+      const value = item?.[deeplinkSort];
+      if (!Number.isFinite(value)) return Number.NEGATIVE_INFINITY;
+      return value as number;
+    };
+    return [...entries].sort((a, b) => valueForSort(b) - valueForSort(a));
+  }, [deeplinkData, deeplinkSort]);
+
+  const deeplinkTotals = useMemo(() => {
+    const entries = deeplinkData ?? [];
+    if (!entries.length) return null;
+    const totals = entries.reduce(
+      (acc, item) => {
+        acc.total += Number.isFinite(item.total) ? item.total : 0;
+        acc.unique += Number.isFinite(item.unique) ? item.unique : 0;
+        acc.visits += Number.isFinite(item.visits) ? item.visits : 0;
+        acc.purchased += Number.isFinite(item.purchased) ? item.purchased : 0;
+        acc.revenue += Number.isFinite(item.revenue) ? item.revenue : 0;
+        return acc;
+      },
+      {
+        total: 0,
+        unique: 0,
+        visits: 0,
+        purchased: 0,
+        revenue: 0,
+      },
+    );
+
+    const conversion =
+      totals.total > 0 ? (totals.purchased / totals.total) * 100 : null;
+
+    return { ...totals, conversion };
+  }, [deeplinkData]);
+
+  const deeplinkColumns = useMemo(
+    () => [
+      {
+        key: 'ref',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ minWidth: 100, fontSize: 12 }}
+          >
+            Ref
+          </Typography>
+        ),
+      },
+      {
+        key: 'deeplink',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ minWidth: 100, fontSize: 12 }}
+          >
+            Deeplink
+          </Typography>
+        ),
+      },
+      {
+        key: 'character',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ minWidth: 90, fontSize: 12 }}
+          >
+            Character
+          </Typography>
+        ),
+      },
+      {
+        key: 'scenario',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ minWidth: 160, fontSize: 12 }}
+          >
+            Scenario
+          </Typography>
+        ),
+      },
+      {
+        key: 'visits',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Visits
+          </Typography>
+        ),
+      },
+      {
+        key: 'unique',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Unique
+          </Typography>
+        ),
+      },
+      {
+        key: 'total',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Total
+          </Typography>
+        ),
+      },
+      {
+        key: 'purchased',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Purchased
+          </Typography>
+        ),
+      },
+      {
+        key: 'revenue',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Revenue
+          </Typography>
+        ),
+      },
+      {
+        key: 'conversion',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Conversion
+          </Typography>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const deeplinkRows = useMemo(() => {
+    return sortedDeeplinkRows.map((item) => ({
+      ref: (
+        <Typography variant="body" as="span">
+          {item.ref || '—'}
+        </Typography>
+      ),
+      deeplink: (
+        <Tooltip content={item.deeplink}>
+          <Typography
+            variant="caption"
+            tone="muted"
+            as="span"
+            className={s.deeplinkCell}
+          >
+            {item.deeplink || '—'}
+          </Typography>
+        </Tooltip>
+      ),
+      character: (
+        <Typography variant="body" as="span">
+          {item.character?.name || '—'}
+        </Typography>
+      ),
+      scenario: item.scenario ? (
+        <div className={s.scenarioCell}>
+          <Typography variant="body" as="span">
+            {item.scenario.name}
+          </Typography>
+          {item.scenario.slug ? (
+            <Typography variant="caption" tone="muted" as="span">
+              {item.scenario.slug}
+            </Typography>
+          ) : null}
+        </div>
+      ) : (
+        <Typography variant="body" as="span">
+          —
+        </Typography>
+      ),
+      visits: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {Number.isFinite(item.visits) ? formatCount(item.visits) : '—'}
+        </Typography>
+      ),
+      unique: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {Number.isFinite(item.unique) ? formatCount(item.unique) : '—'}
+        </Typography>
+      ),
+      total: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {Number.isFinite(item.total) ? formatCount(item.total) : '—'}
+        </Typography>
+      ),
+      purchased: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {Number.isFinite(item.purchased) ? formatCount(item.purchased) : '—'}
+        </Typography>
+      ),
+      revenue: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {paymentsRevenueMetric && Number.isFinite(item.revenue)
+            ? formatMetricValue(paymentsRevenueMetric, item.revenue, 'table')
+            : '—'}
+        </Typography>
+      ),
+      conversion: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {formatDeeplinkConversion(item.conversion)}
+        </Typography>
+      ),
+    }));
+  }, [sortedDeeplinkRows, paymentsRevenueMetric]);
 
   const conversionGroupOptions = useMemo(
     () => [
@@ -669,6 +1232,204 @@ export function AnalyticsPage() {
               title="Section not available yet"
               description="The backend does not provide this section yet."
             />
+          ) : isDeeplinksSection ? (
+            <>
+              {deeplinksError ? (
+                <Alert
+                  tone="danger"
+                  title="Unable to load deeplinks"
+                  description="Please retry or adjust the filters."
+                />
+              ) : null}
+
+              <div className={s.filters}>
+                <FormRow columns={3}>
+                  <Field label="Start date" className={s.filterField}>
+                    <Input
+                      type="date"
+                      size="sm"
+                      value={deeplinkStart}
+                      onChange={(event) =>
+                        updateSearchParams({ startDate: event.target.value })
+                      }
+                      fullWidth
+                    />
+                  </Field>
+                  <Field label="End date" className={s.filterField}>
+                    <Input
+                      type="date"
+                      size="sm"
+                      value={deeplinkEnd}
+                      onChange={(event) =>
+                        updateSearchParams({ endDate: event.target.value })
+                      }
+                      fullWidth
+                    />
+                  </Field>
+                  <Field label="Sort by" className={s.filterField}>
+                    <Select
+                      options={deeplinkSortOptions}
+                      value={deeplinkSort}
+                      onChange={(value) => updateSearchParams({ sort: value })}
+                      size="sm"
+                      fullWidth
+                    />
+                  </Field>
+                </FormRow>
+                <FormRow columns={3}>
+                  <Field label="Ref" className={s.filterField}>
+                    <Input
+                      type="text"
+                      size="sm"
+                      value={deeplinkRef}
+                      onChange={(event) =>
+                        updateSearchParams({ ref: event.target.value })
+                      }
+                      placeholder="All refs"
+                      fullWidth
+                    />
+                  </Field>
+                  <Field label="Character" className={s.filterField}>
+                    <Select
+                      options={characterOptions}
+                      value={deeplinkCharacterId}
+                      onChange={(value) =>
+                        updateSearchParams({
+                          characterId: value,
+                          scenarioId: '',
+                        })
+                      }
+                      size="sm"
+                      fullWidth
+                    />
+                  </Field>
+                  <Field label="Scenario" className={s.filterField}>
+                    <Select
+                      options={scenarioOptions}
+                      value={deeplinkScenarioId}
+                      onChange={(value) =>
+                        updateSearchParams({ scenarioId: value })
+                      }
+                      size="sm"
+                      fullWidth
+                      disabled={!deeplinkCharacterId}
+                    />
+                  </Field>
+                </FormRow>
+                <Typography
+                  variant="caption"
+                  tone="muted"
+                  className={s.filterNote}
+                >
+                  UTC dates. Revenue in USD.
+                </Typography>
+              </div>
+
+              <Section title="Totals">
+                {isDeeplinksLoading ? (
+                  <Grid columns={6} gap={16}>
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <Skeleton key={index} height={88} />
+                    ))}
+                  </Grid>
+                ) : (
+                  <>
+                    <Grid columns={6} gap={16}>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          Visits
+                        </Typography>
+                        <Typography variant="h3">
+                          {deeplinkTotals
+                            ? formatCount(deeplinkTotals.visits)
+                            : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          Unique
+                        </Typography>
+                        <Typography variant="h3">
+                          {deeplinkTotals
+                            ? formatCount(deeplinkTotals.unique)
+                            : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          Total
+                        </Typography>
+                        <Typography variant="h3">
+                          {deeplinkTotals
+                            ? formatCount(deeplinkTotals.total)
+                            : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          Purchased
+                        </Typography>
+                        <Typography variant="h3">
+                          {deeplinkTotals
+                            ? formatCount(deeplinkTotals.purchased)
+                            : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          Revenue
+                        </Typography>
+                        <Typography variant="h3">
+                          {deeplinkTotals && paymentsRevenueMetric
+                            ? formatMetricValue(
+                                paymentsRevenueMetric,
+                                deeplinkTotals.revenue,
+                                'card',
+                              )
+                            : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          Conversion
+                        </Typography>
+                        <Typography variant="h3">
+                          {deeplinkTotals
+                            ? formatDeeplinkConversion(
+                                deeplinkTotals.conversion,
+                              )
+                            : '—'}
+                        </Typography>
+                      </Card>
+                    </Grid>
+                    <Typography
+                      variant="caption"
+                      tone="muted"
+                      className={s.totalsNote}
+                    >
+                      Totals are sums across rows.
+                    </Typography>
+                  </>
+                )}
+              </Section>
+
+              <Section title="Deeplinks">
+                <Card className={s.panel} padding="md">
+                  {isDeeplinksLoading ? (
+                    <Skeleton height={240} />
+                  ) : deeplinkRows.length ? (
+                    <div className={s.tableWrap}>
+                      <Table columns={deeplinkColumns} rows={deeplinkRows} />
+                    </div>
+                  ) : (
+                    <EmptyState
+                      title="No data for this period"
+                      description="Try adjusting the filters."
+                    />
+                  )}
+                </Card>
+              </Section>
+            </>
           ) : (
             <>
               {mainError ? (
@@ -799,9 +1560,7 @@ export function AnalyticsPage() {
                             options={revenueGroupOptions}
                             value={revenueGroupBy}
                             onChange={(value) =>
-                              setRevenueGroupBy(
-                                value as PaymentsRevenueGroupBy,
-                              )
+                              setRevenueGroupBy(value as PaymentsRevenueGroupBy)
                             }
                             size="sm"
                             fitContent
@@ -990,7 +1749,6 @@ export function AnalyticsPage() {
                   )}
                 </Card>
               </Section>
-
             </>
           )}
         </Stack>

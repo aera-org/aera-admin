@@ -45,6 +45,19 @@ export type PaymentsRevenueBreakdownItem = {
   transactions: number;
 };
 
+export type DeeplinkAnalyticsItem = {
+  deeplink: string;
+  ref?: string | null;
+  character?: { id: string; name: string } | null;
+  scenario?: { id: string; name: string; slug?: string | null } | null;
+  total: number;
+  unique: number;
+  visits: number;
+  purchased: number;
+  revenue: number;
+  conversion: number;
+};
+
 export async function getAnalyticsMainRange(params: {
   section: AnalyticsSection;
   startMonth: string;
@@ -120,4 +133,26 @@ export async function getPaymentsRevenueBreakdown(params: {
   }
 
   return (await res.json()) as PaymentsRevenueBreakdownItem[];
+}
+
+export async function getAnalyticsDeeplinks(params: {
+  startDate: string;
+  endDate: string;
+  ref?: string;
+  characterId?: string;
+  scenarioId?: string;
+}) {
+  const query = new URLSearchParams();
+  query.set('startDate', params.startDate);
+  query.set('endDate', params.endDate);
+  if (params.ref) query.set('ref', params.ref);
+  if (params.characterId) query.set('characterId', params.characterId);
+  if (params.scenarioId) query.set('scenarioId', params.scenarioId);
+
+  const res = await apiFetch(`/admin/analytics/deeplinks?${query.toString()}`);
+  if (!res.ok) {
+    throw await buildApiError(res, 'Unable to load deeplinks analytics.');
+  }
+
+  return (await res.json()) as DeeplinkAnalyticsItem[];
 }

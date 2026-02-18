@@ -1,10 +1,12 @@
 export {
+  useAnalyticsDeeplinks,
   useAnalyticsMainRange,
   useAnalyticsMetrics,
   usePaymentsConversionBreakdown,
   usePaymentsRevenueBreakdown,
 } from './queries';
 export type {
+  DeeplinkAnalyticsItem,
   AnalyticsMainRangeResponse,
   AnalyticsMainRow,
   AnalyticsMetricPoint,
