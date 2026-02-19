@@ -1,41 +1,33 @@
-import { DownloadIcon } from '@radix-ui/react-icons';
-import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { DownloadIcon, ReloadIcon, TrashIcon } from '@radix-ui/react-icons';
+import { useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import {
   useCreateDatasetItem,
   useDatasetDetails,
   useDeleteDataset,
+  useDeleteDatasetItem,
+  useRegenerateDatasetItem,
   useUpdateDataset,
 } from '@/app/datasets';
-import { notifyError } from '@/app/toast';
 import {
   Alert,
+  Badge,
   Button,
   Container,
   EmptyState,
   Field,
-  FormRow,
   Grid,
   IconButton,
   Input,
   Modal,
-  Select,
   Skeleton,
   Stack,
-  Textarea,
   Typography,
 } from '@/atoms';
-import {
-  DatasetType,
-  FileDir,
-  type IDatasetDetails,
-  type IDatasetItem,
-  type IFile,
-} from '@/common/types';
-import { capitalize } from '@/common/utils';
+import type { DatasetItemPrompt, IDatasetItem } from '@/common/types';
+import { DatasetItemStatus } from '@/common/types';
 import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
-import { FileUpload } from '@/components/molecules/file-upload/FileUpload';
 import { AppShell } from '@/components/templates';
 
 import s from './DatasetDetailsPage.module.scss';
@@ -52,107 +44,88 @@ function formatDate(value: string | null | undefined) {
   return dateTimeFormatter.format(parsed);
 }
 
-type LocationState = {
-  dataset?: IDatasetDetails;
-};
+function formatPrompt(prompt: DatasetItemPrompt | null | undefined) {
+  if (!prompt) return '-';
+  try {
+    return JSON.stringify(prompt, null, 2);
+  } catch {
+    return '-';
+  }
+}
+
+function getStatusTone(status: DatasetItemStatus) {
+  if (status === 'completed') return 'success';
+  if (status === 'failed') return 'danger';
+  if (status === 'in_progress') return 'warning';
+  return 'accent';
+}
+
+function getStatusLabel(status: DatasetItemStatus) {
+  if (status === 'in_progress') return 'In progress';
+  if (status === 'completed') return 'Completed';
+  if (status === 'failed') return 'Failed';
+  return 'Pending';
+}
 
 export function DatasetDetailsPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const datasetId = id ?? '';
-  const location = useLocation();
-  const state = location.state as LocationState | null;
-  const initialDataset =
-    state?.dataset?.id === datasetId ? state.dataset : null;
 
   const { data, error, isLoading, refetch } = useDatasetDetails(
-    datasetId,
-    initialDataset ?? undefined,
+    datasetId || null,
+    null,
+    {
+      refetchInterval: (current) => {
+        if (!current?.items?.length) return false;
+        const hasActive = current.items.some(
+          (item) =>
+            item.status === DatasetItemStatus.Pending ||
+            item.status === DatasetItemStatus.InProgress,
+        );
+        return hasActive ? 5000 : false;
+      },
+    },
   );
-
   const updateMutation = useUpdateDataset();
-  const deleteMutation = useDeleteDataset();
   const createItemMutation = useCreateDatasetItem();
+  const deleteMutation = useDeleteDataset();
+  const regenerateItemMutation = useRegenerateDatasetItem();
+  const deleteItemMutation = useDeleteDatasetItem();
 
   const [activeItem, setActiveItem] = useState<IDatasetItem | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<IDatasetItem | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [editShowErrors, setEditShowErrors] = useState(false);
-  const [addItemShowErrors, setAddItemShowErrors] = useState(false);
-  const [addItemFile, setAddItemFile] = useState<IFile | null>(null);
-
-  const [editValues, setEditValues] = useState({
-    name: '',
-    type: DatasetType.Character,
-    description: '',
-  });
-  const [addItemValues, setAddItemValues] = useState({
-    prompt: '',
-    fileId: '',
-  });
-
-  useEffect(() => {
-    if (!data) return;
-    setEditValues({
-      name: data.name ?? '',
-      type: data.type ?? DatasetType.Character,
-      description: data.description ?? '',
-    });
-  }, [data]);
-
-  const editValidationErrors = useMemo(() => {
-    if (!editShowErrors) return {};
-    const errors: { name?: string; type?: string } = {};
-    if (!editValues.name.trim()) {
-      errors.name = 'Enter a name.';
-    }
-    if (!editValues.type) {
-      errors.type = 'Select a type.';
-    }
-    return errors;
-  }, [editShowErrors, editValues.name, editValues.type]);
-
-  const editIsValid = useMemo(
-    () => Boolean(editValues.name.trim() && editValues.type),
-    [editValues.name, editValues.type],
+  const [editName, setEditName] = useState('');
+  const [regeneratingItemId, setRegeneratingItemId] = useState<string | null>(
+    null,
   );
 
-  const addItemValidationErrors = useMemo(() => {
-    if (!addItemShowErrors) return {};
-    const errors: { prompt?: string; fileId?: string } = {};
-    if (!addItemValues.prompt.trim()) {
-      errors.prompt = 'Enter a prompt.';
-    }
-    if (!addItemValues.fileId) {
-      errors.fileId = 'Upload an image.';
-    }
-    return errors;
-  }, [addItemShowErrors, addItemValues.fileId, addItemValues.prompt]);
-
-  const addItemIsValid = useMemo(
-    () => Boolean(addItemValues.prompt.trim() && addItemValues.fileId),
-    [addItemValues.fileId, addItemValues.prompt],
-  );
+  const editValidationError = useMemo(() => {
+    if (!editShowErrors) return undefined;
+    if (!editName.trim()) return 'Enter a name.';
+    return undefined;
+  }, [editShowErrors, editName]);
 
   const items = data?.items ?? [];
-  const itemsLabel = useMemo(() => {
-    if (!data) return 'Items';
-    return `Items (${items.length})`;
-  }, [data, items.length]);
+  const refImgs = data?.refImgs ?? [];
+  const itemsLabel = data
+    ? `Generated items (${items.length})`
+    : 'Generated items';
+  const refsLabel = data
+    ? `Reference images (${refImgs.length})`
+    : 'Reference images';
 
   const showSkeleton = isLoading && !data;
   const showEmpty = !showSkeleton && !error && !data;
 
-  const closeModal = () => setActiveItem(null);
+  const closeItemModal = () => setActiveItem(null);
 
   const openEditModal = () => {
     if (!data) return;
-    setEditValues({
-      name: data.name ?? '',
-      type: data.type ?? DatasetType.Character,
-      description: data.description ?? '',
-    });
+    setEditName(data.name ?? '');
     setEditShowErrors(false);
     setIsEditOpen(true);
   };
@@ -162,34 +135,17 @@ export function DatasetDetailsPage() {
     setIsEditOpen(false);
   };
 
-  const openAddItemModal = () => {
-    setAddItemValues({ prompt: '', fileId: '' });
-    setAddItemFile(null);
-    setAddItemShowErrors(false);
-    setIsAddItemOpen(true);
-  };
-
-  const closeAddItemModal = () => {
-    if (createItemMutation.isPending) return;
-    setIsAddItemOpen(false);
-  };
-
   const handleEdit = async () => {
     if (!datasetId) return;
-    const errors = {
-      name: editValues.name.trim() ? undefined : 'Enter a name.',
-      type: editValues.type ? undefined : 'Select a type.',
-    };
-    if (errors.name || errors.type) {
+    if (!editName.trim()) {
       setEditShowErrors(true);
       return;
     }
+
     await updateMutation.mutateAsync({
       id: datasetId,
       payload: {
-        name: editValues.name.trim(),
-        type: editValues.type,
-        description: editValues.description.trim() || undefined,
+        name: editName.trim(),
       },
     });
     setIsEditOpen(false);
@@ -197,28 +153,38 @@ export function DatasetDetailsPage() {
 
   const handleAddItem = async () => {
     if (!datasetId) return;
-    const errors = {
-      prompt: addItemValues.prompt.trim() ? undefined : 'Enter a prompt.',
-      fileId: addItemValues.fileId ? undefined : 'Upload an image.',
-    };
-    if (errors.prompt || errors.fileId) {
-      setAddItemShowErrors(true);
-      return;
-    }
-    await createItemMutation.mutateAsync({
-      id: datasetId,
-      payload: {
-        prompt: addItemValues.prompt.trim(),
-        fileId: addItemValues.fileId,
-      },
-    });
-    setIsAddItemOpen(false);
+    await createItemMutation.mutateAsync({ id: datasetId });
   };
 
   const handleDelete = async () => {
     if (!datasetId) return;
     await deleteMutation.mutateAsync(datasetId);
     navigate('/datasets');
+  };
+
+  const handleRegenerateItem = async (item: IDatasetItem) => {
+    if (!datasetId) return;
+    setRegeneratingItemId(item.id);
+    try {
+      await regenerateItemMutation.mutateAsync({
+        id: datasetId,
+        itemId: item.id,
+      });
+    } finally {
+      setRegeneratingItemId((prev) => (prev === item.id ? null : prev));
+    }
+  };
+
+  const handleDeleteItem = async () => {
+    if (!datasetId || !itemToDelete) return;
+    await deleteItemMutation.mutateAsync({
+      id: datasetId,
+      itemId: itemToDelete.id,
+    });
+    if (activeItem?.id === itemToDelete.id) {
+      setActiveItem(null);
+    }
+    setItemToDelete(null);
   };
 
   return (
@@ -237,14 +203,15 @@ export function DatasetDetailsPage() {
             <Button
               variant="secondary"
               onClick={openEditModal}
-              disabled={!data}
+              disabled={!data || updateMutation.isPending}
             >
               Edit
             </Button>
             <Button
               variant="secondary"
-              onClick={openAddItemModal}
-              disabled={!data}
+              onClick={handleAddItem}
+              loading={createItemMutation.isPending}
+              disabled={!data || createItemMutation.isPending}
             >
               Add item
             </Button>
@@ -305,9 +272,19 @@ export function DatasetDetailsPage() {
               <Field label="Name">
                 <Typography variant="body">{data.name}</Typography>
               </Field>
-              <Field label="Type">
+              <Field label="LoRA trigger word">
                 <Typography variant="body" tone="muted">
-                  {capitalize(data.type)}
+                  {data.loraTriggerWord || '-'}
+                </Typography>
+              </Field>
+              <Field label="Resolution">
+                <Typography variant="body" tone="muted">
+                  {data.resolution || '-'}
+                </Typography>
+              </Field>
+              <Field label="Items count">
+                <Typography variant="body">
+                  {data.itemsCount.toLocaleString()}
                 </Typography>
               </Field>
               <Field label="Description" className={s.fullWidth}>
@@ -328,13 +305,65 @@ export function DatasetDetailsPage() {
             </div>
 
             <div className={s.itemsHeader}>
+              <Typography variant="h3">{refsLabel}</Typography>
+            </div>
+
+            {refImgs.length === 0 ? (
+              <EmptyState
+                title="No reference images"
+                description="This dataset has no reference images."
+              />
+            ) : (
+              <Grid columns={3} gap={16}>
+                {refImgs.map((file) => (
+                  <div
+                    key={file.id}
+                    className={[s.itemCard, s.staticCard].join(' ')}
+                  >
+                    <div className={s.itemMedia}>
+                      {file.url ? (
+                        <img
+                          className={s.itemImage}
+                          src={file.url}
+                          alt={file.name}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className={s.itemPlaceholder}>
+                          <Typography variant="caption" tone="muted">
+                            No image
+                          </Typography>
+                        </div>
+                      )}
+                      {file.url ? (
+                        <div className={s.itemActions}>
+                          <IconButton
+                            as="a"
+                            href={file.url}
+                            download={file.name}
+                            rel="noopener"
+                            aria-label="Download reference image"
+                            tooltip="Download"
+                            size="sm"
+                            variant="ghost"
+                            icon={<DownloadIcon />}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </Grid>
+            )}
+
+            <div className={s.itemsHeader}>
               <Typography variant="h3">{itemsLabel}</Typography>
             </div>
 
             {items.length === 0 ? (
               <EmptyState
-                title="No items"
-                description="This dataset does not have any items yet."
+                title="No generated items"
+                description="Use Add item to generate the first item."
               />
             ) : (
               <Grid columns={3} gap={16}>
@@ -363,12 +392,17 @@ export function DatasetDetailsPage() {
                       ) : (
                         <div className={s.itemPlaceholder}>
                           <Typography variant="caption" tone="muted">
-                            No image
+                            {[
+                              DatasetItemStatus.Pending,
+                              DatasetItemStatus.InProgress,
+                            ].includes(item.status)
+                              ? 'Generating...'
+                              : 'No image'}
                           </Typography>
                         </div>
                       )}
-                      {item.file?.url ? (
-                        <div className={s.itemActions}>
+                      <div className={s.itemActions}>
+                        {item.file?.url ? (
                           <IconButton
                             as="a"
                             href={item.file.url}
@@ -382,8 +416,51 @@ export function DatasetDetailsPage() {
                             // @ts-expect-error Radix types are wrong
                             onClick={(event) => event.stopPropagation()}
                           />
-                        </div>
-                      ) : null}
+                        ) : null}
+                        <IconButton
+                          aria-label="Regenerate item"
+                          tooltip="Regenerate item"
+                          size="sm"
+                          variant="ghost"
+                          icon={<ReloadIcon />}
+                          loading={
+                            regenerateItemMutation.isPending &&
+                            regeneratingItemId === item.id
+                          }
+                          disabled={
+                            regenerateItemMutation.isPending ||
+                            deleteItemMutation.isPending
+                          }
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleRegenerateItem(item);
+                          }}
+                        />
+                        <IconButton
+                          aria-label="Delete item"
+                          tooltip="Delete item"
+                          size="sm"
+                          variant="ghost"
+                          tone="danger"
+                          icon={<TrashIcon />}
+                          disabled={
+                            deleteItemMutation.isPending ||
+                            regenerateItemMutation.isPending
+                          }
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setItemToDelete(item);
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className={s.itemMeta}>
+                      <Badge tone={getStatusTone(item.status)}>
+                        {getStatusLabel(item.status)}
+                      </Badge>
+                      <Typography variant="caption" tone="muted">
+                        {formatDate(item.createdAt)}
+                      </Typography>
                     </div>
                   </div>
                 ))}
@@ -396,11 +473,35 @@ export function DatasetDetailsPage() {
       <Modal
         open={Boolean(activeItem)}
         title="Item details"
-        onClose={closeModal}
+        onClose={closeItemModal}
         actions={
-          <Button variant="secondary" onClick={closeModal}>
-            Close
-          </Button>
+          <div className={s.modalActions}>
+            <Button variant="secondary" onClick={closeItemModal}>
+              Close
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                if (!activeItem) return;
+                handleRegenerateItem(activeItem);
+              }}
+              loading={
+                regenerateItemMutation.isPending &&
+                regeneratingItemId === activeItem?.id
+              }
+              disabled={!activeItem || regenerateItemMutation.isPending}
+            >
+              Regenerate item
+            </Button>
+            <Button
+              variant="ghost"
+              tone="danger"
+              onClick={() => setItemToDelete(activeItem)}
+              disabled={!activeItem || deleteItemMutation.isPending}
+            >
+              Delete item
+            </Button>
+          </div>
         }
       >
         {activeItem ? (
@@ -414,13 +515,28 @@ export function DatasetDetailsPage() {
                 />
               ) : (
                 <Typography variant="caption" tone="muted">
-                  No image available.
+                  {[
+                    DatasetItemStatus.Pending,
+                    DatasetItemStatus.InProgress,
+                  ].includes(activeItem.status)
+                    ? 'Generating...'
+                    : 'No image available.'}
                 </Typography>
               )}
             </div>
+            <Field label="Status">
+              <Badge tone={getStatusTone(activeItem.status)}>
+                {getStatusLabel(activeItem.status)}
+              </Badge>
+            </Field>
             <Field label="Prompt">
-              <Typography variant="body" className={s.promptText}>
-                {activeItem.prompt || '-'}
+              <Typography as="pre" variant="caption" className={s.promptText}>
+                {formatPrompt(activeItem.prompt)}
+              </Typography>
+            </Field>
+            <Field label="Created">
+              <Typography variant="body">
+                {formatDate(activeItem.createdAt)}
               </Typography>
             </Field>
           </div>
@@ -443,162 +559,33 @@ export function DatasetDetailsPage() {
             <Button
               onClick={handleEdit}
               loading={updateMutation.isPending}
-              disabled={
-                !editIsValid ||
-                updateMutation.isPending ||
-                Boolean(editValidationErrors.name || editValidationErrors.type)
-              }
+              disabled={!editName.trim() || updateMutation.isPending}
             >
               Save
             </Button>
           </div>
         }
       >
-        <Stack gap="16px">
-          <FormRow columns={2}>
-            <Field
-              label="Name"
-              labelFor="dataset-edit-name"
-              error={editValidationErrors.name}
-            >
-              <Input
-                id="dataset-edit-name"
-                size="sm"
-                value={editValues.name}
-                onChange={(event) =>
-                  setEditValues((prev) => ({
-                    ...prev,
-                    name: event.target.value,
-                  }))
-                }
-                placeholder="Dataset name"
-                fullWidth
-              />
-            </Field>
-            <Field
-              label="Type"
-              labelFor="dataset-edit-type"
-              error={editValidationErrors.type}
-            >
-              <Select
-                id="dataset-edit-type"
-                size="sm"
-                options={Object.values(DatasetType).map((value) => ({
-                  label: capitalize(value),
-                  value,
-                }))}
-                value={editValues.type}
-                onChange={(value) =>
-                  setEditValues((prev) => ({
-                    ...prev,
-                    type: value as DatasetType,
-                  }))
-                }
-                fullWidth
-              />
-            </Field>
-          </FormRow>
-
-          <Field label="Description" labelFor="dataset-edit-description">
-            <Textarea
-              id="dataset-edit-description"
-              value={editValues.description}
-              onChange={(event) =>
-                setEditValues((prev) => ({
-                  ...prev,
-                  description: event.target.value,
-                }))
-              }
-              placeholder="Optional description"
-              rows={4}
-              fullWidth
-            />
-          </Field>
-        </Stack>
-      </Modal>
-
-      <Modal
-        open={isAddItemOpen}
-        title="Add item"
-        onClose={closeAddItemModal}
-        actions={
-          <div className={s.modalActions}>
-            <Button
-              variant="secondary"
-              onClick={closeAddItemModal}
-              disabled={createItemMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddItem}
-              loading={createItemMutation.isPending}
-              disabled={
-                !addItemIsValid ||
-                createItemMutation.isPending ||
-                Boolean(
-                  addItemValidationErrors.prompt ||
-                  addItemValidationErrors.fileId,
-                )
-              }
-            >
-              Add item
-            </Button>
-          </div>
-        }
-      >
-        <Stack gap="16px">
-          <Field
-            label="Prompt"
-            labelFor="dataset-item-prompt"
-            error={addItemValidationErrors.prompt}
-          >
-            <Textarea
-              id="dataset-item-prompt"
-              value={addItemValues.prompt}
-              onChange={(event) =>
-                setAddItemValues((prev) => ({
-                  ...prev,
-                  prompt: event.target.value,
-                }))
-              }
-              rows={5}
-              fullWidth
-            />
-          </Field>
-          <div>
-            <FileUpload
-              label="Image file"
-              folder={FileDir.Public}
-              value={addItemFile}
-              onChange={(file) => {
-                setAddItemFile(file);
-                setAddItemValues((prev) => ({
-                  ...prev,
-                  fileId: file?.id ?? '',
-                }));
-              }}
-              onError={(message) =>
-                notifyError(new Error(message), 'Unable to upload image.')
-              }
-            />
-            {addItemValidationErrors.fileId ? (
-              <Typography
-                variant="caption"
-                tone="warning"
-                className={s.fileError}
-              >
-                {addItemValidationErrors.fileId}
-              </Typography>
-            ) : null}
-          </div>
-        </Stack>
+        <Field
+          label="Name"
+          labelFor="dataset-edit-name"
+          error={editValidationError}
+        >
+          <Input
+            id="dataset-edit-name"
+            size="sm"
+            value={editName}
+            onChange={(event) => setEditName(event.target.value)}
+            placeholder="Dataset name"
+            fullWidth
+          />
+        </Field>
       </Modal>
 
       <ConfirmModal
         open={isDeleteOpen}
         title="Delete dataset?"
-        description="This will permanently remove the dataset and its items."
+        description="This will permanently remove the dataset and all generated items."
         confirmLabel="Delete"
         tone="danger"
         isConfirming={deleteMutation.isPending}
@@ -606,6 +593,20 @@ export function DatasetDetailsPage() {
         onClose={() => {
           if (deleteMutation.isPending) return;
           setIsDeleteOpen(false);
+        }}
+      />
+
+      <ConfirmModal
+        open={Boolean(itemToDelete)}
+        title="Delete item?"
+        description="This will permanently remove this generated item."
+        confirmLabel="Delete item"
+        tone="danger"
+        isConfirming={deleteItemMutation.isPending}
+        onConfirm={handleDeleteItem}
+        onClose={() => {
+          if (deleteItemMutation.isPending) return;
+          setItemToDelete(null);
         }}
       />
     </AppShell>
