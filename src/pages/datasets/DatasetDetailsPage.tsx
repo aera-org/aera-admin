@@ -1,5 +1,5 @@
 import { DownloadIcon, ReloadIcon, TrashIcon } from '@radix-ui/react-icons';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import {
@@ -28,6 +28,7 @@ import {
 import type { DatasetItemPrompt, IDatasetItem } from '@/common/types';
 import { DatasetItemStatus } from '@/common/types';
 import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
+import { Drawer } from '@/components/molecules/drawer/Drawer';
 import { AppShell } from '@/components/templates';
 
 import s from './DatasetDetailsPage.module.scss';
@@ -102,6 +103,8 @@ export function DatasetDetailsPage() {
   const [regeneratingItemId, setRegeneratingItemId] = useState<string | null>(
     null,
   );
+  const itemsEndRef = useRef<HTMLDivElement | null>(null);
+  const shouldScrollToItemsEndRef = useRef(false);
 
   const editValidationError = useMemo(() => {
     if (!editShowErrors) return undefined;
@@ -120,6 +123,19 @@ export function DatasetDetailsPage() {
 
   const showSkeleton = isLoading && !data;
   const showEmpty = !showSkeleton && !error && !data;
+
+  const scrollToItemsEnd = () => {
+    itemsEndRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+    });
+  };
+
+  useEffect(() => {
+    if (!shouldScrollToItemsEndRef.current) return;
+    scrollToItemsEnd();
+    shouldScrollToItemsEndRef.current = false;
+  }, [items.length]);
 
   const closeItemModal = () => setActiveItem(null);
 
@@ -153,7 +169,9 @@ export function DatasetDetailsPage() {
 
   const handleAddItem = async () => {
     if (!datasetId) return;
+    shouldScrollToItemsEndRef.current = true;
     await createItemMutation.mutateAsync({ id: datasetId });
+    scrollToItemsEnd();
   };
 
   const handleDelete = async () => {
@@ -223,7 +241,7 @@ export function DatasetDetailsPage() {
             >
               Delete
             </Button>
-            <Button variant="secondary" onClick={() => navigate('/datasets')}>
+            <Button variant="text" onClick={() => navigate('/datasets')}>
               Back to datasets
             </Button>
           </div>
@@ -466,43 +484,20 @@ export function DatasetDetailsPage() {
                 ))}
               </Grid>
             )}
+            <div ref={itemsEndRef} className={s.itemsEndAnchor} />
           </div>
         ) : null}
       </Container>
 
-      <Modal
+      <Drawer
         open={Boolean(activeItem)}
         title="Item details"
-        onClose={closeItemModal}
-        actions={
-          <div className={s.modalActions}>
-            <Button variant="secondary" onClick={closeItemModal}>
-              Close
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                if (!activeItem) return;
-                handleRegenerateItem(activeItem);
-              }}
-              loading={
-                regenerateItemMutation.isPending &&
-                regeneratingItemId === activeItem?.id
-              }
-              disabled={!activeItem || regenerateItemMutation.isPending}
-            >
-              Regenerate item
-            </Button>
-            <Button
-              variant="ghost"
-              tone="danger"
-              onClick={() => setItemToDelete(activeItem)}
-              disabled={!activeItem || deleteItemMutation.isPending}
-            >
-              Delete item
-            </Button>
-          </div>
-        }
+        className={s.itemDrawer}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeItemModal();
+          }
+        }}
       >
         {activeItem ? (
           <div className={s.modalContent}>
@@ -539,9 +534,35 @@ export function DatasetDetailsPage() {
                 {formatDate(activeItem.createdAt)}
               </Typography>
             </Field>
+            <div className={s.modalActions}>
+              <Button variant="secondary" onClick={closeItemModal}>
+                Close
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  handleRegenerateItem(activeItem);
+                }}
+                loading={
+                  regenerateItemMutation.isPending &&
+                  regeneratingItemId === activeItem.id
+                }
+                disabled={regenerateItemMutation.isPending}
+              >
+                Regenerate item
+              </Button>
+              <Button
+                variant="ghost"
+                tone="danger"
+                onClick={() => setItemToDelete(activeItem)}
+                disabled={deleteItemMutation.isPending}
+              >
+                Delete item
+              </Button>
+            </div>
           </div>
         ) : null}
-      </Modal>
+      </Drawer>
 
       <Modal
         open={isEditOpen}

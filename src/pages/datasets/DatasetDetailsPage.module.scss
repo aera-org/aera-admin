@@ -2,7 +2,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  padding-bottom: var(--space-8);
 }
 
 .header {
@@ -154,6 +153,10 @@
   gap: var(--space-2);
 }
 
+.itemDrawer {
+  width: min(92vw, 560px);
+}
+
 .fileError {
   margin-top: var(--space-2);
 }
@@ -171,6 +174,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+.itemsEndAnchor {
+  height: 1px;
 }
 
 @media (max-width: 900px) {

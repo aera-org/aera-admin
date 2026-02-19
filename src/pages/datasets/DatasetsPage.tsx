@@ -82,7 +82,7 @@ const EXTENSION_TO_MIME = {
   jpeg: 'image/jpeg',
   webp: 'image/webp',
 } as const;
-const MIN_ITEMS_COUNT = 10;
+const MIN_ITEMS_COUNT = 1;
 const MAX_ITEMS_COUNT = 100;
 const MIN_REF_IMAGES = 1;
 const MAX_REF_IMAGES = 5;
@@ -759,7 +759,6 @@ export function DatasetsPage() {
               label="Items count"
               labelFor="dataset-create-items-count"
               error={createValidationErrors.itemsCount}
-              hint={`${MIN_ITEMS_COUNT}-${MAX_ITEMS_COUNT}`}
             >
               <Input
                 id="dataset-create-items-count"
@@ -862,9 +861,7 @@ export function DatasetsPage() {
                   }
                 />
                 <Typography variant="meta" tone="muted">
-                  {isRefImageUploading
-                    ? 'Uploading image...'
-                    : `Minimum ${MIN_REF_IMAGES}, maximum ${MAX_REF_IMAGES}.`}
+                  {isRefImageUploading ? 'Uploading image...' : `Add reference`}
                 </Typography>
               </div>
 
