@@ -43,12 +43,21 @@ export function useDatasetDetails(
       | ((data: IDatasetDetails | undefined) => number | false);
   } = {},
 ) {
+  const resolvedRefetchInterval =
+    typeof options.refetchInterval === 'function'
+      ? (query: { state: { data: unknown } }) =>
+          // @ts-expect-error: mismatch between Select and LogTab
+          options.refetchInterval?.(
+            query.state.data as IDatasetDetails | undefined,
+          )
+      : options.refetchInterval;
+
   return useQuery({
     queryKey: datasetKeys.detail(id ?? ''),
     queryFn: () => getDatasetDetails(id ?? ''),
     enabled: options.enabled ?? Boolean(id),
     initialData: initialData ?? undefined,
-    refetchInterval: options.refetchInterval,
+    refetchInterval: resolvedRefetchInterval,
   });
 }
 
