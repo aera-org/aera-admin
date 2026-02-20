@@ -9,7 +9,6 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { useAuth } from '@/app/auth';
 import {
   addMonths,
   compareMonthIds,
@@ -36,6 +35,7 @@ import {
   usePaymentsConversionBreakdown,
   usePaymentsRevenueBreakdown,
 } from '@/app/analytics';
+import { useAuth } from '@/app/auth';
 import { useCharacters } from '@/app/characters';
 import {
   Alert,
@@ -845,7 +845,7 @@ export function AnalyticsPage() {
       { value: 'total', label: 'Total' },
       { value: 'revenue', label: 'Revenue' },
       { value: 'visits', label: 'Visits' },
-      { value: 'purchased', label: 'Purchased' },
+      { value: 'purchased', label: 'Customers' },
       { value: 'unique', label: 'Unique' },
       { value: 'conversion', label: 'Conversion' },
     ],
@@ -1057,7 +1057,7 @@ export function AnalyticsPage() {
             style={{ fontSize: 12 }}
             className={s.alignRight}
           >
-            Purchased
+            Customers
           </Typography>
         ),
       },
@@ -1384,7 +1384,7 @@ export function AnalyticsPage() {
                       </Card>
                       <Card className={s.kpiCard} padding="md">
                         <Typography variant="meta" tone="muted">
-                          Purchased
+                          Customers
                         </Typography>
                         <Typography variant="h3">
                           {deeplinkTotals
