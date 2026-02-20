@@ -1,4 +1,5 @@
 export * from './admin.type';
+export * from './broadcast.type';
 export * from './character.type';
 export * from './character-image.type';
 export * from './dataset.type';

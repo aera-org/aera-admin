@@ -1,6 +1,7 @@
 import type { JSX } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
+import { useAuth } from '@/app/auth';
 import {
   ChartIcon,
   CircleDotIcon,
@@ -11,11 +12,11 @@ import {
   LogsIcon,
   MessageSquareQuoteIcon,
   NewspaperIcon,
+  RadioIcon,
   UserCogIcon,
   UserIcon,
   UsersRoundIcon,
 } from '@/assets/icons';
-import { useAuth } from '@/app/auth';
 import { Button } from '@/atoms';
 import { UserRole } from '@/common/types';
 
@@ -34,6 +35,7 @@ const navItems: NavItem[] = [
   { label: 'LoRAs', to: '/loras', icon: <LayersIcon /> },
   { label: 'Gifts', to: '/gifts', icon: <GiftIcon /> },
   { label: 'Users', to: '/users', icon: <UserIcon /> },
+  { label: 'Broadcast', to: '/broadcast', icon: <RadioIcon /> },
   { label: 'Plans', to: '/plans', icon: <DollarSignIcon /> },
   { label: 'Prompts', to: '/prompts', icon: <MessageSquareQuoteIcon /> },
   { label: 'Datasets', to: '/datasets', icon: <CircleDotIcon /> },
