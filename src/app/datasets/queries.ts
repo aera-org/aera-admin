@@ -196,6 +196,10 @@ export function useDownloadDatasetZip() {
   return useMutation({
     mutationFn: ({ id, fallbackName }: DatasetZipDownloadOptions) =>
       downloadDatasetZip(id, fallbackName),
+    onSuccess: (isDownloaded) => {
+      if (!isDownloaded) return;
+      notifySuccess('ZIP downloaded.', 'Dataset ZIP downloaded.');
+    },
     onError: (error) => {
       notifyError(error, 'Unable to download dataset ZIP.');
     },

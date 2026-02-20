@@ -176,11 +176,11 @@ export async function downloadDatasetZip(id: string, fallbackName?: string) {
       });
       const writable = await handle.createWritable();
       await res.body.pipeTo(writable);
-      return;
+      return true;
     } catch (error) {
       if (isAbortError(error)) {
         await res.body.cancel();
-        return;
+        return false;
       }
       throw error;
     }
@@ -196,4 +196,5 @@ export async function downloadDatasetZip(id: string, fallbackName?: string) {
   link.click();
   link.remove();
   window.URL.revokeObjectURL(url);
+  return true;
 }
