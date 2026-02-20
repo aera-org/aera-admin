@@ -7,6 +7,7 @@ export {
   useDatasets,
   useDeleteDataset,
   useDeleteDatasetItem,
+  useDownloadDatasetZip,
   useRegenerateDatasetItem,
   useUpdateDataset,
 } from './queries';

@@ -13,6 +13,7 @@ import {
   type DatasetsListParams,
   deleteDataset,
   deleteDatasetItem,
+  downloadDatasetZip,
   getDatasetDetails,
   getDatasets,
   regenerateDatasetItem,
@@ -182,6 +183,21 @@ export function useDeleteDatasetItem() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to delete dataset item.');
+    },
+  });
+}
+
+type DatasetZipDownloadOptions = {
+  id: string;
+  fallbackName?: string;
+};
+
+export function useDownloadDatasetZip() {
+  return useMutation({
+    mutationFn: ({ id, fallbackName }: DatasetZipDownloadOptions) =>
+      downloadDatasetZip(id, fallbackName),
+    onError: (error) => {
+      notifyError(error, 'Unable to download dataset ZIP.');
     },
   });
 }

@@ -1,4 +1,4 @@
-import { DownloadIcon, ReloadIcon, TrashIcon } from '@radix-ui/react-icons';
+import { ReloadIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -7,9 +7,11 @@ import {
   useDatasetDetails,
   useDeleteDataset,
   useDeleteDatasetItem,
+  useDownloadDatasetZip,
   useRegenerateDatasetItem,
   useUpdateDataset,
 } from '@/app/datasets';
+import { DownloadIcon, PencilLineIcon, TrashIcon } from '@/assets/icons';
 import {
   Alert,
   Badge,
@@ -90,6 +92,7 @@ export function DatasetDetailsPage() {
   );
   const updateMutation = useUpdateDataset();
   const createItemMutation = useCreateDatasetItem();
+  const downloadZipMutation = useDownloadDatasetZip();
   const deleteMutation = useDeleteDataset();
   const regenerateItemMutation = useRegenerateDatasetItem();
   const deleteItemMutation = useDeleteDatasetItem();
@@ -180,6 +183,12 @@ export function DatasetDetailsPage() {
     navigate('/datasets');
   };
 
+  const handleDownloadZip = async () => {
+    if (!datasetId) return;
+    const fallbackName = data?.name ? `${data.name}.zip` : undefined;
+    await downloadZipMutation.mutateAsync({ id: datasetId, fallbackName });
+  };
+
   const handleRegenerateItem = async (item: IDatasetItem) => {
     if (!datasetId) return;
     setRegeneratingItemId(item.id);
@@ -219,30 +228,41 @@ export function DatasetDetailsPage() {
           </div>
           <div className={s.headerActions}>
             <Button
-              variant="secondary"
-              onClick={openEditModal}
-              disabled={!data || updateMutation.isPending}
-            >
-              Edit
-            </Button>
-            <Button
-              variant="secondary"
+              variant="outline"
               onClick={handleAddItem}
               loading={createItemMutation.isPending}
               disabled={!data || createItemMutation.isPending}
             >
               Add item
             </Button>
-            <Button
+            <IconButton
+              aria-label="Edit dataset"
+              icon={<PencilLineIcon />}
+              tooltip="Edit dataset"
+              variant="text"
+              onClick={openEditModal}
+              disabled={!data || updateMutation.isPending}
+            />
+            <IconButton
+              aria-label="Download dataset"
+              variant="text"
+              icon={<DownloadIcon />}
+              tooltip="Download dataset"
+              onClick={handleDownloadZip}
+              loading={downloadZipMutation.isPending}
+              disabled={!data || downloadZipMutation.isPending}
+            />
+            <IconButton
+              aria-label="Delete dataset"
+              icon={<TrashIcon />}
+              tooltip="Delete dataset"
               variant="ghost"
               tone="danger"
               onClick={() => setIsDeleteOpen(true)}
               disabled={!data || deleteMutation.isPending}
-            >
-              Delete
-            </Button>
-            <Button variant="text" onClick={() => navigate('/datasets')}>
-              Back to datasets
+            />
+            <Button variant="ghost" onClick={() => navigate('/datasets')}>
+              Back
             </Button>
           </div>
         </div>
