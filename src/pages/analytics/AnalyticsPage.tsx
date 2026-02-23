@@ -585,7 +585,7 @@ export function AnalyticsPage() {
               tone="muted"
               className={cn(s.tableHeader, [s.alignRight])}
             >
-              {metric.label}
+              {metric.tableLabel ?? metric.label}
             </Typography>
           </Tooltip>
         ),

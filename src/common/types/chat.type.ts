@@ -9,7 +9,7 @@ export interface IChat {
   character: ICharacter;
   user: ITgUser;
   stage: RoleplayStage;
-  userMessageCount: number;
+  historyLength: number;
   photosSent: number;
   createdAt: string;
   updatedAt: string;
@@ -21,5 +21,12 @@ export interface IChatMessage {
 }
 
 export interface IChatDetails extends IChat {
-  history: [];
+  history: IChatMessage[];
+}
+
+export interface ChatSearchParams {
+  characterId?: string;
+  scenarioId?: string;
+  stage?: RoleplayStage;
+  userId?: string;
 }

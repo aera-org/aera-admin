@@ -8,6 +8,8 @@ export { ResetPasswordPage } from './auth/ResetPasswordPage';
 export { BroadcastPage } from './broadcast/BroadcastPage';
 export { CharacterImageDetailsPage } from './character-images/CharacterImageDetailsPage';
 export { CharacterImagesPage } from './character-images/CharacterImagesPage';
+export { ChatDetailsPage } from './chats/ChatDetailsPage';
+export { ChatsPage } from './chats/ChatsPage';
 export { CharacterDetailsPage } from './characters/CharacterDetailsPage';
 export { CharactersPage } from './characters/CharactersPage';
 export { DatasetDetailsPage } from './datasets/DatasetDetailsPage';

@@ -11,6 +11,8 @@ import {
   CharacterImageDetailsPage,
   CharacterImagesPage,
   CharactersPage,
+  ChatDetailsPage,
+  ChatsPage,
   ConfirmEmailPage,
   DatasetDetailsPage,
   DatasetsPage,
@@ -53,6 +55,8 @@ export function AppRoutes() {
         <Route path="/admins" element={<AdminsPage />} />
         <Route path="/broadcast" element={<BroadcastPage />} />
         <Route path="/users" element={<UsersPage />} />
+        <Route path="/chats" element={<ChatsPage />} />
+        <Route path="/chats/:id" element={<ChatDetailsPage />} />
         <Route path="/generations/new" element={<GenerateImagePage />} />
         <Route path="/generations" element={<GenerationsPage />} />
         <Route path="/generations/:id" element={<GenerationDetailsPage />} />

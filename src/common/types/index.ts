@@ -2,6 +2,7 @@ export * from './admin.type';
 export * from './broadcast.type';
 export * from './character.type';
 export * from './character-image.type';
+export * from './chat.type';
 export * from './dataset.type';
 export * from './file.type';
 export * from './gift.type';

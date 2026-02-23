@@ -4,9 +4,8 @@ export type AnalyticsMetricKey =
   | 'bounceRate'
   | 'retentionRate'
   | 'churnRate'
-  | 'uniqueUsers'
-  | 'activeUsers'
-  | 'newUsers'
+  | 'total'
+  | 'unique'
   | 'stickinessRatio'
   | 'avgSessionDurationSec'
   | 'avgMessagesPerSession'
@@ -16,6 +15,8 @@ export type AnalyticsMetricKey =
   | 'averagePurchaseValue'
   | 'cohortLtvM0'
   | 'averageRevenuePerUser'
+  | 'averageRevenuePerCustomer'
+  | 'revenue'
   | 'customers'
   | 'totalTransactions'
   | 'errorRate'
@@ -31,6 +32,7 @@ export type MetricFormat = 'percent' | 'count' | 'duration' | 'currency';
 export type AnalyticsMetricDefinition = {
   key: AnalyticsMetricKey;
   label: string;
+  tableLabel?: string;
   description: string;
   format: MetricFormat;
   section: AnalyticsSection;
@@ -48,6 +50,20 @@ export type AnalyticsSectionConfig = {
 };
 
 const MAIN_METRICS: AnalyticsMetricDefinition[] = [
+  {
+    key: 'total',
+    label: 'Total',
+    description: 'Users with more than 1 session in the month.',
+    format: 'count',
+    section: 'main',
+  },
+  {
+    key: 'unique',
+    label: 'Unique',
+    description: 'New users within total users in the month.',
+    format: 'count',
+    section: 'main',
+  },
   {
     key: 'bounceRate',
     label: 'Bounce rate',
@@ -73,27 +89,6 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
     format: 'percent',
     section: 'main',
     precision: 1,
-  },
-  {
-    key: 'uniqueUsers',
-    label: 'Unique users',
-    description: 'Users with at least one session in the month.',
-    format: 'count',
-    section: 'main',
-  },
-  {
-    key: 'activeUsers',
-    label: 'Active users',
-    description: 'Users with more than 2 sessions in the month.',
-    format: 'count',
-    section: 'main',
-  },
-  {
-    key: 'newUsers',
-    label: 'New users',
-    description: 'Users whose first-ever message was in the month.',
-    format: 'count',
-    section: 'main',
   },
   {
     key: 'stickinessRatio',
@@ -130,46 +125,9 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
 
 const PAYMENTS_METRICS: AnalyticsMetricDefinition[] = [
   {
-    key: 'conversionRate',
-    label: 'Conversion rate',
-    description:
-      'Unique users with at least one payment in month / active users in month.',
-    format: 'percent',
-    section: 'payments',
-    precision: 1,
-  },
-  {
-    key: 'repeatPurchaseRate',
-    label: 'Repeat purchase rate',
-    description:
-      'Users with at least 2 payments by month-end / users with at least 1 payment by month-end.',
-    format: 'percent',
-    section: 'payments',
-    precision: 1,
-  },
-  {
-    key: 'averagePurchaseValue',
-    label: 'Average purchase value',
-    description: 'Total revenue in month / number of payments in month.',
-    format: 'currency',
-    section: 'payments',
-    precision: 2,
-    currency: 'usd',
-  },
-  {
-    key: 'cohortLtvM0',
-    label: 'Cohort LTV M0',
-    description:
-      'Average revenue in the first month from users whose first payment is in that month.',
-    format: 'currency',
-    section: 'payments',
-    precision: 2,
-    currency: 'usd',
-  },
-  {
-    key: 'averageRevenuePerUser',
-    label: 'ARPU',
-    description: 'Total revenue in month / active users in month.',
+    key: 'revenue',
+    label: 'Revenue',
+    description: 'Total revenue in month.',
     format: 'currency',
     section: 'payments',
     precision: 2,
@@ -183,11 +141,69 @@ const PAYMENTS_METRICS: AnalyticsMetricDefinition[] = [
     section: 'payments',
   },
   {
+    key: 'conversionRate',
+    label: 'Conversion',
+    description:
+      'Unique users with at least one payment in month / active users in month.',
+    format: 'percent',
+    section: 'payments',
+    precision: 1,
+  },
+  {
+    key: 'averageRevenuePerUser',
+    label: 'ARPU',
+    description: 'Total revenue in month / active users in month.',
+    format: 'currency',
+    section: 'payments',
+    precision: 2,
+    currency: 'usd',
+  },
+  {
+    key: 'averageRevenuePerCustomer',
+    label: 'ARPC',
+    description: 'Total revenue in month / customers in month.',
+    format: 'currency',
+    section: 'payments',
+    precision: 2,
+    currency: 'usd',
+  },
+  {
     key: 'totalTransactions',
     label: 'Transactions',
+    tableLabel: 'TX',
     description: 'Number of payments in month.',
     format: 'count',
     section: 'payments',
+  },
+  {
+    key: 'averagePurchaseValue',
+    label: 'Average purchase value',
+    tableLabel: 'APV',
+    description: 'Total revenue in month / number of payments in month.',
+    format: 'currency',
+    section: 'payments',
+    precision: 2,
+    currency: 'usd',
+  },
+  {
+    key: 'repeatPurchaseRate',
+    label: 'Repeat purchase rate',
+    tableLabel: 'RPR',
+    description:
+      'Users with at least 2 payments by month-end / users with at least 1 payment by month-end.',
+    format: 'percent',
+    section: 'payments',
+    precision: 1,
+  },
+  {
+    key: 'cohortLtvM0',
+    label: 'LTV',
+    description:
+      'Average revenue in the first month from users whose first payment is in that month.',
+    format: 'currency',
+    section: 'payments',
+    precision: 2,
+    currency: 'usd',
   },
 ];
 
