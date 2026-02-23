@@ -16,6 +16,7 @@ export type AnalyticsMetricKey =
   | 'averagePurchaseValue'
   | 'cohortLtvM0'
   | 'averageRevenuePerUser'
+  | 'customers'
   | 'totalTransactions'
   | 'errorRate'
   | 'avgResponseTime'
@@ -175,6 +176,13 @@ const PAYMENTS_METRICS: AnalyticsMetricDefinition[] = [
     currency: 'usd',
   },
   {
+    key: 'customers',
+    label: 'Customers',
+    description: 'Unique users with at least one payment in month.',
+    format: 'count',
+    section: 'payments',
+  },
+  {
     key: 'totalTransactions',
     label: 'Total transactions',
     description: 'Number of payments in month.',
@@ -259,18 +267,18 @@ const SECTIONS: AnalyticsSectionConfig[] = [
     defaultMetric: 'conversionRate',
   },
   {
-    key: 'technical',
-    label: 'Technical',
-    available: true,
-    metrics: TECHNICAL_METRICS,
-    defaultMetric: 'errorRate',
-  },
-  {
     key: 'deeplinks',
     label: 'Deeplinks',
     available: true,
     metrics: [],
     defaultMetric: null,
+  },
+  {
+    key: 'technical',
+    label: 'Technical',
+    available: true,
+    metrics: TECHNICAL_METRICS,
+    defaultMetric: 'errorRate',
   },
 ];
 

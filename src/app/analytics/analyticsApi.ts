@@ -26,8 +26,8 @@ export type AnalyticsMetricsResponse = {
   metrics: AnalyticsMetricSeries[];
 };
 
-export type PaymentsConversionGroupBy = 'character' | 'scenario';
-export type PaymentsRevenueGroupBy = 'character' | 'deeplink';
+export type PaymentsConversionGroupBy = 'character' | 'scenario' | 'deeplink';
+export type PaymentsRevenueGroupBy = 'character' | 'scenario' | 'deeplink';
 
 export type PaymentsConversionBreakdownItem = {
   id: string;

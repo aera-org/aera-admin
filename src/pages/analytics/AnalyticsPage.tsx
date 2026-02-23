@@ -16,7 +16,7 @@ import {
   formatMetricDelta,
   formatMetricValue,
   formatMonthLabel,
-  getDefaultRange,
+  getCurrentMonthId,
   getLastFullMonthId,
   getMetricDefinition,
   getMetricOptions,
@@ -213,7 +213,6 @@ export function AnalyticsPage() {
   const rawScenarioId = searchParams.get('scenarioId');
   const rawSort = searchParams.get('sort');
 
-  const fallbackRange = useMemo(() => getDefaultRange(), []);
   const [conversionGroupBy, setConversionGroupBy] =
     useState<PaymentsConversionGroupBy>('character');
   const [revenueGroupBy, setRevenueGroupBy] =
@@ -225,6 +224,14 @@ export function AnalyticsPage() {
       ? rawSection
       : 'main';
   const isDeeplinksSection = section === 'deeplinks';
+  const usesCurrentMonthDefault =
+    section === 'main' || section === 'payments';
+  const fallbackRange = useMemo(() => {
+    const end = usesCurrentMonthDefault
+      ? getCurrentMonthId()
+      : getLastFullMonthId();
+    return { start: addMonths(end, -11), end };
+  }, [usesCurrentMonthDefault]);
   const {
     start: startMonth,
     end: endMonth,
@@ -237,7 +244,11 @@ export function AnalyticsPage() {
   const selectedMetric = getMetricDefinition(metricKey);
   // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const metricOptions = useMemo(() => getMetricOptions(section), [section]);
-  const defaultKpiMonth = useMemo(() => getLastFullMonthId(), []);
+  const defaultKpiMonth = useMemo(
+    () =>
+      usesCurrentMonthDefault ? getCurrentMonthId() : getLastFullMonthId(),
+    [usesCurrentMonthDefault],
+  );
   const kpiMonth = isValidMonthId(rawKpi) ? rawKpi : defaultKpiMonth;
 
   const defaultDeeplinkEnd = useMemo(() => toUtcDateId(new Date()), []);
@@ -1212,6 +1223,7 @@ export function AnalyticsPage() {
     () => [
       { value: 'character', label: 'Character' },
       { value: 'scenario', label: 'Scenario' },
+      { value: 'deeplink', label: 'Deeplink' },
     ],
     [],
   );
@@ -1219,6 +1231,7 @@ export function AnalyticsPage() {
   const revenueGroupOptions = useMemo(
     () => [
       { value: 'character', label: 'Character' },
+      { value: 'scenario', label: 'Scenario' },
       { value: 'deeplink', label: 'Deeplink' },
     ],
     [],

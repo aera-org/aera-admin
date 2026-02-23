@@ -35,6 +35,7 @@ export {
   compareMonthIds,
   diffInMonths,
   formatMonthLabel,
+  getCurrentMonthId,
   getDefaultRange,
   getLastFullMonthId,
   getMonthRange,
