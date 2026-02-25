@@ -28,6 +28,7 @@ import {
 } from '@/atoms';
 import {
   DatasetResolution,
+  DatasetStyle,
   FileDir,
   FileStatus,
   type IDataset,
@@ -51,6 +52,7 @@ type CreateDatasetValues = {
   itemsCount: string;
   loraTriggerWord: string;
   resolution: DatasetResolution;
+  style: DatasetStyle;
 };
 
 const ORDER_OPTIONS = [
@@ -65,7 +67,12 @@ const RESOLUTION_OPTIONS = [
   { label: 'Medium (2K)', value: DatasetResolution.medium },
   { label: 'High (4K)', value: DatasetResolution.high },
 ];
+const STYLE_OPTIONS = [
+  { label: 'Photorealistic', value: DatasetStyle.Photorealistic },
+  { label: 'Anime', value: DatasetStyle.Anime },
+];
 const DATASET_RESOLUTION_VALUES = new Set(Object.values(DatasetResolution));
+const DATASET_STYLE_VALUES = new Set(Object.values(DatasetStyle));
 const DEFAULT_ORDER = 'DESC';
 const DEFAULT_PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 400;
@@ -93,6 +100,7 @@ const EMPTY_CREATE_VALUES: CreateDatasetValues = {
   itemsCount: String(MIN_ITEMS_COUNT),
   loraTriggerWord: '',
   resolution: DatasetResolution.low,
+  style: DatasetStyle.Photorealistic,
 };
 
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
@@ -116,6 +124,14 @@ function formatDate(value: string | null | undefined) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return '-';
   return dateTimeFormatter.format(parsed);
+}
+
+function formatStyle(value: string | null | undefined) {
+  if (!value) return '-';
+  return value
+    .split(/[_-]/g)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
 function parsePositiveNumber(value: string | null, fallback: number) {
@@ -194,6 +210,10 @@ async function uploadToPresigned(
 
 function isDatasetResolution(value: string): value is DatasetResolution {
   return DATASET_RESOLUTION_VALUES.has(value as DatasetResolution);
+}
+
+function isDatasetStyle(value: string): value is DatasetStyle {
+  return DATASET_STYLE_VALUES.has(value as DatasetStyle);
 }
 
 export function DatasetsPage() {
@@ -302,6 +322,7 @@ export function DatasetsPage() {
   const columns = useMemo(
     () => [
       { key: 'dataset', label: 'Dataset' },
+      { key: 'style', label: 'Style' },
       { key: 'resolution', label: 'Resolution' },
       { key: 'items', label: <span className={s.alignRight}>Items</span> },
       { key: 'updated', label: <span className={s.alignRight}>Updated</span> },
@@ -322,6 +343,11 @@ export function DatasetsPage() {
               {dataset.loraTriggerWord || '-'}
             </Typography>
           </div>
+        ),
+        style: (
+          <Typography variant="body" tone="muted">
+            {formatStyle(dataset.style)}
+          </Typography>
         ),
         resolution: (
           <Typography variant="body" tone="muted">
@@ -351,6 +377,7 @@ export function DatasetsPage() {
             <Skeleton width={120} height={10} />
           </div>
         ),
+        style: <Skeleton width={90} height={12} />,
         resolution: <Skeleton width={90} height={12} />,
         items: (
           <div className={s.alignRight}>
@@ -388,6 +415,7 @@ export function DatasetsPage() {
       description?: string;
       itemsCount?: string;
       loraTriggerWord?: string;
+      style?: string;
       resolution?: string;
       refImgIds?: string;
     } = {};
@@ -412,6 +440,10 @@ export function DatasetsPage() {
       errors.loraTriggerWord = 'Enter a LoRA trigger word.';
     }
 
+    if (!isDatasetStyle(createValues.style)) {
+      errors.style = 'Select a style.';
+    }
+
     if (!isDatasetResolution(createValues.resolution)) {
       errors.resolution = 'Select a resolution.';
     }
@@ -430,6 +462,7 @@ export function DatasetsPage() {
     createValues.description,
     parsedItemsCount,
     createValues.loraTriggerWord,
+    createValues.style,
     createValues.resolution,
     refImageIds.length,
   ]);
@@ -440,6 +473,7 @@ export function DatasetsPage() {
         createValues.name.trim() &&
         createValues.description.trim() &&
         createValues.loraTriggerWord.trim() &&
+        isDatasetStyle(createValues.style) &&
         isDatasetResolution(createValues.resolution) &&
         parsedItemsCount !== null &&
         parsedItemsCount >= MIN_ITEMS_COUNT &&
@@ -451,6 +485,7 @@ export function DatasetsPage() {
       createValues.name,
       createValues.description,
       createValues.loraTriggerWord,
+      createValues.style,
       createValues.resolution,
       parsedItemsCount,
       refImageIds.length,
@@ -548,6 +583,7 @@ export function DatasetsPage() {
       loraTriggerWord: createValues.loraTriggerWord.trim()
         ? undefined
         : 'Enter a LoRA trigger word.',
+      style: isDatasetStyle(createValues.style) ? undefined : 'Select a style.',
       resolution: isDatasetResolution(createValues.resolution)
         ? undefined
         : 'Select a resolution.',
@@ -563,6 +599,7 @@ export function DatasetsPage() {
       errors.description ||
       errors.itemsCount ||
       errors.loraTriggerWord ||
+      errors.style ||
       errors.resolution ||
       errors.refImgIds
     ) {
@@ -575,6 +612,7 @@ export function DatasetsPage() {
       description: createValues.description.trim(),
       itemsCount: parsedItemsCount!,
       loraTriggerWord: createValues.loraTriggerWord.trim(),
+      style: createValues.style,
       resolution: createValues.resolution,
       refImgIds: refImageIds,
     });
@@ -819,6 +857,26 @@ export function DatasetsPage() {
               />
             </Field>
           </FormRow>
+
+          <Field
+            label="Style"
+            labelFor="dataset-create-style"
+            error={createValidationErrors.style}
+          >
+            <Select
+              id="dataset-create-style"
+              size="sm"
+              options={STYLE_OPTIONS}
+              value={createValues.style}
+              onChange={(value) =>
+                setCreateValues((prev) => ({
+                  ...prev,
+                  style: value as DatasetStyle,
+                }))
+              }
+              fullWidth
+            />
+          </Field>
 
           <Field
             label="Description"

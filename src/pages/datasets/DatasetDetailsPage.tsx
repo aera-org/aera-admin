@@ -47,6 +47,14 @@ function formatDate(value: string | null | undefined) {
   return dateTimeFormatter.format(parsed);
 }
 
+function formatStyle(value: string | null | undefined) {
+  if (!value) return '-';
+  return value
+    .split(/[_-]/g)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
 function formatPrompt(prompt: DatasetItemPrompt | null | undefined) {
   if (!prompt) return '-';
   try {
@@ -293,6 +301,8 @@ export function DatasetDetailsPage() {
               <Skeleton width={220} height={16} />
               <Skeleton width={140} height={12} />
               <Skeleton width={180} height={16} />
+              <Skeleton width={120} height={12} />
+              <Skeleton width={200} height={16} />
             </div>
             <Grid columns={3} gap={16}>
               {Array.from({ length: 6 }).map((_, index) => (
@@ -313,6 +323,11 @@ export function DatasetDetailsPage() {
               <Field label="LoRA trigger word">
                 <Typography variant="body" tone="muted">
                   {data.loraTriggerWord || '-'}
+                </Typography>
+              </Field>
+              <Field label="Style">
+                <Typography variant="body" tone="muted">
+                  {formatStyle(data.style)}
                 </Typography>
               </Field>
               <Field label="Resolution">

@@ -39,9 +39,15 @@ export interface DatasetItemPrompt {
   lora_caption: string;
 }
 
+export enum DatasetStyle {
+  Photorealistic = 'photorealistic',
+  Anime = 'anime',
+}
+
 export interface IDataset {
   id: string;
   name: string;
+  style: DatasetStyle;
   description: string;
   resolution: DatasetResolution;
   loraTriggerWord: string;
@@ -76,6 +82,7 @@ export interface CreateDatasetDto {
   itemsCount: number;
   loraTriggerWord: string;
   resolution: DatasetResolution;
+  style: DatasetStyle;
   refImgIds: string[];
 }
 
