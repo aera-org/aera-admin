@@ -103,7 +103,7 @@ type DeeplinkSortKey =
   | 'transactions'
   | 'visits'
   | 'unique'
-  | 'purchased'
+  | 'customers'
   | 'conversion';
 
 const MAX_RANGE_MONTHS = 24;
@@ -220,7 +220,7 @@ function isValidDeeplinkSort(
     value === 'transactions' ||
     value === 'visits' ||
     value === 'unique' ||
-    value === 'purchased' ||
+    value === 'customers' ||
     value === 'conversion'
   );
 }
@@ -338,8 +338,7 @@ export function AnalyticsPage() {
 
   const defaultDateEnd = useMemo(() => toUtcDateId(new Date()), []);
   const defaultDeeplinkStart = useMemo(
-    () =>
-      addDaysToDateId(defaultDateEnd, -(DEFAULT_DEEPLINK_RANGE_DAYS - 1)),
+    () => addDaysToDateId(defaultDateEnd, -(DEFAULT_DEEPLINK_RANGE_DAYS - 1)),
     [defaultDateEnd],
   );
   const defaultDailyStart = useMemo(
@@ -797,10 +796,7 @@ export function AnalyticsPage() {
     () => getMetricDefinition('averagePurchaseValue'),
     [],
   );
-  const dailyRevenueMetric = useMemo(
-    () => getMetricDefinition('revenue'),
-    [],
-  );
+  const dailyRevenueMetric = useMemo(() => getMetricDefinition('revenue'), []);
   const dailyArpuMetric = useMemo(
     () => getMetricDefinition('averageRevenuePerUser'),
     [],
@@ -1023,7 +1019,7 @@ export function AnalyticsPage() {
       { value: 'revenue', label: 'Revenue' },
       { value: 'transactions', label: 'Transactions' },
       { value: 'visits', label: 'Visits' },
-      { value: 'purchased', label: 'Customers' },
+      { value: 'customers', label: 'Customers' },
       { value: 'unique', label: 'Unique' },
       { value: 'conversion', label: 'Conversion' },
     ],
@@ -1217,7 +1213,7 @@ export function AnalyticsPage() {
         ),
       },
       {
-        key: 'purchased',
+        key: 'customers',
         label: (
           <Typography
             variant="meta"
@@ -1405,7 +1401,8 @@ export function AnalyticsPage() {
     const conversion =
       totals.total > 0 ? totals.customers / totals.total : null;
     const arpu = totals.total > 0 ? totals.revenue / totals.total : null;
-    const arpc = totals.customers > 0 ? totals.revenue / totals.customers : null;
+    const arpc =
+      totals.customers > 0 ? totals.revenue / totals.customers : null;
 
     return { ...totals, conversion, arpu, arpc };
   }, [dailyData]);
@@ -1997,9 +1994,7 @@ export function AnalyticsPage() {
                           Total
                         </Typography>
                         <Typography variant="h3">
-                          {dailyTotals
-                            ? formatCount(dailyTotals.total)
-                            : '—'}
+                          {dailyTotals ? formatCount(dailyTotals.total) : '—'}
                         </Typography>
                       </Card>
                       <Card className={s.kpiCard} padding="md">
@@ -2007,9 +2002,7 @@ export function AnalyticsPage() {
                           Unique
                         </Typography>
                         <Typography variant="h3">
-                          {dailyTotals
-                            ? formatCount(dailyTotals.unique)
-                            : '—'}
+                          {dailyTotals ? formatCount(dailyTotals.unique) : '—'}
                         </Typography>
                       </Card>
                       <Card className={s.kpiCard} padding="md">
