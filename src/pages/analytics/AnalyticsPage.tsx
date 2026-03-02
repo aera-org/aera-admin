@@ -11,7 +11,9 @@ import { useSearchParams } from 'react-router-dom';
 
 import {
   addMonths,
+  buildAnalyticsCsvFileName,
   compareMonthIds,
+  downloadCsvFile,
   formatCount,
   formatMetricDelta,
   formatMetricValue,
@@ -38,6 +40,8 @@ import {
 } from '@/app/analytics';
 import { useAuth } from '@/app/auth';
 import { useCharacters } from '@/app/characters';
+import { notifyError, notifySuccess } from '@/app/toast';
+import { DownloadIcon } from '@/assets/icons';
 import {
   Alert,
   Button,
@@ -48,6 +52,7 @@ import {
   Field,
   FormRow,
   Grid,
+  IconButton,
   Input,
   Section,
   Select,
@@ -301,6 +306,7 @@ export function AnalyticsPage() {
     useState<PaymentsConversionGroupBy>('character');
   const [revenueGroupBy, setRevenueGroupBy] =
     useState<PaymentsRevenueGroupBy>('character');
+  const [isExporting, setIsExporting] = useState(false);
   const isTargetUser = user?.role === UserRole.Target;
   const section = isTargetUser
     ? 'deeplinks'
@@ -1692,6 +1698,156 @@ export function AnalyticsPage() {
     [],
   );
 
+  const monthlyExportHeaders = useMemo(
+    () => ['month', ...sectionConfig.metrics.map((metric) => metric.key)],
+    [sectionConfig.metrics],
+  );
+  const monthlyExportRows = useMemo(() => {
+    const orderedMonths = [...rangeMonths].sort((a, b) => compareMonthIds(b, a));
+    return orderedMonths.map((month) => {
+      const row = dataByMonth.get(month);
+      return [
+        month,
+        ...sectionConfig.metrics.map((metric) => {
+          const value = row?.[metric.key];
+          return Number.isFinite(value) ? value : null;
+        }),
+      ];
+    });
+  }, [dataByMonth, rangeMonths, sectionConfig.metrics]);
+
+  const dailyExportRows = useMemo(() => {
+    const entries = dailyData ?? [];
+    return [...entries]
+      .sort((a, b) => String(b.day).localeCompare(String(a.day)))
+      .map((item) => [
+        item.day,
+        Number.isFinite(item.total) ? item.total : null,
+        Number.isFinite(item.unique) ? item.unique : null,
+        Number.isFinite(item.customers) ? item.customers : null,
+        Number.isFinite(item.revenue) ? item.revenue : null,
+        Number.isFinite(item.conversion) ? item.conversion : null,
+        Number.isFinite(item.arpu) ? item.arpu : null,
+        Number.isFinite(item.arpc) ? item.arpc : null,
+      ]);
+  }, [dailyData]);
+
+  const deeplinkExportRows = useMemo(() => {
+    return sortedDeeplinkRows.map((item) => [
+      item.ref ?? '',
+      item.deeplink,
+      item.character?.id ?? '',
+      item.character?.name ?? '',
+      item.scenario?.id ?? '',
+      item.scenario?.name ?? '',
+      item.scenario?.slug ?? '',
+      Number.isFinite(item.visits) ? item.visits : null,
+      Number.isFinite(item.unique) ? item.unique : null,
+      Number.isFinite(item.total) ? item.total : null,
+      Number.isFinite(item.customers) ? item.customers : null,
+      Number.isFinite(item.transactions) ? item.transactions : null,
+      Number.isFinite(item.revenue) ? item.revenue : null,
+      Number.isFinite(item.conversion) ? item.conversion : null,
+    ]);
+  }, [sortedDeeplinkRows]);
+
+  const isActiveSectionLoading = isDeeplinksSection
+    ? isDeeplinksLoading
+    : isDailySection
+      ? isDailyLoading
+      : isMainLoading;
+  const canExport = isSectionAvailable && !isActiveSectionLoading;
+
+  const handleExportCsv = useCallback(() => {
+    if (!canExport || isExporting) return;
+
+    setIsExporting(true);
+    try {
+      if (isDeeplinksSection) {
+        downloadCsvFile(
+          {
+            headers: [
+              'ref',
+              'deeplink',
+              'characterId',
+              'characterName',
+              'scenarioId',
+              'scenarioName',
+              'scenarioSlug',
+              'visits',
+              'unique',
+              'total',
+              'customers',
+              'transactions',
+              'revenue',
+              'conversion',
+            ],
+            rows: deeplinkExportRows,
+          },
+          buildAnalyticsCsvFileName({
+            section,
+            start: deeplinkStart,
+            end: deeplinkEnd,
+          }),
+        );
+      } else if (isDailySection) {
+        downloadCsvFile(
+          {
+            headers: [
+              'day',
+              'total',
+              'unique',
+              'customers',
+              'revenue',
+              'conversion',
+              'arpu',
+              'arpc',
+            ],
+            rows: dailyExportRows,
+          },
+          buildAnalyticsCsvFileName({
+            section,
+            start: dailyStart,
+            end: dailyEnd,
+          }),
+        );
+      } else {
+        downloadCsvFile(
+          {
+            headers: monthlyExportHeaders,
+            rows: monthlyExportRows,
+          },
+          buildAnalyticsCsvFileName({
+            section,
+            start: startMonth,
+            end: endMonth,
+          }),
+        );
+      }
+      notifySuccess('CSV exported.', 'CSV exported.');
+    } catch (error) {
+      notifyError(error, 'Unable to export CSV.');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [
+    canExport,
+    isExporting,
+    isDeeplinksSection,
+    deeplinkExportRows,
+    section,
+    deeplinkStart,
+    deeplinkEnd,
+    isDailySection,
+    dailyExportRows,
+    dailyStart,
+    dailyEnd,
+    monthlyExportHeaders,
+    monthlyExportRows,
+    startMonth,
+    endMonth,
+  ]);
+
   const { ref: chartRef, width: chartWidth } =
     useElementWidth<HTMLDivElement>();
 
@@ -1720,6 +1876,15 @@ export function AnalyticsPage() {
                 );
               })}
             </ButtonGroup>
+            <IconButton
+              aria-label="Export CSV"
+              tooltip="Export CSV"
+              icon={<DownloadIcon />}
+              variant="ghost"
+              onClick={handleExportCsv}
+              loading={isExporting}
+              disabled={!canExport}
+            />
           </div>
         </div>
 
