@@ -5,6 +5,8 @@ export type {
   AnalyticsMetricSeries,
   AnalyticsMetricsResponse,
   DailyAnalyticsItem,
+  DailyCountrySeriesItem,
+  DailyCountryTopItem,
   DeeplinkAnalyticsItem,
   PaymentsConversionBreakdownItem,
   PaymentsConversionGroupBy,
@@ -50,6 +52,8 @@ export {
   normalizeRange,
 } from './months';
 export {
+  useAnalyticsDailyByCountry,
+  useAnalyticsDailyCountryTop,
   useAnalyticsDaily,
   useAnalyticsDeeplinks,
   useAnalyticsMainRange,

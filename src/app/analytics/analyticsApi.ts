@@ -38,6 +38,21 @@ export type DailyAnalyticsItem = {
   arpc: number;
 };
 
+export type DailyCountrySeriesItem = DailyAnalyticsItem & {
+  country: string;
+};
+
+export type DailyCountryTopItem = {
+  country: string;
+  unique: number;
+  total: number;
+  customers: number;
+  revenue: number;
+  conversion: number;
+  arpu: number;
+  arpc: number;
+};
+
 export type PaymentsConversionGroupBy = 'character' | 'scenario' | 'deeplink';
 export type PaymentsRevenueGroupBy = 'character' | 'scenario' | 'deeplink';
 
@@ -123,6 +138,53 @@ export async function getAnalyticsDaily(params: {
   }
 
   return (await res.json()) as DailyAnalyticsItem[];
+}
+
+export async function getAnalyticsDailyByCountry(params: {
+  country: string;
+  startDate: string;
+  endDate: string;
+}) {
+  const query = new URLSearchParams();
+  query.set('country', params.country);
+  query.set('startDate', params.startDate);
+  query.set('endDate', params.endDate);
+
+  const res = await apiFetch(
+    `/admin/analytics/daily/by-country?${query.toString()}`,
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, 'Unable to load daily country analytics.');
+  }
+
+  return (await res.json()) as DailyCountrySeriesItem[];
+}
+
+export async function getAnalyticsDailyCountryTop(params: {
+  metric: string;
+  startDate: string;
+  endDate: string;
+  order?: 'asc' | 'desc';
+  limit?: number;
+}) {
+  const query = new URLSearchParams();
+  query.set('metric', params.metric);
+  query.set('startDate', params.startDate);
+  query.set('endDate', params.endDate);
+  if (params.order) query.set('order', params.order);
+  if (params.limit) query.set('limit', String(params.limit));
+
+  const res = await apiFetch(
+    `/admin/analytics/daily/by-country/top?${query.toString()}`,
+  );
+  if (!res.ok) {
+    throw await buildApiError(
+      res,
+      'Unable to load daily country ranking.',
+    );
+  }
+
+  return (await res.json()) as DailyCountryTopItem[];
 }
 
 export async function getPaymentsConversionBreakdown(params: {

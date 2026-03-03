@@ -31,6 +31,8 @@ import {
   normalizeRange,
   type PaymentsConversionGroupBy,
   type PaymentsRevenueGroupBy,
+  useAnalyticsDailyByCountry,
+  useAnalyticsDailyCountryTop,
   useAnalyticsDaily,
   useAnalyticsDeeplinks,
   useAnalyticsMainRange,
@@ -81,6 +83,10 @@ type QueryUpdate = {
   scenarioId?: string;
   sort?: string;
   dailyMetric?: string;
+  country?: string;
+  countryMetric?: string;
+  countryOrder?: string;
+  countryLimit?: string;
 };
 
 type ChartDatum = {
@@ -96,6 +102,8 @@ type DailyMetricKey =
   | 'conversion'
   | 'arpu'
   | 'arpc';
+
+type CountryOrder = 'asc' | 'desc';
 
 type DailyChartDatum = {
   day: string;
@@ -115,6 +123,7 @@ const MAX_RANGE_MONTHS = 24;
 const DEFAULT_DEEPLINK_RANGE_DAYS = 30;
 const DEFAULT_DAILY_RANGE_DAYS = 30;
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const COUNTRY_LIMIT_OPTIONS = [20, 50, 100] as const;
 
 function useElementWidth<T extends HTMLElement>() {
   const [node, setNode] = useState<T | null>(null);
@@ -216,6 +225,12 @@ function formatDayLabel(value: string, variant: 'short' | 'long' = 'short') {
   return new Intl.DateTimeFormat(undefined, options).format(date);
 }
 
+function formatCountryLabel(value: string | null | undefined) {
+  const normalized = value?.trim();
+  if (!normalized || normalized.toLowerCase() === 'unknown') return 'Unknown';
+  return normalized;
+}
+
 function isValidDeeplinkSort(
   value: string | null | undefined,
 ): value is DeeplinkSortKey {
@@ -242,6 +257,21 @@ function isValidDailyMetric(
     value === 'arpu' ||
     value === 'arpc'
   );
+}
+
+function isValidCountryOrder(
+  value: string | null | undefined,
+): value is CountryOrder {
+  return value === 'asc' || value === 'desc';
+}
+
+function getCountryLimit(value: string | null | undefined) {
+  const parsed = Number(value);
+  if (Number.isFinite(parsed)) {
+    const match = COUNTRY_LIMIT_OPTIONS.find((option) => option === parsed);
+    if (match) return match;
+  }
+  return COUNTRY_LIMIT_OPTIONS[0];
 }
 
 const DAILY_METRIC_OPTIONS: Array<{
@@ -301,6 +331,10 @@ export function AnalyticsPage() {
   const rawScenarioId = searchParams.get('scenarioId');
   const rawSort = searchParams.get('sort');
   const rawDailyMetric = searchParams.get('dailyMetric');
+  const rawCountry = searchParams.get('country');
+  const rawCountryMetric = searchParams.get('countryMetric');
+  const rawCountryOrder = searchParams.get('countryOrder');
+  const rawCountryLimit = searchParams.get('countryLimit');
 
   const [conversionGroupBy, setConversionGroupBy] =
     useState<PaymentsConversionGroupBy>('character');
@@ -315,7 +349,9 @@ export function AnalyticsPage() {
       : 'main';
   const isDeeplinksSection = section === 'deeplinks';
   const isDailySection = section === 'daily';
-  const isMonthlySection = !isDeeplinksSection && !isDailySection;
+  const isCountriesSection = section === 'countries';
+  const isMonthlySection =
+    !isDeeplinksSection && !isDailySection && !isCountriesSection;
   const usesCurrentMonthDefault = section === 'main' || section === 'payments';
   const fallbackRange = useMemo(() => {
     const end = usesCurrentMonthDefault
@@ -374,6 +410,13 @@ export function AnalyticsPage() {
   const dailyMetricKey = isValidDailyMetric(rawDailyMetric)
     ? rawDailyMetric
     : 'total';
+  const countryMetricKey = isValidDailyMetric(rawCountryMetric)
+    ? rawCountryMetric
+    : 'total';
+  const countryOrder = isValidCountryOrder(rawCountryOrder)
+    ? rawCountryOrder
+    : 'desc';
+  const countryLimit = getCountryLimit(rawCountryLimit);
   const deeplinkRef = rawRef ?? '';
   const deeplinkCharacterId = rawCharacterId ?? '';
   const deeplinkScenarioId = rawScenarioId ?? '';
@@ -479,6 +522,38 @@ export function AnalyticsPage() {
         }
       }
 
+      if (update.country !== undefined) {
+        if (update.country) {
+          next.set('country', update.country);
+        } else {
+          next.delete('country');
+        }
+      }
+
+      if (update.countryMetric !== undefined) {
+        if (update.countryMetric) {
+          next.set('countryMetric', update.countryMetric);
+        } else {
+          next.delete('countryMetric');
+        }
+      }
+
+      if (update.countryOrder !== undefined) {
+        if (update.countryOrder) {
+          next.set('countryOrder', update.countryOrder);
+        } else {
+          next.delete('countryOrder');
+        }
+      }
+
+      if (update.countryLimit !== undefined) {
+        if (update.countryLimit) {
+          next.set('countryLimit', update.countryLimit);
+        } else {
+          next.delete('countryLimit');
+        }
+      }
+
       setSearchParams(next, { replace });
     },
     [searchParams, setSearchParams],
@@ -494,8 +569,10 @@ export function AnalyticsPage() {
       if (!metricKey && rawMetric) updates.metric = '';
       if (rawKpi !== kpiMonth) updates.kpi = kpiMonth;
     } else {
-      const nextStart = isDailySection ? dailyStart : deeplinkStart;
-      const nextEnd = isDailySection ? dailyEnd : deeplinkEnd;
+      const nextStart =
+        isDailySection || isCountriesSection ? dailyStart : deeplinkStart;
+      const nextEnd =
+        isDailySection || isCountriesSection ? dailyEnd : deeplinkEnd;
       if (rawStartDate !== nextStart) updates.startDate = nextStart;
       if (rawEndDate !== nextEnd) updates.endDate = nextEnd;
       if (isDeeplinksSection && rawSort !== deeplinkSort) {
@@ -503,6 +580,17 @@ export function AnalyticsPage() {
       }
       if (isDailySection && rawDailyMetric !== dailyMetricKey) {
         updates.dailyMetric = dailyMetricKey;
+      }
+      if (isCountriesSection) {
+        if (rawCountryMetric !== countryMetricKey) {
+          updates.countryMetric = countryMetricKey;
+        }
+        if (rawCountryOrder !== countryOrder) {
+          updates.countryOrder = countryOrder;
+        }
+        if (rawCountryLimit !== String(countryLimit)) {
+          updates.countryLimit = String(countryLimit);
+        }
       }
     }
     if (Object.keys(updates).length > 0) {
@@ -527,11 +615,18 @@ export function AnalyticsPage() {
     deeplinkSort,
     isDeeplinksSection,
     isDailySection,
+    isCountriesSection,
     isMonthlySection,
     dailyStart,
     dailyEnd,
     dailyMetricKey,
     rawDailyMetric,
+    rawCountryMetric,
+    countryMetricKey,
+    rawCountryOrder,
+    countryOrder,
+    rawCountryLimit,
+    countryLimit,
     updateSearchParams,
   ]);
 
@@ -680,6 +775,61 @@ export function AnalyticsPage() {
     },
   );
 
+  const {
+    data: countryTopData,
+    isLoading: isCountryTopLoading,
+    error: countryTopError,
+  } = useAnalyticsDailyCountryTop(
+    {
+      metric: countryMetricKey,
+      startDate: dailyStart,
+      endDate: dailyEnd,
+      order: countryOrder,
+      limit: countryLimit,
+    },
+    {
+      enabled:
+        isCountriesSection &&
+        isValidDateId(dailyStart) &&
+        isValidDateId(dailyEnd),
+    },
+  );
+
+  const selectedCountry = useMemo(() => {
+    if (rawCountry) return rawCountry;
+    return countryTopData?.[0]?.country ?? 'unknown';
+  }, [rawCountry, countryTopData]);
+
+  const {
+    data: countrySeriesData,
+    isLoading: isCountrySeriesLoading,
+    error: countrySeriesError,
+  } = useAnalyticsDailyByCountry(
+    {
+      country: selectedCountry,
+      startDate: dailyStart,
+      endDate: dailyEnd,
+    },
+    {
+      enabled:
+        isCountriesSection &&
+        Boolean(selectedCountry) &&
+        isValidDateId(dailyStart) &&
+        isValidDateId(dailyEnd),
+    },
+  );
+
+  useEffect(() => {
+    if (!isCountriesSection) return;
+    if (rawCountry || !selectedCountry) return;
+    updateSearchParams({ country: selectedCountry }, true);
+  }, [
+    isCountriesSection,
+    rawCountry,
+    selectedCountry,
+    updateSearchParams,
+  ]);
+
   const kpiCards = sectionConfig.metrics.map((metric) => {
     const value = currentRow?.[metric.key] ?? null;
     const previous = previousRow?.[metric.key] ?? null;
@@ -825,6 +975,38 @@ export function AnalyticsPage() {
       DAILY_METRIC_OPTIONS[0],
     [dailyMetricKey],
   );
+  const countryOrderOptions = useMemo(
+    () => [
+      { value: 'desc', label: 'Desc' },
+      { value: 'asc', label: 'Asc' },
+    ],
+    [],
+  );
+  const countryLimitOptions = useMemo(
+    () =>
+      COUNTRY_LIMIT_OPTIONS.map((limit) => ({
+        value: String(limit),
+        label: String(limit),
+      })),
+    [],
+  );
+  const countryOptions = useMemo(() => {
+    const options =
+      countryTopData?.map((item) => ({
+        value: item.country,
+        label: formatCountryLabel(item.country),
+      })) ?? [];
+    if (!options.some((option) => option.value === 'unknown')) {
+      options.push({ value: 'unknown', label: 'Unknown' });
+    }
+    if (rawCountry && !options.some((option) => option.value === rawCountry)) {
+      options.unshift({
+        value: rawCountry,
+        label: formatCountryLabel(rawCountry),
+      });
+    }
+    return options;
+  }, [countryTopData, rawCountry]);
 
   const conversionColumns = useMemo(
     () => [
@@ -1636,6 +1818,347 @@ export function AnalyticsPage() {
     dailyArpcMetric,
   ]);
 
+  const countryTopColumns = useMemo(
+    () => [
+      {
+        key: 'country',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ minWidth: 90, fontSize: 12 }}
+          >
+            Country
+          </Typography>
+        ),
+      },
+      {
+        key: 'total',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Total
+          </Typography>
+        ),
+      },
+      {
+        key: 'unique',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Unique
+          </Typography>
+        ),
+      },
+      {
+        key: 'customers',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Customers
+          </Typography>
+        ),
+      },
+      {
+        key: 'revenue',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Revenue
+          </Typography>
+        ),
+      },
+      {
+        key: 'conversion',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Conversion
+          </Typography>
+        ),
+      },
+      {
+        key: 'arpu',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            ARPU
+          </Typography>
+        ),
+      },
+      {
+        key: 'arpc',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            ARPC
+          </Typography>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const countryTopRows = useMemo(() => {
+    const entries = countryTopData ?? [];
+    return entries.map((item) => ({
+      country: (
+        <Typography variant="body" as="span">
+          {formatCountryLabel(item.country)}
+        </Typography>
+      ),
+      total: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {Number.isFinite(item.total) ? formatCount(item.total) : '—'}
+        </Typography>
+      ),
+      unique: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {Number.isFinite(item.unique) ? formatCount(item.unique) : '—'}
+        </Typography>
+      ),
+      customers: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {Number.isFinite(item.customers)
+            ? formatCount(item.customers)
+            : '—'}
+        </Typography>
+      ),
+      revenue: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {dailyRevenueMetric && Number.isFinite(item.revenue)
+            ? formatMetricValue(dailyRevenueMetric, item.revenue, 'table')
+            : '—'}
+        </Typography>
+      ),
+      conversion: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {conversionMetric && Number.isFinite(item.conversion)
+            ? formatMetricValue(conversionMetric, item.conversion, 'table')
+            : '—'}
+        </Typography>
+      ),
+      arpu: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {dailyArpuMetric && Number.isFinite(item.arpu)
+            ? formatMetricValue(dailyArpuMetric, item.arpu, 'table')
+            : '—'}
+        </Typography>
+      ),
+      arpc: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {dailyArpcMetric && Number.isFinite(item.arpc)
+            ? formatMetricValue(dailyArpcMetric, item.arpc, 'table')
+            : '—'}
+        </Typography>
+      ),
+    }));
+  }, [
+    countryTopData,
+    conversionMetric,
+    dailyRevenueMetric,
+    dailyArpuMetric,
+    dailyArpcMetric,
+  ]);
+
+  const countrySeriesTotals = useMemo(() => {
+    const entries = countrySeriesData ?? [];
+    if (!entries.length) return null;
+    const totals = entries.reduce(
+      (acc, item) => {
+        acc.total += Number.isFinite(item.total) ? item.total : 0;
+        acc.unique += Number.isFinite(item.unique) ? item.unique : 0;
+        acc.customers += Number.isFinite(item.customers) ? item.customers : 0;
+        acc.revenue += Number.isFinite(item.revenue) ? item.revenue : 0;
+        return acc;
+      },
+      {
+        total: 0,
+        unique: 0,
+        customers: 0,
+        revenue: 0,
+      },
+    );
+
+    const conversion =
+      totals.total > 0 ? totals.customers / totals.total : null;
+    const arpu = totals.total > 0 ? totals.revenue / totals.total : null;
+    const arpc =
+      totals.customers > 0 ? totals.revenue / totals.customers : null;
+
+    return { ...totals, conversion, arpu, arpc };
+  }, [countrySeriesData]);
+
+  const countrySeriesRows = useMemo(() => {
+    const entries = countrySeriesData ?? [];
+    return [...entries]
+      .sort((a, b) => String(b.day).localeCompare(String(a.day)))
+      .map((item) => ({
+        day: (
+          <Typography variant="body" as="span">
+            {item.day ? formatDayLabel(item.day, 'long') : '—'}
+          </Typography>
+        ),
+        total: (
+          <Typography
+            variant="body"
+            as="span"
+            className={s.alignRight}
+            style={{ fontSize: 14 }}
+          >
+            {Number.isFinite(item.total) ? formatCount(item.total) : '—'}
+          </Typography>
+        ),
+        unique: (
+          <Typography
+            variant="body"
+            as="span"
+            className={s.alignRight}
+            style={{ fontSize: 14 }}
+          >
+            {Number.isFinite(item.unique) ? formatCount(item.unique) : '—'}
+          </Typography>
+        ),
+        customers: (
+          <Typography
+            variant="body"
+            as="span"
+            className={s.alignRight}
+            style={{ fontSize: 14 }}
+          >
+            {Number.isFinite(item.customers)
+              ? formatCount(item.customers)
+              : '—'}
+          </Typography>
+        ),
+        revenue: (
+          <Typography
+            variant="body"
+            as="span"
+            className={s.alignRight}
+            style={{ fontSize: 14 }}
+          >
+            {dailyRevenueMetric && Number.isFinite(item.revenue)
+              ? formatMetricValue(dailyRevenueMetric, item.revenue, 'table')
+              : '—'}
+          </Typography>
+        ),
+        conversion: (
+          <Typography
+            variant="body"
+            as="span"
+            className={s.alignRight}
+            style={{ fontSize: 14 }}
+          >
+            {conversionMetric && Number.isFinite(item.conversion)
+              ? formatMetricValue(conversionMetric, item.conversion, 'table')
+              : '—'}
+          </Typography>
+        ),
+        arpu: (
+          <Typography
+            variant="body"
+            as="span"
+            className={s.alignRight}
+            style={{ fontSize: 14 }}
+          >
+            {dailyArpuMetric && Number.isFinite(item.arpu)
+              ? formatMetricValue(dailyArpuMetric, item.arpu, 'table')
+              : '—'}
+          </Typography>
+        ),
+        arpc: (
+          <Typography
+            variant="body"
+            as="span"
+            className={s.alignRight}
+            style={{ fontSize: 14 }}
+          >
+            {dailyArpcMetric && Number.isFinite(item.arpc)
+              ? formatMetricValue(dailyArpcMetric, item.arpc, 'table')
+              : '—'}
+          </Typography>
+        ),
+      }));
+  }, [
+    countrySeriesData,
+    conversionMetric,
+    dailyRevenueMetric,
+    dailyArpuMetric,
+    dailyArpcMetric,
+  ]);
+
   const dailyChartData = useMemo(() => {
     const entries = dailyData ?? [];
     return [...entries]
@@ -2349,6 +2872,252 @@ export function AnalyticsPage() {
                     />
                   )}
                 </Card>
+              </Section>
+            </>
+          ) : isCountriesSection ? (
+            <>
+              {countryTopError ? (
+                <Alert
+                  tone="danger"
+                  title="Unable to load country ranking"
+                  description="Please retry or adjust the filters."
+                />
+              ) : null}
+              {countrySeriesError ? (
+                <Alert
+                  tone="danger"
+                  title="Unable to load country series"
+                  description="Please retry or adjust the filters."
+                />
+              ) : null}
+
+              <div className={s.filters}>
+                <FormRow columns={3}>
+                  <Field label="Start date" className={s.filterField}>
+                    <Input
+                      type="date"
+                      size="sm"
+                      value={dailyStart}
+                      onChange={(event) =>
+                        updateSearchParams({ startDate: event.target.value })
+                      }
+                      fullWidth
+                    />
+                  </Field>
+                  <Field label="End date" className={s.filterField}>
+                    <Input
+                      type="date"
+                      size="sm"
+                      value={dailyEnd}
+                      onChange={(event) =>
+                        updateSearchParams({ endDate: event.target.value })
+                      }
+                      fullWidth
+                    />
+                  </Field>
+                  <Field label="Top by" className={s.filterField}>
+                    <Select
+                      options={dailyMetricOptions}
+                      value={countryMetricKey}
+                      onChange={(value) =>
+                        updateSearchParams({ countryMetric: value })
+                      }
+                      size="sm"
+                      fullWidth
+                    />
+                  </Field>
+                </FormRow>
+                <FormRow columns={2}>
+                  <Field label="Order" className={s.filterField}>
+                    <Select
+                      options={countryOrderOptions}
+                      value={countryOrder}
+                      onChange={(value) =>
+                        updateSearchParams({ countryOrder: value })
+                      }
+                      size="sm"
+                      fullWidth
+                    />
+                  </Field>
+                  <Field label="Limit" className={s.filterField}>
+                    <Select
+                      options={countryLimitOptions}
+                      value={String(countryLimit)}
+                      onChange={(value) =>
+                        updateSearchParams({ countryLimit: value })
+                      }
+                      size="sm"
+                      fullWidth
+                    />
+                  </Field>
+                </FormRow>
+                <Typography
+                  variant="caption"
+                  tone="muted"
+                  className={s.filterNote}
+                >
+                  UTC dates. Revenue in USD. Current day is partial.
+                </Typography>
+              </div>
+
+              <Section title="Top countries">
+                <Card className={s.panel} padding="md">
+                  {isCountryTopLoading ? (
+                    <Skeleton height={240} />
+                  ) : countryTopRows.length ? (
+                    <div className={s.tableWrap}>
+                      <Table columns={countryTopColumns} rows={countryTopRows} />
+                    </div>
+                  ) : (
+                    <EmptyState
+                      title="No data for this period"
+                      description="Try adjusting the filters."
+                    />
+                  )}
+                </Card>
+              </Section>
+
+              <Section
+                title="Country"
+                actions={
+                  <Field
+                    label="Country"
+                    layout="inline"
+                    className={s.breakdownField}
+                  >
+                    <Select
+                      options={countryOptions}
+                      value={selectedCountry}
+                      onChange={(value) =>
+                        updateSearchParams({ country: value })
+                      }
+                      size="sm"
+                      fitContent
+                    />
+                  </Field>
+                }
+              >
+                {isCountrySeriesLoading ? (
+                  <>
+                    <Grid columns={7} gap={16}>
+                      {Array.from({ length: 7 }).map((_, index) => (
+                        <Skeleton key={index} height={88} />
+                      ))}
+                    </Grid>
+                    <Skeleton height={240} />
+                  </>
+                ) : countrySeriesRows.length ? (
+                  <>
+                    <Grid columns={7} gap={16}>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          Total
+                        </Typography>
+                        <Typography variant="h3">
+                          {countrySeriesTotals
+                            ? formatCount(countrySeriesTotals.total)
+                            : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          Unique
+                        </Typography>
+                        <Typography variant="h3">
+                          {countrySeriesTotals
+                            ? formatCount(countrySeriesTotals.unique)
+                            : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          Customers
+                        </Typography>
+                        <Typography variant="h3">
+                          {countrySeriesTotals
+                            ? formatCount(countrySeriesTotals.customers)
+                            : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          Revenue
+                        </Typography>
+                        <Typography variant="h3">
+                          {countrySeriesTotals && dailyRevenueMetric
+                            ? formatMetricValue(
+                                dailyRevenueMetric,
+                                countrySeriesTotals.revenue,
+                                'card',
+                              )
+                            : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          Conversion
+                        </Typography>
+                        <Typography variant="h3">
+                          {countrySeriesTotals && conversionMetric
+                            ? formatMetricValue(
+                                conversionMetric,
+                                countrySeriesTotals.conversion,
+                                'card',
+                              )
+                            : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          ARPU
+                        </Typography>
+                        <Typography variant="h3">
+                          {countrySeriesTotals && dailyArpuMetric
+                            ? formatMetricValue(
+                                dailyArpuMetric,
+                                countrySeriesTotals.arpu,
+                                'card',
+                              )
+                            : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          ARPC
+                        </Typography>
+                        <Typography variant="h3">
+                          {countrySeriesTotals && dailyArpcMetric
+                            ? formatMetricValue(
+                                dailyArpcMetric,
+                                countrySeriesTotals.arpc,
+                                'card',
+                              )
+                            : '—'}
+                        </Typography>
+                      </Card>
+                    </Grid>
+                    <Typography
+                      variant="caption"
+                      tone="muted"
+                      className={s.totalsNote}
+                    >
+                      Totals are sums across rows.
+                    </Typography>
+                    <Card className={s.panel} padding="md">
+                      <div className={s.tableWrap}>
+                        <Table
+                          columns={dailyColumns}
+                          rows={countrySeriesRows}
+                        />
+                      </div>
+                    </Card>
+                  </>
+                ) : (
+                  <EmptyState
+                    title="No data for this period"
+                    description="Try adjusting the filters."
+                  />
+                )}
               </Section>
             </>
           ) : (

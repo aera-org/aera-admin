@@ -2,12 +2,16 @@ import { useQuery } from '@tanstack/react-query';
 
 import {
   getAnalyticsDeeplinks,
+  getAnalyticsDailyByCountry,
+  getAnalyticsDailyCountryTop,
   getAnalyticsDaily,
   getAnalyticsMainRange,
   getAnalyticsMetrics,
   getPaymentsConversionBreakdown,
   getPaymentsRevenueBreakdown,
   type DeeplinkAnalyticsItem,
+  type DailyCountrySeriesItem,
+  type DailyCountryTopItem,
   type DailyAnalyticsItem,
   type AnalyticsMainRangeResponse,
   type AnalyticsMetricsResponse,
@@ -47,6 +51,18 @@ const analyticsKeys = {
   }) => ['analytics', 'deeplinks', params] as const,
   daily: (params: { startDate: string; endDate: string }) =>
     ['analytics', 'daily', params] as const,
+  dailyByCountry: (params: {
+    country: string;
+    startDate: string;
+    endDate: string;
+  }) => ['analytics', 'daily', 'by-country', params] as const,
+  dailyCountryTop: (params: {
+    metric: string;
+    startDate: string;
+    endDate: string;
+    order?: 'asc' | 'desc';
+    limit?: number;
+  }) => ['analytics', 'daily', 'by-country', 'top', params] as const,
 };
 
 type AnalyticsQueryOptions<T> = {
@@ -144,6 +160,38 @@ export function useAnalyticsDaily(
   return useQuery({
     queryKey: analyticsKeys.daily(params),
     queryFn: () => getAnalyticsDaily(params),
+    placeholderData: options.placeholderData ?? ((previous) => previous),
+    staleTime: options.staleTime ?? DEFAULT_STALE_TIME,
+    enabled: options.enabled ?? true,
+  });
+}
+
+export function useAnalyticsDailyByCountry(
+  params: { country: string; startDate: string; endDate: string },
+  options: AnalyticsQueryOptions<DailyCountrySeriesItem[]> = {},
+) {
+  return useQuery({
+    queryKey: analyticsKeys.dailyByCountry(params),
+    queryFn: () => getAnalyticsDailyByCountry(params),
+    placeholderData: options.placeholderData ?? ((previous) => previous),
+    staleTime: options.staleTime ?? DEFAULT_STALE_TIME,
+    enabled: options.enabled ?? true,
+  });
+}
+
+export function useAnalyticsDailyCountryTop(
+  params: {
+    metric: string;
+    startDate: string;
+    endDate: string;
+    order?: 'asc' | 'desc';
+    limit?: number;
+  },
+  options: AnalyticsQueryOptions<DailyCountryTopItem[]> = {},
+) {
+  return useQuery({
+    queryKey: analyticsKeys.dailyCountryTop(params),
+    queryFn: () => getAnalyticsDailyCountryTop(params),
     placeholderData: options.placeholderData ?? ((previous) => previous),
     staleTime: options.staleTime ?? DEFAULT_STALE_TIME,
     enabled: options.enabled ?? true,
