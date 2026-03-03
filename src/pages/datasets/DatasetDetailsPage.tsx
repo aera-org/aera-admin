@@ -11,6 +11,8 @@ import {
   useRegenerateDatasetItem,
   useUpdateDataset,
 } from '@/app/datasets';
+import { getFileSignedUrl } from '@/app/files/filesApi';
+import { notifyError } from '@/app/toast';
 import { DownloadIcon, PencilLineIcon, TrashIcon } from '@/assets/icons';
 import {
   Alert,
@@ -27,8 +29,6 @@ import {
   Stack,
   Typography,
 } from '@/atoms';
-import { getFileSignedUrl } from '@/app/files/filesApi';
-import { notifyError } from '@/app/toast';
 import type { DatasetItemPrompt, IDatasetItem } from '@/common/types';
 import { DatasetItemStatus } from '@/common/types';
 import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
@@ -208,7 +208,8 @@ export function DatasetDetailsPage() {
       const signedUrl =
         typeof signedUrlResponse === 'string'
           ? signedUrlResponse
-          : signedUrlResponse.url ?? signedUrlResponse.signedUrl;
+          : // @ts-expect-error Signed URL response type is wrong
+            (signedUrlResponse.url ?? signedUrlResponse.signedUrl);
       if (!signedUrl) {
         throw new Error('Unable to download config.');
       }

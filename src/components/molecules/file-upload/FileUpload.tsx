@@ -10,19 +10,16 @@ import { FileStatus } from '@/common/types';
 import s from './FileUpload.module.scss';
 
 const DEFAULT_ACCEPT = 'image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp';
-const ACCEPTED_MIME_TYPES = new Set([
-  'image/png',
-  'image/jpeg',
-  'image/jpg',
-  'image/webp',
-]);
 const EXTENSION_TO_MIME = {
   png: 'image/png',
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
   webp: 'image/webp',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  mov: 'video/quicktime',
+  m4v: 'video/mp4',
 } as const;
-const ACCEPTED_EXTENSIONS = new Set(Object.keys(EXTENSION_TO_MIME));
 
 type FileUploadStatus =
   | 'idle'
@@ -55,12 +52,29 @@ function getFileExtension(name: string) {
   return parts[parts.length - 1].toLowerCase();
 }
 
-function isAcceptedFile(file: File) {
-  if (ACCEPTED_MIME_TYPES.has(file.type)) {
-    return true;
-  }
+function isAcceptedFile(file: File, accept: string) {
+  const tokens = accept
+    .split(',')
+    .map((token) => token.trim().toLowerCase())
+    .filter(Boolean);
+  if (tokens.length === 0) return true;
+
+  const type = file.type.toLowerCase();
   const extension = getFileExtension(file.name);
-  return ACCEPTED_EXTENSIONS.has(extension);
+
+  return tokens.some((token) => {
+    if (token === '*/*') {
+      return true;
+    }
+    if (token.startsWith('.')) {
+      return extension === token.slice(1);
+    }
+    if (token.endsWith('/*')) {
+      const prefix = token.slice(0, -1);
+      return type.startsWith(prefix);
+    }
+    return type === token;
+  });
 }
 
 function resolveMimeType(file: File) {
@@ -184,8 +198,11 @@ export function FileUpload({
     selectedFile?.name || uploadedFile?.name || 'No file selected';
   const fileSize = selectedFile ? formatBytes(selectedFile.size) : null;
   const hasFile = Boolean(selectedFile || uploadedFile);
+  const isImageUpload = (uploadedFile?.mime ?? '').startsWith('image/');
   const showPreview =
-    uploadedFile?.status === FileStatus.UPLOADED && Boolean(uploadedFile.url);
+    uploadedFile?.status === FileStatus.UPLOADED &&
+    Boolean(uploadedFile.url) &&
+    isImageUpload;
 
   const handleClear = () => {
     if (isDisabled) return;
@@ -216,8 +233,11 @@ export function FileUpload({
     setProgress(0);
     setStatus('selected');
 
-    if (!isAcceptedFile(file)) {
-      const message = 'Only PNG, JPG, JPEG, or WEBP files are allowed.';
+    if (!isAcceptedFile(file, accept)) {
+      const message =
+        accept === DEFAULT_ACCEPT
+          ? 'Only PNG, JPG, JPEG, or WEBP files are allowed.'
+          : 'Selected file type is not allowed.';
       setErrorMessage(message);
       setStatus('error');
       onError?.(message);

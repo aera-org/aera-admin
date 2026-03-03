@@ -13,6 +13,7 @@ export enum MessageActionType {
 
 interface BroadcastMessage {
   imgId?: string;
+  videoId?: string;
   text: string;
   action?: {
     text: string;

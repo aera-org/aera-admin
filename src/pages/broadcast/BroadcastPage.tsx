@@ -64,6 +64,8 @@ const actionTypeOptions = [
   { label: 'URL', value: MessageActionType.Url },
   { label: 'Open app', value: MessageActionType.App },
 ];
+const VIDEO_UPLOAD_ACCEPT =
+  'video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v';
 
 function useDebouncedValue<T>(value: T, delay: number) {
   const [debounced, setDebounced] = useState(value);
@@ -136,6 +138,7 @@ export function BroadcastPage() {
 
   const [messageText, setMessageText] = useState('');
   const [imageFile, setImageFile] = useState<IFile | null>(null);
+  const [videoFile, setVideoFile] = useState<IFile | null>(null);
 
   const [isActionEnabled, setIsActionEnabled] = useState(false);
   const [actionText, setActionText] = useState('');
@@ -286,6 +289,7 @@ export function BroadcastPage() {
     setBulkUserIds('');
     setMessageText('');
     setImageFile(null);
+    setVideoFile(null);
     setIsActionEnabled(false);
     setActionText('');
     setActionType(MessageActionType.Callback);
@@ -374,6 +378,7 @@ export function BroadcastPage() {
       message: {
         text: messageText.trim(),
         imgId: imageFile?.id || undefined,
+        videoId: videoFile?.id || undefined,
         action: isActionEnabled
           ? {
               text: actionText.trim(),
@@ -651,6 +656,18 @@ export function BroadcastPage() {
                 onChange={(file) => setImageFile(file)}
                 onError={(message) =>
                   notifyError(new Error(message), 'Unable to upload image.')
+                }
+              />
+
+              <FileUpload
+                label="Video file (optional)"
+                folder={FileDir.Public}
+                accept={VIDEO_UPLOAD_ACCEPT}
+                value={videoFile}
+                disabled={createMutation.isPending}
+                onChange={(file) => setVideoFile(file)}
+                onError={(message) =>
+                  notifyError(new Error(message), 'Unable to upload video.')
                 }
               />
 
