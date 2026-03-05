@@ -1,6 +1,6 @@
 import { apiFetch } from '@/app/api';
 import { buildApiError } from '@/app/api/apiErrors';
-import type { ILora, LoraUploadDto } from '@/common/types';
+import type { ILora, LoraUpdateDto, LoraUploadDto } from '@/common/types';
 
 import type { PaginatedResponse } from '../paginated-response.type';
 
@@ -13,7 +13,7 @@ export type LorasListParams = {
 
 const fallbackError = 'Unable to load LoRAs.';
 const uploadFallbackError = 'Unable to upload the LoRA.';
-const updateFallbackError = 'Unable to update the strength.';
+const updateFallbackError = 'Unable to update the LoRA.';
 const deleteFallbackError = 'Unable to delete the LoRA.';
 const downloadFallbackError = 'Unable to download the LoRA.';
 
@@ -48,6 +48,7 @@ export async function uploadLora(payload: LoraUploadDto, file: File) {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('strength', String(payload.strength));
+  formData.append('triggerWord', payload.triggerWord);
 
   const res = await apiFetch('/admin/loras', {
     method: 'POST',
@@ -59,11 +60,11 @@ export async function uploadLora(payload: LoraUploadDto, file: File) {
   return (await res.json()) as { success: boolean };
 }
 
-export async function updateLoraStrength(id: string, strength: number) {
+export async function updateLora(id: string, payload: LoraUpdateDto) {
   const res = await apiFetch(`/admin/loras/${id}`, {
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ strength }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) {
     throw await buildApiError(res, updateFallbackError);

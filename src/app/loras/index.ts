@@ -3,7 +3,7 @@ export {
   deleteLora,
   downloadLora,
   getLoras,
-  updateLoraStrength,
+  updateLora,
   uploadLora,
 } from './lorasApi';
-export { useDeleteLora, useLoras, useUpdateLoraStrength } from './queries';
+export { useDeleteLora, useLoras, useUpdateLora } from './queries';

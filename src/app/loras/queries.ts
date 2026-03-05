@@ -6,7 +6,7 @@ import {
   deleteLora,
   getLoras,
   type LorasListParams,
-  updateLoraStrength,
+  updateLora,
 } from './lorasApi';
 
 const loraKeys = {
@@ -21,18 +21,25 @@ export function useLoras(params: LorasListParams) {
   });
 }
 
-export function useUpdateLoraStrength() {
+export function useUpdateLora() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, strength }: { id: string; strength: number }) =>
-      updateLoraStrength(id, strength),
+    mutationFn: ({
+      id,
+      strength,
+      triggerWord,
+    }: {
+      id: string;
+      strength?: number;
+      triggerWord?: string;
+    }) => updateLora(id, { strength, triggerWord }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loras'] });
-      notifySuccess('Strength updated.', 'Strength updated.');
+      notifySuccess('LoRA updated.', 'LoRA updated.');
     },
     onError: (error) => {
-      notifyError(error, 'Unable to update the strength.');
+      notifyError(error, 'Unable to update the LoRA.');
     },
   });
 }

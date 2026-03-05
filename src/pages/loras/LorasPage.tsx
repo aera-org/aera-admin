@@ -8,7 +8,7 @@ import {
   uploadLora,
   useDeleteLora,
   useLoras,
-  useUpdateLoraStrength,
+  useUpdateLora,
 } from '@/app/loras';
 import { notifyError, notifySuccess } from '@/app/toast';
 import { PencilLineIcon, PlusIcon } from '@/assets/icons';
@@ -94,6 +94,11 @@ function resolveStrength(value: string) {
   return parsed;
 }
 
+function resolveTriggerWord(value: string) {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
 export function LorasPage() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -172,7 +177,7 @@ export function LorasPage() {
   );
 
   const { data, error, isLoading, refetch } = useLoras(queryParams);
-  const updateStrengthMutation = useUpdateLoraStrength();
+  const updateLoraMutation = useUpdateLora();
   const deleteMutation = useDeleteLora();
 
   const loras = data?.data ?? [];
@@ -191,6 +196,7 @@ export function LorasPage() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [strengthInput, setStrengthInput] = useState('1');
+  const [triggerWordInput, setTriggerWordInput] = useState('');
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -198,6 +204,7 @@ export function LorasPage() {
   const resetUpload = () => {
     setUploadFile(null);
     setStrengthInput('1');
+    setTriggerWordInput('');
     if (uploadInputRef.current) {
       uploadInputRef.current.value = '';
     }
@@ -212,6 +219,8 @@ export function LorasPage() {
     if (!uploadFile) return;
     const strengthValue = resolveStrength(strengthInput);
     if (strengthValue === null) return;
+    const triggerWordValue = resolveTriggerWord(triggerWordInput);
+    if (!triggerWordValue) return;
 
     setIsUploading(true);
     try {
@@ -219,6 +228,7 @@ export function LorasPage() {
         {
           fileName: uploadFile.name,
           strength: strengthValue,
+          triggerWord: triggerWordValue,
         },
         uploadFile,
       );
@@ -235,10 +245,12 @@ export function LorasPage() {
   const [strengthModalOpen, setStrengthModalOpen] = useState(false);
   const [strengthTarget, setStrengthTarget] = useState<ILora | null>(null);
   const [strengthValue, setStrengthValue] = useState('');
+  const [triggerWordValue, setTriggerWordValue] = useState('');
 
   const openStrengthModal = (lora: ILora) => {
     setStrengthTarget(lora);
     setStrengthValue(String(lora.strength));
+    setTriggerWordValue(lora.triggerWord ?? '');
     setStrengthModalOpen(true);
   };
 
@@ -246,15 +258,19 @@ export function LorasPage() {
     setStrengthModalOpen(false);
     setStrengthTarget(null);
     setStrengthValue('');
+    setTriggerWordValue('');
   };
 
   const handleStrengthSave = async () => {
     if (!strengthTarget) return;
     const nextStrength = resolveStrength(strengthValue);
     if (nextStrength === null) return;
-    await updateStrengthMutation.mutateAsync({
+    const nextTriggerWord = resolveTriggerWord(triggerWordValue);
+    if (!nextTriggerWord) return;
+    await updateLoraMutation.mutateAsync({
       id: strengthTarget.id,
       strength: nextStrength,
+      triggerWord: nextTriggerWord,
     });
     closeStrengthModal();
   };
@@ -270,6 +286,7 @@ export function LorasPage() {
   const columns = useMemo(
     () => [
       { key: 'file', label: 'File' },
+      { key: 'triggerWord', label: 'Trigger word' },
       { key: 'strength', label: 'Strength' },
       { key: 'updated', label: <span className={s.alignRight}>Updated</span> },
       { key: 'actions', label: '' },
@@ -287,6 +304,11 @@ export function LorasPage() {
               {lora.id}
             </Typography>
           </div>
+        ),
+        triggerWord: (
+          <Typography variant="body" tone="muted">
+            {lora.triggerWord || '—'}
+          </Typography>
         ),
         strength: (
           <Typography variant="body" tone="muted">
@@ -323,9 +345,9 @@ export function LorasPage() {
               }}
             />
             <IconButton
-              aria-label="Edit strength"
+              aria-label="Edit LoRA"
               icon={<PencilLineIcon />}
-              tooltip="Edit strength"
+              tooltip="Edit LoRA"
               variant="ghost"
               size="sm"
               onClick={() => openStrengthModal(lora)}
@@ -353,6 +375,7 @@ export function LorasPage() {
             <Skeleton width={90} height={10} />
           </div>
         ),
+        triggerWord: <Skeleton width={110} height={12} />,
         strength: <Skeleton width={60} height={12} />,
         updated: (
           <div className={s.alignRight}>
@@ -502,7 +525,8 @@ export function LorasPage() {
               disabled={
                 isUploading ||
                 !uploadFile ||
-                resolveStrength(strengthInput) === null
+                resolveStrength(strengthInput) === null ||
+                !resolveTriggerWord(triggerWordInput)
               }
             >
               Upload
@@ -539,6 +563,15 @@ export function LorasPage() {
               />
             </div>
           </Field>
+          <Field label="Trigger word">
+            <Input
+              value={triggerWordInput}
+              onChange={(event) => setTriggerWordInput(event.target.value)}
+              placeholder="Enter trigger word"
+              fullWidth
+              disabled={isUploading}
+            />
+          </Field>
           <Field label="Strength">
             <Input
               type="number"
@@ -562,7 +595,7 @@ export function LorasPage() {
 
       <Modal
         open={strengthModalOpen}
-        title="Edit strength"
+        title="Edit LoRA"
         onClose={closeStrengthModal}
         actions={
           <div className={s.modalActions}>
@@ -571,10 +604,11 @@ export function LorasPage() {
             </Button>
             <Button
               onClick={handleStrengthSave}
-              loading={updateStrengthMutation.isPending}
+              loading={updateLoraMutation.isPending}
               disabled={
                 resolveStrength(strengthValue) === null ||
-                updateStrengthMutation.isPending
+                !resolveTriggerWord(triggerWordValue) ||
+                updateLoraMutation.isPending
               }
             >
               Save
@@ -583,6 +617,14 @@ export function LorasPage() {
         }
       >
         <Stack gap="12px">
+          <Field label="Trigger word">
+            <Input
+              value={triggerWordValue}
+              onChange={(event) => setTriggerWordValue(event.target.value)}
+              placeholder="Enter trigger word"
+              fullWidth
+            />
+          </Field>
           <Field label="Strength">
             <Input
               type="number"
