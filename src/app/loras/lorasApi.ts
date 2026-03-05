@@ -13,7 +13,7 @@ export type LorasListParams = {
 
 const fallbackError = 'Unable to load LoRAs.';
 const uploadFallbackError = 'Unable to upload the LoRA.';
-const updateFallbackError = 'Unable to update the seed.';
+const updateFallbackError = 'Unable to update the strength.';
 const deleteFallbackError = 'Unable to delete the LoRA.';
 const downloadFallbackError = 'Unable to download the LoRA.';
 
@@ -47,7 +47,7 @@ export async function getLoras(params: LorasListParams) {
 export async function uploadLora(payload: LoraUploadDto, file: File) {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('seed', String(payload.seed));
+  formData.append('strength', String(payload.strength));
 
   const res = await apiFetch('/admin/loras', {
     method: 'POST',
@@ -59,11 +59,11 @@ export async function uploadLora(payload: LoraUploadDto, file: File) {
   return (await res.json()) as { success: boolean };
 }
 
-export async function updateLoraSeed(id: string, seed: number) {
+export async function updateLoraStrength(id: string, strength: number) {
   const res = await apiFetch(`/admin/loras/${id}`, {
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ seed }),
+    body: JSON.stringify({ strength }),
   });
   if (!res.ok) {
     throw await buildApiError(res, updateFallbackError);

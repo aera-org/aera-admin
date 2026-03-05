@@ -36,6 +36,7 @@ type ScenarioTransferScenario = {
   id: string;
   name: string;
   emoji: string;
+  slug?: string;
   description: string;
   isActive: boolean;
   shortDescription: string;
@@ -268,6 +269,7 @@ export function buildScenarioTransferPayload({
       id: scenario.id,
       name: sanitizeString(scenario.name),
       emoji: sanitizeString(scenario.emoji),
+      slug: sanitizeString(scenario.slug),
       description: sanitizeString(scenario.description),
       isActive: Boolean(scenario.isActive),
       shortDescription: sanitizeString(scenario.shortDescription),
@@ -422,6 +424,7 @@ export async function parseScenarioTransferFile(file: File) {
       id: ensureNonEmptyString(scenarioObj.id, 'scenario.id'),
       name: ensureString(scenarioObj.name, 'scenario.name'),
       emoji: ensureString(scenarioObj.emoji, 'scenario.emoji'),
+      slug: ensureString(scenarioObj.slug ?? '', 'scenario.slug'),
       description: ensureString(
         scenarioObj.description,
         'scenario.description',

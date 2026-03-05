@@ -6,7 +6,7 @@ import {
   deleteLora,
   getLoras,
   type LorasListParams,
-  updateLoraSeed,
+  updateLoraStrength,
 } from './lorasApi';
 
 const loraKeys = {
@@ -21,18 +21,18 @@ export function useLoras(params: LorasListParams) {
   });
 }
 
-export function useUpdateLoraSeed() {
+export function useUpdateLoraStrength() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, seed }: { id: string; seed: number }) =>
-      updateLoraSeed(id, seed),
+    mutationFn: ({ id, strength }: { id: string; strength: number }) =>
+      updateLoraStrength(id, strength),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loras'] });
-      notifySuccess('Seed updated.', 'Seed updated.');
+      notifySuccess('Strength updated.', 'Strength updated.');
     },
     onError: (error) => {
-      notifyError(error, 'Unable to update the seed.');
+      notifyError(error, 'Unable to update the strength.');
     },
   });
 }

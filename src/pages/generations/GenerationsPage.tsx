@@ -18,7 +18,7 @@ import {
   Table,
   Typography,
 } from '@/atoms';
-import { ImgGenerationStatus, type IImgGeneration } from '@/common/types';
+import { type IImgGeneration,ImgGenerationStatus } from '@/common/types';
 import { AppShell } from '@/components/templates';
 
 import s from './GenerationsPage.module.scss';
@@ -181,8 +181,7 @@ export function GenerationsPage() {
   const columns = useMemo(
     () => [
       { key: 'generation', label: 'Generation' },
-      { key: 'lora', label: 'LoRA' },
-      { key: 'seed', label: 'Seed' },
+      { key: 'loras', label: 'LoRAs' },
       { key: 'status', label: 'Status' },
       { key: 'created', label: <span className={s.alignRight}>Created</span> },
     ],
@@ -200,18 +199,34 @@ export function GenerationsPage() {
             </Typography>
           </div>
         ),
-        lora: (
+        loras: (
           <div className={s.loraCell}>
-            <Typography variant="body">{generation.lora.fileName}</Typography>
-            <Typography variant="caption" tone="muted">
-              {generation.lora.id}
-            </Typography>
+            {generation.mainLora ? (
+              <>
+                <Typography variant="body">
+                  Main: {generation.mainLora.fileName}
+                </Typography>
+                <Typography variant="caption" tone="muted">
+                  {generation.mainLora.id}
+                </Typography>
+              </>
+            ) : null}
+            {generation.secondaryLora ? (
+              <>
+                <Typography variant="body">
+                  Secondary: {generation.secondaryLora.fileName}
+                </Typography>
+                <Typography variant="caption" tone="muted">
+                  {generation.secondaryLora.id}
+                </Typography>
+              </>
+            ) : null}
+            {!generation.mainLora && !generation.secondaryLora ? (
+              <Typography variant="body" tone="muted">
+                -
+              </Typography>
+            ) : null}
           </div>
-        ),
-        seed: (
-          <Typography variant="body" tone="muted">
-            {generation.seed}
-          </Typography>
         ),
         status:
           generation.status === ImgGenerationStatus.Ready ? (
@@ -241,13 +256,14 @@ export function GenerationsPage() {
             <Skeleton width={120} height={10} />
           </div>
         ),
-        lora: (
+        loras: (
           <div className={s.loraCell}>
             <Skeleton width={140} height={12} />
             <Skeleton width={90} height={10} />
+            <Skeleton width={120} height={12} />
+            <Skeleton width={90} height={10} />
           </div>
         ),
-        seed: <Skeleton width={60} height={12} />,
         status: <Skeleton width={90} height={20} />,
         created: (
           <div className={s.alignRight}>

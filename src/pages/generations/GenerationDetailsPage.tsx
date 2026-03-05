@@ -193,18 +193,39 @@ export function GenerationDetailsPage() {
                 </div>
                 <div>
                   <Typography variant="meta" tone="muted">
-                    LoRA
+                    Main LoRA
                   </Typography>
-                  <Typography variant="body">{data.lora.fileName}</Typography>
-                  <Typography variant="caption" tone="muted">
-                    {data.lora.id}
-                  </Typography>
+                  {data.mainLora ? (
+                    <>
+                      <Typography variant="body">{data.mainLora.fileName}</Typography>
+                      <Typography variant="caption" tone="muted">
+                        {data.mainLora.id}
+                      </Typography>
+                    </>
+                  ) : (
+                    <Typography variant="body" tone="muted">
+                      -
+                    </Typography>
+                  )}
                 </div>
                 <div>
                   <Typography variant="meta" tone="muted">
-                    Seed
+                    Secondary LoRA
                   </Typography>
-                  <Typography variant="body">{data.seed}</Typography>
+                  {data.secondaryLora ? (
+                    <>
+                      <Typography variant="body">
+                        {data.secondaryLora.fileName}
+                      </Typography>
+                      <Typography variant="caption" tone="muted">
+                        {data.secondaryLora.id}
+                      </Typography>
+                    </>
+                  ) : (
+                    <Typography variant="body" tone="muted">
+                      -
+                    </Typography>
+                  )}
                 </div>
                 <div>
                   <Typography variant="meta" tone="muted">

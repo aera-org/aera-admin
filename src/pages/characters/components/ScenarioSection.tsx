@@ -462,6 +462,7 @@ export function ScenarioSection({
       const createdScenario = await createScenarioApi(characterId, {
         name: scenarioPayload.name.trim(),
         emoji: scenarioPayload.emoji.trim(),
+        slug: scenarioPayload.slug?.trim() || undefined,
         description: scenarioPayload.description.trim(),
         isActive: scenarioPayload.isActive,
         shortDescription: scenarioPayload.shortDescription.trim() || undefined,

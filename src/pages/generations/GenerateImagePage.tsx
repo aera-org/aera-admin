@@ -10,7 +10,6 @@ import {
   Container,
   Field,
   FormRow,
-  Input,
   Select,
   Stack,
   Textarea,
@@ -24,13 +23,6 @@ import s from './GenerateImagePage.module.scss';
 const PAGE_SIZE = 50;
 
 const SEARCH_DEBOUNCE_MS = 300;
-
-function resolveSeed(value: string) {
-  if (!value.trim()) return null;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return null;
-  return Math.floor(parsed);
-}
 
 function useDebouncedValue<T>(value: T, delay: number) {
   const [debounced, setDebounced] = useState(value);
@@ -50,18 +42,26 @@ export function GenerateImagePage() {
   const [values, setValues] = useState({
     characterId: '',
     scenarioId: '',
-    loraId: '',
-    seed: '',
+    mainLoraId: '',
+    secondaryLoraId: '',
     userRequest: '',
   });
   const [showErrors, setShowErrors] = useState(false);
   const [characterSearch, setCharacterSearch] = useState('');
-  const [loraSearch, setLoraSearch] = useState('');
+  const [mainLoraSearch, setMainLoraSearch] = useState('');
+  const [secondaryLoraSearch, setSecondaryLoraSearch] = useState('');
   const debouncedCharacterSearch = useDebouncedValue(
     characterSearch,
     SEARCH_DEBOUNCE_MS,
   );
-  const debouncedLoraSearch = useDebouncedValue(loraSearch, SEARCH_DEBOUNCE_MS);
+  const debouncedMainLoraSearch = useDebouncedValue(
+    mainLoraSearch,
+    SEARCH_DEBOUNCE_MS,
+  );
+  const debouncedSecondaryLoraSearch = useDebouncedValue(
+    secondaryLoraSearch,
+    SEARCH_DEBOUNCE_MS,
+  );
 
   const {
     data: characterData,
@@ -74,11 +74,21 @@ export function GenerateImagePage() {
     take: PAGE_SIZE,
   });
   const {
-    data: loraData,
-    error: loraError,
-    isLoading: isLorasLoading,
+    data: mainLoraData,
+    error: mainLoraError,
+    isLoading: isMainLorasLoading,
   } = useLoras({
-    search: debouncedLoraSearch || undefined,
+    search: debouncedMainLoraSearch || undefined,
+    order: 'DESC',
+    skip: 0,
+    take: PAGE_SIZE,
+  });
+  const {
+    data: secondaryLoraData,
+    error: secondaryLoraError,
+    isLoading: isSecondaryLorasLoading,
+  } = useLoras({
+    search: debouncedSecondaryLoraSearch || undefined,
     order: 'DESC',
     skip: 0,
     take: PAGE_SIZE,
@@ -105,14 +115,22 @@ export function GenerateImagePage() {
     const result: {
       characterId?: string;
       scenarioId?: string;
-      loraId?: string;
-      seed?: string;
+      mainLoraId?: string;
+      secondaryLoraId?: string;
       userRequest?: string;
     } = {};
     if (!values.characterId) result.characterId = 'Select a character.';
     if (!values.scenarioId) result.scenarioId = 'Select a scenario.';
-    if (!values.loraId) result.loraId = 'Select a LoRA.';
-    if (resolveSeed(values.seed) === null) result.seed = 'Enter a seed.';
+    if (values.secondaryLoraId && !values.mainLoraId) {
+      result.secondaryLoraId = 'Select main LoRA first.';
+    }
+    if (
+      values.mainLoraId &&
+      values.secondaryLoraId &&
+      values.mainLoraId === values.secondaryLoraId
+    ) {
+      result.secondaryLoraId = 'Secondary LoRA must differ from main LoRA.';
+    }
     if (!values.userRequest.trim()) result.userRequest = 'Enter a request.';
     return result;
   }, [showErrors, values]);
@@ -122,8 +140,9 @@ export function GenerateImagePage() {
       Boolean(
         values.characterId &&
         values.scenarioId &&
-        values.loraId &&
-        resolveSeed(values.seed) !== null &&
+        (!values.secondaryLoraId || values.mainLoraId) &&
+        (!values.secondaryLoraId ||
+          values.mainLoraId !== values.secondaryLoraId) &&
         values.userRequest.trim(),
       ),
     [values],
@@ -134,13 +153,11 @@ export function GenerateImagePage() {
       setShowErrors(true);
       return;
     }
-    const seedValue = resolveSeed(values.seed);
-    if (seedValue === null) return;
     const response = await createMutation.mutateAsync({
       characterId: values.characterId,
       scenarioId: values.scenarioId,
-      loraId: values.loraId,
-      seed: seedValue,
+      mainLoraId: values.mainLoraId || undefined,
+      secondaryLoraId: values.secondaryLoraId || undefined,
       userRequest: values.userRequest.trim(),
     });
     if (response?.id) {
@@ -148,7 +165,8 @@ export function GenerateImagePage() {
     }
   };
 
-  const blockingError = characterError || loraError || detailsError;
+  const blockingError =
+    characterError || mainLoraError || secondaryLoraError || detailsError;
   const errorMessage =
     blockingError instanceof Error
       ? blockingError.message
@@ -159,19 +177,33 @@ export function GenerateImagePage() {
     label: character.name,
     meta: character.id,
   }));
-  const loraOptions = (loraData?.data ?? []).map((lora) => ({
-    id: lora.id,
-    label: lora.fileName,
-    meta: lora.id,
-  }));
+  const mainLoraOptions = [
+    {
+      id: '',
+      label: 'No main LoRA',
+      meta: undefined,
+    },
+    ...(mainLoraData?.data ?? []).map((lora) => ({
+      id: lora.id,
+      label: lora.fileName,
+      meta: lora.id,
+    })),
+  ];
+  const secondaryLoraOptions = [
+    {
+      id: '',
+      label: 'No secondary LoRA',
+      meta: undefined,
+    },
+    ...(secondaryLoraData?.data ?? [])
+      .filter((lora) => lora.id !== values.mainLoraId)
+      .map((lora) => ({
+        id: lora.id,
+        label: lora.fileName,
+        meta: lora.id,
+      })),
+  ];
 
-  const loraSeedMap = useMemo(() => {
-    const map = new Map<string, number>();
-    (loraData?.data ?? []).forEach((lora) => {
-      map.set(lora.id, lora.seed);
-    });
-    return map;
-  }, [loraData?.data]);
   const scenarioOptions = scenarios.map((scenario) => ({
     label: scenario.name,
     value: scenario.id,
@@ -216,69 +248,78 @@ export function GenerateImagePage() {
               />
             </Field>
             <Field
-              label="LoRA"
-              labelFor="generation-lora"
-              error={errors.loraId}
+              label="Scenario"
+              labelFor="generation-scenario"
+              error={errors.scenarioId}
             >
-              <SearchSelect
-                id="generation-lora"
-                options={loraOptions}
-                value={values.loraId}
-                search={loraSearch}
-                onSearchChange={setLoraSearch}
-                onSelect={(value) =>
-                  setValues((prev) => ({
-                    ...prev,
-                    loraId: value,
-                    seed:
-                      loraSeedMap.get(value) !== undefined
-                        ? String(loraSeedMap.get(value))
-                        : prev.seed,
-                  }))
+              <Select
+                id="generation-scenario"
+                size="sm"
+                options={scenarioOptions}
+                value={values.scenarioId}
+                placeholder={
+                  values.characterId ? 'Select scenario' : 'Select character first'
                 }
-                placeholder="Select LoRA"
-                disabled={createMutation.isPending}
-                loading={isLorasLoading}
-                invalid={Boolean(errors.loraId)}
+                onChange={(value) =>
+                  setValues((prev) => ({ ...prev, scenarioId: value }))
+                }
+                fullWidth
+                disabled={!values.characterId || createMutation.isPending}
+                invalid={Boolean(errors.scenarioId)}
               />
             </Field>
           </FormRow>
 
-          <Field
-            label="Scenario"
-            labelFor="generation-scenario"
-            error={errors.scenarioId}
-          >
-            <Select
-              id="generation-scenario"
-              size="sm"
-              options={scenarioOptions}
-              value={values.scenarioId}
-              placeholder={
-                values.characterId ? 'Select scenario' : 'Select character first'
-              }
-              onChange={(value) =>
-                setValues((prev) => ({ ...prev, scenarioId: value }))
-              }
-              fullWidth
-              disabled={!values.characterId || createMutation.isPending}
-              invalid={Boolean(errors.scenarioId)}
-            />
-          </Field>
-
           <FormRow columns={2}>
-            <Field label="Seed" labelFor="generation-seed" error={errors.seed}>
-              <Input
-                id="generation-seed"
-                size="sm"
-                type="number"
-                value={values.seed}
-                onChange={(event) =>
-                  setValues((prev) => ({ ...prev, seed: event.target.value }))
+            <Field
+              label="Main LoRA"
+              labelFor="generation-main-lora"
+              error={errors.mainLoraId}
+            >
+              <SearchSelect
+                id="generation-main-lora"
+                options={mainLoraOptions}
+                value={values.mainLoraId}
+                search={mainLoraSearch}
+                onSearchChange={setMainLoraSearch}
+                onSelect={(value) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    mainLoraId: value,
+                    secondaryLoraId:
+                      !value || prev.secondaryLoraId === value
+                        ? ''
+                        : prev.secondaryLoraId,
+                  }))
                 }
-                fullWidth
+                placeholder="Select main LoRA"
                 disabled={createMutation.isPending}
-                invalid={Boolean(errors.seed)}
+                loading={isMainLorasLoading}
+                invalid={Boolean(errors.mainLoraId)}
+              />
+            </Field>
+            <Field
+              label="Secondary LoRA"
+              labelFor="generation-secondary-lora"
+              error={errors.secondaryLoraId}
+            >
+              <SearchSelect
+                id="generation-secondary-lora"
+                options={secondaryLoraOptions}
+                value={values.secondaryLoraId}
+                search={secondaryLoraSearch}
+                onSearchChange={setSecondaryLoraSearch}
+                onSelect={(value) =>
+                  setValues((prev) => ({ ...prev, secondaryLoraId: value }))
+                }
+                placeholder={
+                  values.mainLoraId
+                    ? 'Select secondary LoRA'
+                    : 'Select main LoRA first'
+                }
+                disabled={!values.mainLoraId || createMutation.isPending}
+                loading={isSecondaryLorasLoading}
+                invalid={Boolean(errors.secondaryLoraId)}
               />
             </Field>
           </FormRow>

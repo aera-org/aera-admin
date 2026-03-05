@@ -8,7 +8,7 @@ import {
   uploadLora,
   useDeleteLora,
   useLoras,
-  useUpdateLoraSeed,
+  useUpdateLoraStrength,
 } from '@/app/loras';
 import { notifyError, notifySuccess } from '@/app/toast';
 import { PencilLineIcon, PlusIcon } from '@/assets/icons';
@@ -86,11 +86,12 @@ function parsePageSize(value: string | null) {
   return PAGE_SIZE_OPTIONS.includes(parsed) ? parsed : DEFAULT_PAGE_SIZE;
 }
 
-function resolveSeed(value: string) {
+function resolveStrength(value: string) {
   if (!value.trim()) return null;
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return null;
-  return Math.floor(parsed);
+  if (parsed < 0 || parsed > 1) return null;
+  return parsed;
 }
 
 export function LorasPage() {
@@ -171,7 +172,7 @@ export function LorasPage() {
   );
 
   const { data, error, isLoading, refetch } = useLoras(queryParams);
-  const updateSeedMutation = useUpdateLoraSeed();
+  const updateStrengthMutation = useUpdateLoraStrength();
   const deleteMutation = useDeleteLora();
 
   const loras = data?.data ?? [];
@@ -189,14 +190,14 @@ export function LorasPage() {
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [seedInput, setSeedInput] = useState('123456');
+  const [strengthInput, setStrengthInput] = useState('1');
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const resetUpload = () => {
     setUploadFile(null);
-    setSeedInput('');
+    setStrengthInput('1');
     if (uploadInputRef.current) {
       uploadInputRef.current.value = '';
     }
@@ -209,15 +210,15 @@ export function LorasPage() {
 
   const handleUpload = async () => {
     if (!uploadFile) return;
-    const seedValue = resolveSeed(seedInput);
-    if (seedValue === null) return;
+    const strengthValue = resolveStrength(strengthInput);
+    if (strengthValue === null) return;
 
     setIsUploading(true);
     try {
       await uploadLora(
         {
           fileName: uploadFile.name,
-          seed: seedValue,
+          strength: strengthValue,
         },
         uploadFile,
       );
@@ -231,28 +232,31 @@ export function LorasPage() {
     }
   };
 
-  const [seedModalOpen, setSeedModalOpen] = useState(false);
-  const [seedTarget, setSeedTarget] = useState<ILora | null>(null);
-  const [seedValue, setSeedValue] = useState('');
+  const [strengthModalOpen, setStrengthModalOpen] = useState(false);
+  const [strengthTarget, setStrengthTarget] = useState<ILora | null>(null);
+  const [strengthValue, setStrengthValue] = useState('');
 
-  const openSeedModal = (lora: ILora) => {
-    setSeedTarget(lora);
-    setSeedValue(String(lora.seed));
-    setSeedModalOpen(true);
+  const openStrengthModal = (lora: ILora) => {
+    setStrengthTarget(lora);
+    setStrengthValue(String(lora.strength));
+    setStrengthModalOpen(true);
   };
 
-  const closeSeedModal = () => {
-    setSeedModalOpen(false);
-    setSeedTarget(null);
-    setSeedValue('');
+  const closeStrengthModal = () => {
+    setStrengthModalOpen(false);
+    setStrengthTarget(null);
+    setStrengthValue('');
   };
 
-  const handleSeedSave = async () => {
-    if (!seedTarget) return;
-    const nextSeed = resolveSeed(seedValue);
-    if (nextSeed === null) return;
-    await updateSeedMutation.mutateAsync({ id: seedTarget.id, seed: nextSeed });
-    closeSeedModal();
+  const handleStrengthSave = async () => {
+    if (!strengthTarget) return;
+    const nextStrength = resolveStrength(strengthValue);
+    if (nextStrength === null) return;
+    await updateStrengthMutation.mutateAsync({
+      id: strengthTarget.id,
+      strength: nextStrength,
+    });
+    closeStrengthModal();
   };
 
   const [deleteTarget, setDeleteTarget] = useState<ILora | null>(null);
@@ -266,7 +270,7 @@ export function LorasPage() {
   const columns = useMemo(
     () => [
       { key: 'file', label: 'File' },
-      { key: 'seed', label: 'Seed' },
+      { key: 'strength', label: 'Strength' },
       { key: 'updated', label: <span className={s.alignRight}>Updated</span> },
       { key: 'actions', label: '' },
     ],
@@ -284,9 +288,9 @@ export function LorasPage() {
             </Typography>
           </div>
         ),
-        seed: (
+        strength: (
           <Typography variant="body" tone="muted">
-            {lora.seed}
+            {lora.strength}
           </Typography>
         ),
         updated: (
@@ -319,12 +323,12 @@ export function LorasPage() {
               }}
             />
             <IconButton
-              aria-label="Edit seed"
+              aria-label="Edit strength"
               icon={<PencilLineIcon />}
-              tooltip="Edit seed"
+              tooltip="Edit strength"
               variant="ghost"
               size="sm"
-              onClick={() => openSeedModal(lora)}
+              onClick={() => openStrengthModal(lora)}
             />
             <IconButton
               aria-label="Delete LoRA"
@@ -349,7 +353,7 @@ export function LorasPage() {
             <Skeleton width={90} height={10} />
           </div>
         ),
-        seed: <Skeleton width={60} height={12} />,
+        strength: <Skeleton width={60} height={12} />,
         updated: (
           <div className={s.alignRight}>
             <Skeleton width={120} height={12} />
@@ -496,7 +500,9 @@ export function LorasPage() {
               onClick={handleUpload}
               loading={isUploading}
               disabled={
-                isUploading || !uploadFile || resolveSeed(seedInput) === null
+                isUploading ||
+                !uploadFile ||
+                resolveStrength(strengthInput) === null
               }
             >
               Upload
@@ -533,12 +539,15 @@ export function LorasPage() {
               />
             </div>
           </Field>
-          <Field label="Seed">
+          <Field label="Strength">
             <Input
               type="number"
-              value={seedInput}
-              onChange={(event) => setSeedInput(event.target.value)}
-              placeholder="Enter seed"
+              value={strengthInput}
+              onChange={(event) => setStrengthInput(event.target.value)}
+              placeholder="Enter strength"
+              step="0.01"
+              min="0"
+              max="1"
               fullWidth
               disabled={isUploading}
             />
@@ -552,19 +561,20 @@ export function LorasPage() {
       </Modal>
 
       <Modal
-        open={seedModalOpen}
-        title="Edit seed"
-        onClose={closeSeedModal}
+        open={strengthModalOpen}
+        title="Edit strength"
+        onClose={closeStrengthModal}
         actions={
           <div className={s.modalActions}>
-            <Button variant="secondary" onClick={closeSeedModal}>
+            <Button variant="secondary" onClick={closeStrengthModal}>
               Cancel
             </Button>
             <Button
-              onClick={handleSeedSave}
-              loading={updateSeedMutation.isPending}
+              onClick={handleStrengthSave}
+              loading={updateStrengthMutation.isPending}
               disabled={
-                resolveSeed(seedValue) === null || updateSeedMutation.isPending
+                resolveStrength(strengthValue) === null ||
+                updateStrengthMutation.isPending
               }
             >
               Save
@@ -573,11 +583,14 @@ export function LorasPage() {
         }
       >
         <Stack gap="12px">
-          <Field label="Seed">
+          <Field label="Strength">
             <Input
               type="number"
-              value={seedValue}
-              onChange={(event) => setSeedValue(event.target.value)}
+              value={strengthValue}
+              onChange={(event) => setStrengthValue(event.target.value)}
+              step="0.01"
+              min="0"
+              max="1"
               fullWidth
             />
           </Field>

@@ -14,18 +14,18 @@ export enum ImgGenerationStatus {
 }
 
 export interface ImgGenerationRequest {
-  loraId: string;
+  mainLoraId?: string;
+  secondaryLoraId?: string;
   characterId: string;
   scenarioId: string;
-  seed: number;
   userRequest: string;
 }
 
 export interface IImgGeneration {
   id: string;
-  seed: number;
   character: ICharacter;
-  lora: ILora;
+  mainLora: ILora;
+  secondaryLora?: ILora;
   scenario: IScenario;
   stage: RoleplayStage;
   status: ImgGenerationStatus;

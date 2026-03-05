@@ -1,9 +1,9 @@
-export { useDeleteLora, useLoras, useUpdateLoraSeed } from './queries';
 export type { LorasListParams } from './lorasApi';
 export {
   deleteLora,
   downloadLora,
   getLoras,
-  updateLoraSeed,
+  updateLoraStrength,
   uploadLora,
 } from './lorasApi';
+export { useDeleteLora, useLoras, useUpdateLoraStrength } from './queries';
