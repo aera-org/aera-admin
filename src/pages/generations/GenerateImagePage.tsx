@@ -16,6 +16,7 @@ import {
   Typography,
 } from '@/atoms';
 import { AppShell } from '@/components/templates';
+import { RoleplayStage, STAGES_IN_ORDER } from '@/common/types';
 
 import { SearchSelect } from './components/SearchSelect';
 import s from './GenerateImagePage.module.scss';
@@ -23,6 +24,21 @@ import s from './GenerateImagePage.module.scss';
 const PAGE_SIZE = 50;
 
 const SEARCH_DEBOUNCE_MS = 300;
+
+const STAGE_LABELS: Record<RoleplayStage, string> = {
+  [RoleplayStage.Acquaintance]: 'Acquaintance',
+  [RoleplayStage.Flirting]: 'Flirting',
+  [RoleplayStage.Seduction]: 'Seduction',
+  [RoleplayStage.Resistance]: 'Resistance',
+  [RoleplayStage.Undressing]: 'Undressing',
+  [RoleplayStage.Prelude]: 'Prelude',
+  [RoleplayStage.Sex]: 'Sex',
+  [RoleplayStage.Aftercare]: 'Aftercare',
+};
+
+function formatStage(stage: RoleplayStage) {
+  return STAGE_LABELS[stage] ?? stage;
+}
 
 function useDebouncedValue<T>(value: T, delay: number) {
   const [debounced, setDebounced] = useState(value);
@@ -42,6 +58,7 @@ export function GenerateImagePage() {
   const [values, setValues] = useState({
     characterId: '',
     scenarioId: '',
+    stage: '' as RoleplayStage | '',
     mainLoraId: '',
     secondaryLoraId: '',
     userRequest: '',
@@ -115,12 +132,14 @@ export function GenerateImagePage() {
     const result: {
       characterId?: string;
       scenarioId?: string;
+      stage?: string;
       mainLoraId?: string;
       secondaryLoraId?: string;
       userRequest?: string;
     } = {};
     if (!values.characterId) result.characterId = 'Select a character.';
     if (!values.scenarioId) result.scenarioId = 'Select a scenario.';
+    if (!values.stage) result.stage = 'Select a stage.';
     if (values.secondaryLoraId && !values.mainLoraId) {
       result.secondaryLoraId = 'Select main LoRA first.';
     }
@@ -140,6 +159,7 @@ export function GenerateImagePage() {
       Boolean(
         values.characterId &&
         values.scenarioId &&
+        values.stage &&
         (!values.secondaryLoraId || values.mainLoraId) &&
         (!values.secondaryLoraId ||
           values.mainLoraId !== values.secondaryLoraId) &&
@@ -156,6 +176,7 @@ export function GenerateImagePage() {
     const response = await createMutation.mutateAsync({
       characterId: values.characterId,
       scenarioId: values.scenarioId,
+      stage: values.stage as RoleplayStage,
       mainLoraId: values.mainLoraId || undefined,
       secondaryLoraId: values.secondaryLoraId || undefined,
       userRequest: values.userRequest.trim(),
@@ -208,6 +229,14 @@ export function GenerateImagePage() {
     label: scenario.name,
     value: scenario.id,
   }));
+  const stageOptions = useMemo(
+    () =>
+      STAGES_IN_ORDER.map((stage) => ({
+        label: formatStage(stage),
+        value: stage,
+      })),
+    [],
+  );
 
   return (
     <AppShell>
@@ -226,7 +255,7 @@ export function GenerateImagePage() {
         ) : null}
 
         <Stack gap="16px">
-          <FormRow columns={2}>
+          <FormRow columns={3}>
             <Field
               label="Character"
               labelFor="generation-character"
@@ -258,7 +287,9 @@ export function GenerateImagePage() {
                 options={scenarioOptions}
                 value={values.scenarioId}
                 placeholder={
-                  values.characterId ? 'Select scenario' : 'Select character first'
+                  values.characterId
+                    ? 'Select scenario'
+                    : 'Select character first'
                 }
                 onChange={(value) =>
                   setValues((prev) => ({ ...prev, scenarioId: value }))
@@ -266,6 +297,28 @@ export function GenerateImagePage() {
                 fullWidth
                 disabled={!values.characterId || createMutation.isPending}
                 invalid={Boolean(errors.scenarioId)}
+              />
+            </Field>
+            <Field
+              label="Stage"
+              labelFor="generation-stage"
+              error={errors.stage}
+            >
+              <Select
+                id="generation-stage"
+                size="sm"
+                options={stageOptions}
+                value={values.stage}
+                placeholder="Select stage"
+                onChange={(value) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    stage: value as RoleplayStage,
+                  }))
+                }
+                fullWidth
+                disabled={createMutation.isPending}
+                invalid={Boolean(errors.stage)}
               />
             </Field>
           </FormRow>

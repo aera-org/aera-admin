@@ -18,6 +18,7 @@ export interface ImgGenerationRequest {
   secondaryLoraId?: string;
   characterId: string;
   scenarioId: string;
+  stage: RoleplayStage;
   userRequest: string;
 }
 
