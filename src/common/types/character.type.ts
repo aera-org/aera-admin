@@ -16,6 +16,11 @@ export interface ICharacter {
   updatedAt: string;
 }
 
+export enum CharacterType {
+  Realistic = 'realistic',
+  Anime = 'anime',
+}
+
 export enum RoleplayStage {
   // hook
   Acquaintance = 'ACQUAINTANCE',

@@ -28,8 +28,11 @@ import s from './PromptFormPage.module.scss';
 
 const TYPE_OPTIONS = [
   { label: 'Chat', value: PromptType.Chat },
-  { label: 'Image', value: PromptType.Image },
   { label: 'Ping', value: PromptType.Ping },
+  { label: 'Image', value: PromptType.Image },
+  { label: 'Image Sex', value: PromptType.ImageSex },
+  { label: 'Image Anime', value: PromptType.AnimeImage },
+  { label: 'Image Anime Sex', value: PromptType.AnimeImageSex },
 ];
 
 export function PromptUpdatePage() {

@@ -15,7 +15,7 @@ import {
   Textarea,
   Typography,
 } from '@/atoms';
-import { RoleplayStage, STAGES_IN_ORDER } from '@/common/types';
+import { CharacterType, RoleplayStage, STAGES_IN_ORDER } from '@/common/types';
 import { AppShell } from '@/components/templates';
 
 import { SearchSelect } from './components/SearchSelect';
@@ -36,8 +36,17 @@ const STAGE_LABELS: Record<RoleplayStage, string> = {
   [RoleplayStage.Aftercare]: 'Aftercare',
 };
 
+const TYPE_LABELS: Record<CharacterType, string> = {
+  [CharacterType.Realistic]: 'Realistic',
+  [CharacterType.Anime]: 'Anime',
+};
+
 function formatStage(stage: RoleplayStage) {
   return STAGE_LABELS[stage] ?? stage;
+}
+
+function formatType(type: CharacterType) {
+  return TYPE_LABELS[type] ?? type;
 }
 
 function useDebouncedValue<T>(value: T, delay: number) {
@@ -59,6 +68,7 @@ export function GenerateImagePage() {
     characterId: '',
     scenarioId: '',
     stage: '' as RoleplayStage | '',
+    type: '' as CharacterType | '',
     mainLoraId: '',
     secondLoraId: '',
     userRequest: '',
@@ -133,6 +143,7 @@ export function GenerateImagePage() {
       characterId?: string;
       scenarioId?: string;
       stage?: string;
+      type?: string;
       mainLoraId?: string;
       secondLoraId?: string;
       userRequest?: string;
@@ -140,6 +151,7 @@ export function GenerateImagePage() {
     if (!values.characterId) result.characterId = 'Select a character.';
     if (!values.scenarioId) result.scenarioId = 'Select a scenario.';
     if (!values.stage) result.stage = 'Select a stage.';
+    if (!values.type) result.type = 'Select a type.';
     if (values.secondLoraId && !values.mainLoraId) {
       result.secondLoraId = 'Select main LoRA first.';
     }
@@ -160,6 +172,7 @@ export function GenerateImagePage() {
         values.characterId &&
         values.scenarioId &&
         values.stage &&
+        values.type &&
         (!values.secondLoraId || values.mainLoraId) &&
         (!values.secondLoraId || values.mainLoraId !== values.secondLoraId) &&
         values.userRequest.trim(),
@@ -176,6 +189,7 @@ export function GenerateImagePage() {
       characterId: values.characterId,
       scenarioId: values.scenarioId,
       stage: values.stage as RoleplayStage,
+      type: values.type as CharacterType,
       mainLoraId: values.mainLoraId || undefined,
       secondLoraId: values.secondLoraId || undefined,
       userRequest: values.userRequest.trim(),
@@ -233,6 +247,14 @@ export function GenerateImagePage() {
       STAGES_IN_ORDER.map((stage) => ({
         label: formatStage(stage),
         value: stage,
+      })),
+    [],
+  );
+  const typeOptions = useMemo(
+    () =>
+      Object.values(CharacterType).map((type) => ({
+        label: formatType(type),
+        value: type,
       })),
     [],
   );
@@ -322,7 +344,25 @@ export function GenerateImagePage() {
             </Field>
           </FormRow>
 
-          <FormRow columns={2}>
+          <FormRow columns={3}>
+            <Field label="Type" labelFor="generation-type" error={errors.type}>
+              <Select
+                id="generation-type"
+                size="sm"
+                options={typeOptions}
+                value={values.type}
+                placeholder="Select type"
+                onChange={(value) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    type: value as CharacterType,
+                  }))
+                }
+                fullWidth
+                disabled={createMutation.isPending}
+                invalid={Boolean(errors.type)}
+              />
+            </Field>
             <Field
               label="Main LoRA"
               labelFor="generation-main-lora"

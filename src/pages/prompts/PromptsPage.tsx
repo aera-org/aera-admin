@@ -56,8 +56,11 @@ const ACTIVE_FILTER_OPTIONS = [
 const TYPE_FILTER_OPTIONS = [
   { label: 'All', value: 'all' },
   { label: 'Chat', value: PromptType.Chat },
-  { label: 'Image', value: PromptType.Image },
   { label: 'Ping', value: PromptType.Ping },
+  { label: 'Image', value: PromptType.Image },
+  { label: 'Image Sex', value: PromptType.ImageSex },
+  { label: 'Image Anime', value: PromptType.AnimeImage },
+  { label: 'Image Anime Sex', value: PromptType.AnimeImageSex },
 ];
 
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
@@ -104,7 +107,10 @@ function resolveTypeFilter(value: string | null) {
   if (
     value === PromptType.Chat ||
     value === PromptType.Image ||
-    value === PromptType.Ping
+    value === PromptType.Ping ||
+    value === PromptType.ImageSex ||
+    value === PromptType.AnimeImage ||
+    value === PromptType.AnimeImageSex
   )
     return value;
   return DEFAULT_TYPE_FILTER;

@@ -1,7 +1,10 @@
 export enum PromptType {
   Chat = 'chat',
-  Image = 'image',
   Ping = 'ping',
+  Image = 'image',
+  ImageSex = 'image-sex',
+  AnimeImage = 'anime-image',
+  AnimeImageSex = 'anime-image-sex',
 }
 
 export type CreatePromptDto = {

@@ -1,5 +1,6 @@
 import type { IAdmin } from './admin.type.ts';
 import {
+  CharacterType,
   type ICharacter,
   type IScenario,
   RoleplayStage,
@@ -20,6 +21,7 @@ export interface ImgGenerationRequest {
   scenarioId: string;
   stage: RoleplayStage;
   userRequest: string;
+  type: CharacterType;
 }
 
 export interface IImgGeneration {
