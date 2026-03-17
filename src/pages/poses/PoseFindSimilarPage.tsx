@@ -7,6 +7,8 @@ import {
   Button,
   Container,
   Field,
+  FormRow,
+  Input,
   Stack,
   Textarea,
   Typography,
@@ -17,17 +19,18 @@ import s from './PoseFormPage.module.scss';
 
 type Values = {
   pose: string;
+  angle: string;
   details: string;
 };
 
 type Errors = {
   pose?: string;
-  details?: string;
 };
 
 function getInitialValues(): Values {
   return {
     pose: '',
+    angle: '',
     details: '',
   };
 }
@@ -37,9 +40,6 @@ function getErrors(values: Values): Errors {
 
   if (!values.pose.trim()) {
     errors.pose = 'Enter a pose.';
-  }
-  if (!values.details.trim()) {
-    errors.details = 'Enter details.';
   }
 
   return errors;
@@ -70,6 +70,7 @@ export function PoseFindSimilarPage() {
     await findSimilarMutation.mutateAsync({
       pose: values.pose.trim(),
       details: values.details.trim(),
+      angle: values.angle.trim(),
     });
   };
 
@@ -89,28 +90,41 @@ export function PoseFindSimilarPage() {
         </div>
 
         <Stack gap="16px" className={s.form}>
-          <Field label="Pose" labelFor="pose-find-pose" error={errors.pose}>
-            <Textarea
-              id="pose-find-pose"
-              size="sm"
-              value={values.pose}
-              onChange={(event) =>
-                setValues((previous) => ({
-                  ...previous,
-                  pose: event.target.value,
-                }))
-              }
-              rows={4}
-              disabled={findSimilarMutation.isPending}
-              fullWidth
-            />
-          </Field>
+          <FormRow columns={2}>
+            <Field label="Pose" labelFor="pose-find-pose" error={errors.pose}>
+              <Input
+                id="pose-find-pose"
+                size="sm"
+                value={values.pose}
+                onChange={(event) =>
+                  setValues((previous) => ({
+                    ...previous,
+                    pose: event.target.value,
+                  }))
+                }
+                disabled={findSimilarMutation.isPending}
+                fullWidth
+              />
+            </Field>
 
-          <Field
-            label="Details"
-            labelFor="pose-find-details"
-            error={errors.details}
-          >
+            <Field label="Angle" labelFor="pose-find-angle">
+              <Input
+                id="pose-find-angle"
+                size="sm"
+                value={values.angle}
+                onChange={(event) =>
+                  setValues((previous) => ({
+                    ...previous,
+                    angle: event.target.value,
+                  }))
+                }
+                disabled={findSimilarMutation.isPending}
+                fullWidth
+              />
+            </Field>
+          </FormRow>
+
+          <Field label="Details" labelFor="pose-find-details">
             <Textarea
               id="pose-find-details"
               size="sm"

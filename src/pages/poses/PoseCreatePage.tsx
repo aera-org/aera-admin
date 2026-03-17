@@ -17,6 +17,7 @@ function getInitialValues(): PosePromptFormValues {
   return {
     name: '',
     pose: '',
+    angle: '',
     details: '',
     prompt: '',
   };
@@ -72,6 +73,7 @@ export function PoseCreatePage() {
       meta: {
         pose: values.pose.trim(),
         details: values.details.trim(),
+        angle: values.angle.trim(),
       },
       prompt: values.prompt.trim(),
     });

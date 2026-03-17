@@ -80,6 +80,7 @@ type GenerationFormValues = {
   sexRequest: {
     pose: string;
     details: string;
+    angle: string;
   };
 };
 
@@ -152,6 +153,7 @@ function buildInitialValues(
     sexRequest: {
       pose: prefill?.sexRequest?.pose ?? '',
       details: prefill?.sexRequest?.details ?? '',
+      angle: prefill?.sexRequest?.angle ?? '',
     },
   };
 }
@@ -172,6 +174,7 @@ function buildGenerationRequest(
     payload.sexRequest = {
       pose: values.sexRequest.pose.trim(),
       details: values.sexRequest.details.trim(),
+      angle: values.sexRequest.angle.trim(),
     };
   } else {
     payload.userRequest = values.userRequest.trim();
@@ -913,7 +916,7 @@ export function GenerateImagePage() {
           </FormRow>
 
           {isSexRequestStage ? (
-            <FormRow columns={2}>
+            <FormRow columns={3}>
               <Field
                 label="Pose"
                 labelFor="generation-sex-pose"
@@ -933,6 +936,24 @@ export function GenerateImagePage() {
                     }))
                   }
                   placeholder="Enter pose"
+                  fullWidth
+                  disabled={isSubmitting}
+                />
+              </Field>
+              <Field label="Angle" labelFor="generation-sex-angle">
+                <Input
+                  id="generation-sex-angle"
+                  value={values.sexRequest.angle}
+                  onChange={(event) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      sexRequest: {
+                        ...prev.sexRequest,
+                        angle: event.target.value,
+                      },
+                    }))
+                  }
+                  placeholder="Enter angle"
                   fullWidth
                   disabled={isSubmitting}
                 />

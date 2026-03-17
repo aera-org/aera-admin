@@ -3,6 +3,7 @@ import { Field, FormRow, Input, Textarea } from '@/atoms';
 export type PosePromptFormValues = {
   name: string;
   pose: string;
+  angle: string;
   details: string;
   prompt: string;
 };
@@ -26,7 +27,7 @@ export function PosePromptForm({
 }: PosePromptFormProps) {
   return (
     <>
-      <FormRow columns={2}>
+      <FormRow columns={3}>
         <Field label="Name" labelFor="pose-name" error={errors.name}>
           <Input
             id="pose-name"
@@ -44,6 +45,17 @@ export function PosePromptForm({
             size="sm"
             value={values.pose}
             onChange={(event) => onChange('pose', event.target.value)}
+            disabled={disabled}
+            fullWidth
+          />
+        </Field>
+
+        <Field label="Angle" labelFor="pose-meta-angle" error={errors.angle}>
+          <Input
+            id="pose-meta-angle"
+            size="sm"
+            value={values.angle}
+            onChange={(event) => onChange('angle', event.target.value)}
             disabled={disabled}
             fullWidth
           />

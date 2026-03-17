@@ -24,6 +24,7 @@ export interface ImgGenerationRequest {
   sexRequest?: {
     pose: string;
     details: string;
+    angle: string;
   };
   type: CharacterType;
 }
@@ -47,6 +48,7 @@ export interface IImgGenerationDetails extends IImgGeneration {
   sexRequest?: {
     pose: string;
     details: string;
+    angle: string;
   };
   file?: IFile;
   madeBy: IAdmin;

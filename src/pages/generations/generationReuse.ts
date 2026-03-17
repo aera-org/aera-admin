@@ -15,5 +15,6 @@ export type GenerateImagePrefillState = {
   sexRequest?: {
     pose: string;
     details: string;
+    angle: string;
   };
 };

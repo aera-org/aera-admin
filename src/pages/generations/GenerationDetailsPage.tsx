@@ -226,6 +226,14 @@ export function GenerationDetailsPage() {
                       </div>
                       <div>
                         <Typography variant="caption" tone="muted">
+                          Angle
+                        </Typography>
+                        <Typography variant="body">
+                          {data.sexRequest?.angle || '-'}
+                        </Typography>
+                      </div>
+                      <div>
+                        <Typography variant="caption" tone="muted">
                           Details
                         </Typography>
                         <Typography variant="body">

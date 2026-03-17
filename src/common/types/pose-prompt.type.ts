@@ -9,6 +9,7 @@ export interface IPosePromptDetails extends IPosePrompt {
   meta: {
     pose: string;
     details: string;
+    angle: string;
   };
   prompt: string;
 }
@@ -18,6 +19,7 @@ export type CreatePosePromptDto = {
   meta: {
     pose: string;
     details: string;
+    angle: string;
   };
   prompt: string;
 };
@@ -27,6 +29,7 @@ export type UpdatePosePromptDto = {
   meta: {
     pose: string;
     details: string;
+    angle: string;
   };
   prompt: string;
 };

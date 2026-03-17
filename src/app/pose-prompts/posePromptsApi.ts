@@ -18,6 +18,7 @@ export type PosePromptsListParams = {
 export type FindSimilarPosePromptDto = {
   pose: string;
   details: string;
+  angle: string;
 };
 
 const fallbackError = 'Unable to load poses.';
