@@ -346,9 +346,6 @@ export function GenerateImagePage() {
     }
     if (isSexRequestStage) {
       if (!values.sexRequest.pose.trim()) result.sexPose = 'Enter a pose.';
-      if (!values.sexRequest.details.trim()) {
-        result.sexDetails = 'Enter details.';
-      }
     } else if (!values.userRequest.trim()) {
       result.userRequest = 'Enter a request.';
     }
@@ -365,7 +362,7 @@ export function GenerateImagePage() {
         (!values.secondLoraId || values.mainLoraId) &&
         (!values.secondLoraId || values.mainLoraId !== values.secondLoraId) &&
         (isSexRequestStage
-          ? values.sexRequest.pose.trim() && values.sexRequest.details.trim()
+          ? values.sexRequest.pose.trim()
           : values.userRequest.trim()),
       ),
     [isSexRequestStage, values],
