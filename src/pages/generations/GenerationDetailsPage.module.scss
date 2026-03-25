@@ -74,6 +74,9 @@
   top: var(--space-3);
   right: var(--space-3);
   z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 .state {

@@ -8,8 +8,8 @@ import {
   deleteImgGeneration,
   getImgGenerationDetails,
   getImgGenerations,
-  regenerateImgGeneration,
   type ImgGenerationsListParams,
+  regenerateImgGeneration,
 } from './imgGenerationsApi';
 
 const imgGenerationKeys = {
@@ -23,6 +23,17 @@ export function useImgGenerations(params: ImgGenerationsListParams) {
     queryKey: imgGenerationKeys.list(params),
     queryFn: () => getImgGenerations(params),
     placeholderData: (previousData) => previousData,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      return data?.data?.some(
+        (generation) =>
+          generation.status !== ImgGenerationStatus.Ready &&
+          generation.status !== ImgGenerationStatus.Failed,
+      )
+        ? 5000
+        : false;
+    },
+    refetchIntervalInBackground: true,
   });
 }
 

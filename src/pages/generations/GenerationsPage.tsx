@@ -3,19 +3,21 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useImgGenerations } from '@/app/img-generations';
+import { DownloadIcon } from '@/assets/icons';
 import {
   Alert,
   Badge,
   Button,
+  Card,
   Container,
   EmptyState,
   Field,
+  IconButton,
   Input,
   Pagination,
   Select,
   Skeleton,
   Stack,
-  Table,
   Typography,
 } from '@/atoms';
 import { type IImgGeneration, ImgGenerationStatus } from '@/common/types';
@@ -84,6 +86,16 @@ function buildContext(generation: IImgGeneration) {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
   return [scenario, stage].filter(Boolean).join(' · ');
+}
+
+function getStatusMeta(status: ImgGenerationStatus) {
+  if (status === ImgGenerationStatus.Ready) {
+    return { label: 'Ready', tone: 'success' as const, outline: false };
+  }
+  if (status === ImgGenerationStatus.Failed) {
+    return { label: 'Failed', tone: 'danger' as const, outline: false };
+  }
+  return { label: 'Generating', tone: 'warning' as const, outline: true };
 }
 
 export function GenerationsPage() {
@@ -178,106 +190,40 @@ export function GenerationsPage() {
     }
   }, [data, page, total, totalPages, updateSearchParams]);
 
-  const columns = useMemo(
-    () => [
-      { key: 'generation', label: 'Generation' },
-      { key: 'loras', label: 'LoRAs' },
-      { key: 'status', label: 'Status' },
-      { key: 'created', label: <span className={s.alignRight}>Created</span> },
-    ],
-    [],
-  );
-
-  const rows = useMemo(
+  const skeletonCards = useMemo(
     () =>
-      generations.map((generation) => ({
-        generation: (
-          <div className={s.generationCell}>
-            <Typography variant="body">{generation.character.name}</Typography>
-            <Typography variant="caption" tone="muted">
-              {buildContext(generation) || generation.id}
-            </Typography>
+      Array.from({ length: 6 }, (_, index) => (
+        <Card key={`generation-skel-${index}`} padding="md" className={s.generationCard}>
+          <div className={s.cardHeader}>
+            <div className={s.titleBlock}>
+              <Skeleton width={160} height={12} />
+              <Skeleton width={120} height={10} />
+            </div>
+            <Skeleton width={90} height={20} />
           </div>
-        ),
-        loras: (
-          <div className={s.loraCell}>
-            {generation.mainLora ? (
-              <>
-                <Typography variant="body">
-                  Main: {generation.mainLora.fileName}
-                </Typography>
-                <Typography variant="caption" tone="muted">
-                  {generation.mainLora.id}
-                </Typography>
-              </>
-            ) : null}
-            {generation.secondLora ? (
-              <>
-                <Typography variant="body">
-                  Secondary: {generation.secondLora.fileName}
-                </Typography>
-                <Typography variant="caption" tone="muted">
-                  {generation.secondLora.id}
-                </Typography>
-              </>
-            ) : null}
-            {!generation.mainLora && !generation.secondLora ? (
-              <Typography variant="body" tone="muted">
-                -
-              </Typography>
-            ) : null}
+          <div className={s.previewFrame}>
+            <Skeleton height="100%" />
           </div>
-        ),
-        status:
-          generation.status === ImgGenerationStatus.Ready ? (
-            <Badge tone="success">Ready</Badge>
-          ) : generation.status === ImgGenerationStatus.Failed ? (
-            <Badge tone="danger">Failed</Badge>
-          ) : (
-            <Badge tone="warning" outline>
-              Generating
-            </Badge>
-          ),
-        created: (
-          <Typography variant="caption" tone="muted" className={s.alignRight}>
-            {formatDate(generation.createdAt)}
-          </Typography>
-        ),
-      })),
-    [generations],
-  );
-
-  const skeletonRows = useMemo(
-    () =>
-      Array.from({ length: 6 }, (_, index) => ({
-        generation: (
-          <div className={s.generationCell} key={`generation-skel-${index}`}>
-            <Skeleton width={160} height={12} />
-            <Skeleton width={120} height={10} />
+          <div className={s.meta}>
+            <div className={s.loraBlock}>
+              <Skeleton width={140} height={12} />
+              <Skeleton width={100} height={10} />
+              <Skeleton width={120} height={12} />
+            </div>
+            <div className={s.footerMeta}>
+              <Skeleton width={120} height={10} />
+              <Skeleton width={110} height={10} />
+            </div>
           </div>
-        ),
-        loras: (
-          <div className={s.loraCell}>
-            <Skeleton width={140} height={12} />
-            <Skeleton width={90} height={10} />
-            <Skeleton width={120} height={12} />
-            <Skeleton width={90} height={10} />
-          </div>
-        ),
-        status: <Skeleton width={90} height={20} />,
-        created: (
-          <div className={s.alignRight}>
-            <Skeleton width={120} height={12} />
-          </div>
-        ),
-      })),
+        </Card>
+      )),
     [],
   );
 
   const showSkeleton = isLoading && !data;
   const showEmpty = !showSkeleton && !error && generations.length === 0;
-  const showTable = !showEmpty && !error;
-  const showFooter = showTable && !showSkeleton;
+  const showGallery = !showEmpty && !error;
+  const showFooter = showGallery && !showSkeleton;
 
   const rangeStart = total === 0 ? 0 : effectiveSkip + 1;
   const rangeEnd =
@@ -346,33 +292,120 @@ export function GenerationsPage() {
           />
         ) : null}
 
-        {showTable ? (
-          <div className={s.tableWrap}>
-            <Table
-              columns={columns}
-              rows={showSkeleton ? skeletonRows : rows}
-              getRowProps={
-                showSkeleton
-                  ? undefined
-                  : (_, index) => {
-                      const generation = generations[index];
-                      if (!generation) return {};
-                      return {
-                        className: s.clickableRow,
-                        role: 'link',
-                        tabIndex: 0,
-                        onClick: () =>
-                          navigate(`/generations/${generation.id}`),
-                        onKeyDown: (event) => {
+        {showGallery ? (
+          <div className={s.galleryWrap}>
+            <div className={s.galleryGrid}>
+              {showSkeleton
+                ? skeletonCards
+                : generations.map((generation) => {
+                    const status = getStatusMeta(generation.status);
+                    const hasImage = Boolean(
+                      generation.status === ImgGenerationStatus.Ready &&
+                        generation.file?.url,
+                    );
+
+                    return (
+                      <Card
+                        key={generation.id}
+                        padding="md"
+                        className={s.generationCard}
+                        role="link"
+                        tabIndex={0}
+                        onClick={() => navigate(`/generations/${generation.id}`)}
+                        onKeyDown={(event) => {
                           if (event.key === 'Enter' || event.key === ' ') {
                             event.preventDefault();
                             navigate(`/generations/${generation.id}`);
                           }
-                        },
-                      };
-                    }
-              }
-            />
+                        }}
+                      >
+                        <div className={s.cardHeader}>
+                          <div className={s.titleBlock}>
+                            <Typography variant="body">
+                              {generation.character.name}
+                            </Typography>
+                            <Typography variant="caption" tone="muted">
+                              {buildContext(generation) || generation.id}
+                            </Typography>
+                          </div>
+                          <Badge tone={status.tone} outline={status.outline}>
+                            {status.label}
+                          </Badge>
+                        </div>
+
+                        <div className={s.previewFrame}>
+                          {hasImage ? (
+                            <>
+                              <img
+                                className={s.previewImage}
+                                src={generation.file?.url ?? ''}
+                                alt={`Generation ${generation.id}`}
+                                loading="lazy"
+                              />
+                              <div className={s.previewActions}>
+                                <IconButton
+                                  as="a"
+                                  href={generation.file?.url ?? undefined}
+                                  download={generation.file?.name}
+                                  rel="noopener"
+                                  aria-label="Download generation"
+                                  tooltip="Download generation"
+                                  variant="ghost"
+                                  size="sm"
+                                  icon={<DownloadIcon />}
+                                  // @ts-expect-error Radix anchor event types are incorrect
+                                  onClick={(event) => event.stopPropagation()}
+                                />
+                              </div>
+                            </>
+                          ) : generation.status === ImgGenerationStatus.Generating ? (
+                            <Skeleton height="100%" />
+                          ) : generation.status === ImgGenerationStatus.Failed ? (
+                            <div className={s.previewPlaceholder}>
+                              <Typography variant="caption" tone="muted">
+                                Generation failed.
+                              </Typography>
+                            </div>
+                          ) : (
+                            <div className={s.previewPlaceholder}>
+                              <Typography variant="caption" tone="muted">
+                                Waiting for image.
+                              </Typography>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className={s.meta}>
+                          <div className={s.loraBlock}>
+                            {generation.mainLora ? (
+                              <Typography variant="caption" tone="muted">
+                                Main: {generation.mainLora.fileName}
+                              </Typography>
+                            ) : null}
+                            {generation.secondLora ? (
+                              <Typography variant="caption" tone="muted">
+                                Secondary: {generation.secondLora.fileName}
+                              </Typography>
+                            ) : null}
+                            {!generation.mainLora && !generation.secondLora ? (
+                              <Typography variant="caption" tone="muted">
+                                No LoRAs
+                              </Typography>
+                            ) : null}
+                          </div>
+                          <div className={s.footerMeta}>
+                            <Typography variant="caption" tone="muted">
+                              {generation.id}
+                            </Typography>
+                            <Typography variant="caption" tone="muted">
+                              {formatDate(generation.createdAt)}
+                            </Typography>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+            </div>
 
             {showFooter ? (
               <div className={s.footer}>

@@ -7,6 +7,7 @@ import {
   useImgGenerationDetails,
   useRegenerateImgGeneration,
 } from '@/app/img-generations';
+import { DownloadIcon } from '@/assets/icons';
 import {
   Alert,
   Badge,
@@ -172,6 +173,19 @@ export function GenerationDetailsPage() {
               <div className={s.previewFrame}>
                 {data ? (
                   <div className={s.previewActions}>
+                    {hasImage ? (
+                      <IconButton
+                        as="a"
+                        href={data.file?.url ?? undefined}
+                        download={data.file?.name}
+                        rel="noopener"
+                        aria-label="Download generation"
+                        icon={<DownloadIcon />}
+                        tooltip="Download generation"
+                        variant="ghost"
+                        size="sm"
+                      />
+                    ) : null}
                     <IconButton
                       aria-label="Regenerate generation"
                       icon={<ReloadIcon />}

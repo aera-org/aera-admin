@@ -38,6 +38,7 @@ export interface IImgGeneration {
   stage: RoleplayStage;
   type?: CharacterType;
   status: ImgGenerationStatus;
+  file?: IFile;
   createdAt: string;
   updatedAt: string;
 }
@@ -50,7 +51,6 @@ export interface IImgGenerationDetails extends IImgGeneration {
     details: string;
     angle: string;
   };
-  file?: IFile;
   madeBy: IAdmin;
   latency?: {
     promptGeneration: number;

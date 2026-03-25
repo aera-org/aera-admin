@@ -29,30 +29,123 @@
   align-items: flex-end;
   display: flex;
   gap: var(--space-4);
+  flex-wrap: wrap;
 }
 
 .filterField {
   flex-grow: 1;
+  min-width: 220px;
 }
 
-.tableWrap {
+.galleryWrap {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
 }
 
-.generationCell {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 220px;
+.galleryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
 }
 
-.loraCell {
+.generationCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.generationCard:hover {
+  border-color: hsl(var(--border-strong));
+}
+
+.generationCard:focus-visible {
+  outline: 2px solid hsl(var(--accent));
+  outline-offset: 2px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.titleBlock {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  min-width: 200px;
+  min-width: 0;
+}
+
+.previewFrame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.previewImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.previewPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.previewActions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition);
+}
+
+.generationCard:hover .previewActions,
+.generationCard:focus-visible .previewActions,
+.generationCard:focus-within .previewActions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.loraBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.footerMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
 }
 
 .footer {
@@ -68,30 +161,6 @@
   align-items: center;
   gap: var(--space-3);
   flex-wrap: wrap;
-}
-
-.alignRight {
-  display: block;
-  width: 100%;
-  text-align: right;
-}
-
-.clickableRow {
-  cursor: pointer;
-
-  &:hover td {
-    transition: background var(--transition);
-  }
-}
-
-.clickableRow:hover td {
-  background: var(--color-bg-soft);
-}
-
-.clickableRow:focus-visible td {
-  background: var(--color-bg-soft);
-  outline: 2px solid hsl(var(--accent));
-  outline-offset: -2px;
 }
 
 .state {
