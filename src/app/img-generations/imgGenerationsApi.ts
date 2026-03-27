@@ -4,6 +4,7 @@ import type {
   IImgGeneration,
   IImgGenerationDetails,
   ImgGenerationRequest,
+  RoleplayStage,
 } from '@/common/types';
 
 import type { PaginatedResponse } from '../paginated-response.type';
@@ -13,6 +14,9 @@ export type ImgGenerationsListParams = {
   order?: string;
   skip?: number;
   take?: number;
+  characterId?: string;
+  scenarioId?: string;
+  stage?: RoleplayStage;
 };
 
 const fallbackError = 'Unable to load generations.';
@@ -33,6 +37,9 @@ export async function getImgGenerations(params: ImgGenerationsListParams) {
   if (params.order) query.set('order', params.order);
   if (typeof params.skip === 'number') query.set('skip', String(params.skip));
   if (typeof params.take === 'number') query.set('take', String(params.take));
+  if (params.characterId) query.set('characterId', params.characterId);
+  if (params.scenarioId) query.set('scenarioId', params.scenarioId);
+  if (params.stage) query.set('stage', params.stage);
 
   const suffix = query.toString();
   const res = await apiFetch(

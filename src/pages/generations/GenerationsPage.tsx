@@ -2,6 +2,7 @@ import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import { useCharacterDetails, useCharacters } from '@/app/characters';
 import { useImgGenerations } from '@/app/img-generations';
 import { DownloadIcon } from '@/assets/icons';
 import {
@@ -20,13 +21,21 @@ import {
   Stack,
   Typography,
 } from '@/atoms';
-import { type IImgGeneration, ImgGenerationStatus } from '@/common/types';
+import {
+  type IImgGeneration,
+  ImgGenerationStatus,
+  type RoleplayStage,
+  STAGES_IN_ORDER,
+} from '@/common/types';
 import { AppShell } from '@/components/templates';
 
 import s from './GenerationsPage.module.scss';
 
 type QueryUpdate = {
   search?: string;
+  characterId?: string;
+  scenarioId?: string;
+  stage?: string;
   order?: string;
   page?: number;
   pageSize?: number;
@@ -41,6 +50,7 @@ const ORDER_VALUES = new Set(ORDER_OPTIONS.map((option) => option.value));
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
 const DEFAULT_ORDER = 'DESC';
 const DEFAULT_PAGE_SIZE = 20;
+const DEFAULT_STAGE_FILTER = 'all';
 const SEARCH_DEBOUNCE_MS = 400;
 
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
@@ -78,13 +88,26 @@ function parsePageSize(value: string | null) {
   return PAGE_SIZE_OPTIONS.includes(parsed) ? parsed : DEFAULT_PAGE_SIZE;
 }
 
-function buildContext(generation: IImgGeneration) {
-  const scenario = generation.scenario?.name?.trim();
-  const stage = generation.stage
-    ?.toLowerCase()
+function resolveStageFilter(value: string | null) {
+  if (!value || value === DEFAULT_STAGE_FILTER) return DEFAULT_STAGE_FILTER;
+  if (STAGES_IN_ORDER.includes(value as RoleplayStage)) {
+    return value;
+  }
+  return DEFAULT_STAGE_FILTER;
+}
+
+function formatStage(value: RoleplayStage | null | undefined) {
+  if (!value) return '-';
+  return value
+    .toLowerCase()
     .split('_')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+}
+
+function buildContext(generation: IImgGeneration) {
+  const scenario = generation.scenario?.name?.trim();
+  const stage = formatStage(generation.stage);
   return [scenario, stage].filter(Boolean).join(' · ');
 }
 
@@ -102,6 +125,9 @@ export function GenerationsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSearch = searchParams.get('search') ?? '';
+  const rawCharacterId = searchParams.get('characterId') ?? '';
+  const rawScenarioId = searchParams.get('scenarioId') ?? '';
+  const rawStage = searchParams.get('stage');
   const rawOrder = searchParams.get('order');
   const rawPage = searchParams.get('page');
   const rawPageSize = searchParams.get('pageSize');
@@ -110,6 +136,9 @@ export function GenerationsPage() {
   const debouncedSearch = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
   const normalizedSearch = debouncedSearch.trim();
 
+  const characterFilter = rawCharacterId.trim();
+  const scenarioFilter = rawScenarioId.trim();
+  const stageFilter = resolveStageFilter(rawStage);
   const order = ORDER_VALUES.has(rawOrder ?? '') ? rawOrder! : DEFAULT_ORDER;
   const page = parsePositiveNumber(rawPage, 1);
   const pageSize = parsePageSize(rawPageSize);
@@ -124,6 +153,32 @@ export function GenerationsPage() {
           next.set('search', nextSearch);
         } else {
           next.delete('search');
+        }
+      }
+
+      if (update.characterId !== undefined) {
+        const nextCharacterId = update.characterId.trim();
+        if (nextCharacterId) {
+          next.set('characterId', nextCharacterId);
+        } else {
+          next.delete('characterId');
+        }
+      }
+
+      if (update.scenarioId !== undefined) {
+        const nextScenarioId = update.scenarioId.trim();
+        if (nextScenarioId) {
+          next.set('scenarioId', nextScenarioId);
+        } else {
+          next.delete('scenarioId');
+        }
+      }
+
+      if (update.stage !== undefined) {
+        if (update.stage && update.stage !== DEFAULT_STAGE_FILTER) {
+          next.set('stage', update.stage);
+        } else {
+          next.delete('stage');
         }
       }
 
@@ -165,14 +220,106 @@ export function GenerationsPage() {
     updateSearchParams({ search: normalizedSearch, page: 1 }, true);
   }, [normalizedSearch, rawSearch, updateSearchParams]);
 
+  const characterQueryParams = useMemo(
+    () => ({
+      order: 'ASC',
+      skip: 0,
+      take: 1000,
+    }),
+    [],
+  );
+
+  const { data: characterData, isLoading: isCharactersLoading } =
+    useCharacters(characterQueryParams);
+  const {
+    data: filterCharacterDetails,
+    isLoading: isFilterCharacterLoading,
+  } = useCharacterDetails(characterFilter || null);
+
+  useEffect(() => {
+    if (!scenarioFilter) return;
+    if (!characterFilter) {
+      updateSearchParams({ scenarioId: '', page: 1 }, true);
+      return;
+    }
+    if (!filterCharacterDetails) return;
+    const exists = filterCharacterDetails.scenarios.some(
+      (scenario) => scenario.id === scenarioFilter,
+    );
+    if (!exists) {
+      updateSearchParams({ scenarioId: '', page: 1 }, true);
+    }
+  }, [
+    characterFilter,
+    filterCharacterDetails,
+    scenarioFilter,
+    updateSearchParams,
+  ]);
+
+  const characterOptions = useMemo(() => {
+    const options = (characterData?.data ?? []).map((character) => ({
+      label: character.name,
+      value: character.id,
+    }));
+
+    if (
+      characterFilter &&
+      filterCharacterDetails &&
+      !options.some((option) => option.value === characterFilter)
+    ) {
+      options.unshift({
+        label: filterCharacterDetails.name,
+        value: filterCharacterDetails.id,
+      });
+    }
+
+    return [{ label: 'All characters', value: '' }, ...options];
+  }, [characterData?.data, characterFilter, filterCharacterDetails]);
+
+  const scenarioOptions = useMemo(
+    () => [
+      { label: 'All scenarios', value: '' },
+      ...(filterCharacterDetails?.scenarios ?? []).map((scenario) => ({
+        label: scenario.name || 'Untitled',
+        value: scenario.id,
+      })),
+    ],
+    [filterCharacterDetails?.scenarios],
+  );
+
+  const stageOptions = useMemo(
+    () => [
+      { label: 'All stages', value: DEFAULT_STAGE_FILTER },
+      ...STAGES_IN_ORDER.map((stage) => ({
+        label: formatStage(stage),
+        value: stage,
+      })),
+    ],
+    [],
+  );
+
   const queryParams = useMemo(
     () => ({
       search: normalizedSearch || undefined,
+      characterId: characterFilter || undefined,
+      scenarioId: scenarioFilter || undefined,
+      stage:
+        stageFilter === DEFAULT_STAGE_FILTER
+          ? undefined
+          : (stageFilter as RoleplayStage),
       order,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    [normalizedSearch, order, page, pageSize],
+    [
+      characterFilter,
+      normalizedSearch,
+      order,
+      page,
+      pageSize,
+      scenarioFilter,
+      stageFilter,
+    ],
   );
 
   const { data, error, isLoading, refetch } = useImgGenerations(queryParams);
@@ -253,6 +400,58 @@ export function GenerationsPage() {
                 onChange={(event) => setSearchInput(event.target.value)}
                 iconLeft={<MagnifyingGlassIcon />}
                 fullWidth
+              />
+            </Field>
+            <Field label="Character" labelFor="generations-character">
+              <Select
+                id="generations-character"
+                options={characterOptions}
+                value={characterFilter}
+                size="sm"
+                variant="ghost"
+                placeholder={
+                  isCharactersLoading ? 'Loading characters...' : 'All characters'
+                }
+                disabled={isCharactersLoading}
+                onChange={(value) =>
+                  updateSearchParams({
+                    characterId: value,
+                    scenarioId: '',
+                    page: 1,
+                  })
+                }
+              />
+            </Field>
+            <Field label="Scenario" labelFor="generations-scenario">
+              <Select
+                id="generations-scenario"
+                options={scenarioOptions}
+                value={scenarioFilter}
+                size="sm"
+                variant="ghost"
+                placeholder={
+                  characterFilter
+                    ? isFilterCharacterLoading
+                      ? 'Loading scenarios...'
+                      : 'All scenarios'
+                    : 'Select character first'
+                }
+                disabled={!characterFilter || isFilterCharacterLoading}
+                onChange={(value) =>
+                  updateSearchParams({ scenarioId: value, page: 1 })
+                }
+              />
+            </Field>
+            <Field label="Stage" labelFor="generations-stage">
+              <Select
+                id="generations-stage"
+                options={stageOptions}
+                value={stageFilter}
+                size="sm"
+                variant="ghost"
+                onChange={(value) =>
+                  updateSearchParams({ stage: value, page: 1 })
+                }
               />
             </Field>
             <Field label="Order" labelFor="generations-order">
