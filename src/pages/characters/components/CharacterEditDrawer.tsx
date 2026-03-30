@@ -1,0 +1,112 @@
+import { useMemo } from 'react';
+
+import { useUpdateCharacter } from '@/app/characters';
+import {
+  CharacterBodyType,
+  CharacterBreastSize,
+  CharacterEthnicity,
+  CharacterHairColor,
+  type ICharacterDetails,
+} from '@/common/types';
+
+import {
+  CharacterFormDrawer,
+  type CharacterFormValues,
+} from './CharacterFormDrawer';
+
+type CharacterEditDrawerProps = {
+  character: ICharacterDetails | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+export function CharacterEditDrawer({
+  character,
+  open,
+  onOpenChange,
+}: CharacterEditDrawerProps) {
+  const updateMutation = useUpdateCharacter();
+
+  const initialValues = useMemo<CharacterFormValues>(() => {
+    if (!character) {
+      return {
+        name: '',
+        emoji: '',
+        gender: 'female',
+        hairColor: CharacterHairColor.Blond,
+        ethnicity: CharacterEthnicity.Caucasian,
+        bodyType: CharacterBodyType.Average,
+        breastSize: CharacterBreastSize.Medium,
+        isActive: true,
+        isFeatured: false,
+        loraId: '',
+        description: '',
+        avatarId: '',
+        promoImgId: '',
+      };
+    }
+
+    return {
+      name: character.name ?? '',
+      emoji: character.emoji ?? '',
+      gender: character.gender ?? '',
+      hairColor: character.hairColor,
+      ethnicity: character.ethnicity,
+      bodyType: character.bodyType,
+      breastSize: character.breastSize,
+      isActive: character.isActive,
+      isFeatured: Boolean(character.isFeatured),
+      loraId: character.lora?.id ?? '',
+      description: character.description ?? '',
+      avatarId: character.avatar?.id ?? '',
+      promoImgId: character.promoImg?.id ?? '',
+    };
+  }, [character]);
+
+  if (!character) return null;
+
+  return (
+    <CharacterFormDrawer
+      open={open}
+      title="Edit character"
+      submitLabel="Save"
+      initialValues={initialValues}
+      initialAvatarFile={character.avatar ?? null}
+      initialPromoFile={character.promoImg ?? null}
+      initialLoraOption={
+        character.lora
+          ? {
+              id: character.lora.id,
+              fileName: character.lora.fileName,
+            }
+          : null
+      }
+      onOpenChange={onOpenChange}
+      isSubmitting={updateMutation.isPending}
+      requireDirty
+      showStatus
+      onSubmit={async (values) => {
+        await updateMutation.mutateAsync({
+          id: character.id,
+          payload: {
+            name: values.name,
+            emoji: values.emoji,
+            gender: values.gender,
+            hairColor: values.hairColor,
+            ethnicity: values.ethnicity,
+            bodyType: values.bodyType,
+            breastSize: values.breastSize,
+            isActive: values.isActive,
+            isFeatured: values.isFeatured,
+            loraId: values.loraId,
+            description: values.description,
+            avatarId: values.avatarId,
+            promoImgId: values.promoImgId || undefined,
+          },
+        });
+
+        onOpenChange(false);
+      }}
+    />
+  );
+}
