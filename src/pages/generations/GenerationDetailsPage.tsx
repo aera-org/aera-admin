@@ -7,7 +7,6 @@ import {
   useImgGenerationDetails,
   useRegenerateImgGeneration,
 } from '@/app/img-generations';
-import { usePosePromptDetails } from '@/app/pose-prompts';
 import { DownloadIcon } from '@/assets/icons';
 import {
   Alert,
@@ -21,7 +20,6 @@ import {
   Typography,
 } from '@/atoms';
 import { ImgGenerationStatus, RoleplayStage } from '@/common/types';
-import { formatPhotoAngle, formatSexPose, formatSexType } from '@/common/utils';
 import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
 import { AppShell } from '@/components/templates';
 
@@ -65,10 +63,6 @@ export function GenerationDetailsPage() {
   const { data, error, isLoading, refetch } = useImgGenerationDetails(
     id ?? null,
   );
-  const { data: posePromptDetails } = usePosePromptDetails(
-    data?.sexPoseId ?? null,
-    Boolean(data?.sexPoseId),
-  );
   const deleteMutation = useDeleteImgGeneration();
   const regenerateMutation = useRegenerateImgGeneration();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -97,14 +91,14 @@ export function GenerationDetailsPage() {
       scenarioId: data.scenario.id,
       scenarioName: data.scenario.name,
       stage: data.stage,
-      type: data.type,
+      type: data.character.type ?? data.type,
       mainLoraId: data.mainLora?.id,
       mainLoraName: data.mainLora?.fileName,
       secondLoraId: data.secondLora?.id,
       secondLoraName: data.secondLora?.fileName,
       userRequest: data.userRequest,
-      sexPoseId: data.sexPoseId,
-      sexPoseName: posePromptDetails?.name,
+      posePromptId: data.posePrompt?.id ?? data.posePromptId,
+      posePromptName: data.posePrompt?.name,
     };
 
     navigate('/generations/new', { state: { prefill } });
@@ -242,43 +236,15 @@ export function GenerationDetailsPage() {
                           Pose prompt
                         </Typography>
                         <Typography variant="body">
-                          {posePromptDetails?.name || data.sexPoseId || '-'}
+                          {data.posePrompt?.name || data.posePromptId || '-'}
                         </Typography>
                       </div>
-                      {posePromptDetails ? (
-                        <>
-                          <div>
-                            <Typography variant="caption" tone="muted">
-                              Sex type
-                            </Typography>
-                            <Typography variant="body">
-                              {formatSexType(posePromptDetails.sexType)}
-                            </Typography>
-                          </div>
-                          <div>
-                            <Typography variant="caption" tone="muted">
-                              Pose
-                            </Typography>
-                            <Typography variant="body">
-                              {formatSexPose(posePromptDetails.pose)}
-                            </Typography>
-                          </div>
-                          <div>
-                            <Typography variant="caption" tone="muted">
-                              Angle
-                            </Typography>
-                            <Typography variant="body">
-                              {formatPhotoAngle(posePromptDetails.angle)}
-                            </Typography>
-                          </div>
-                        </>
-                      ) : null}
-                      {data.sexPoseId ? (
+                      {data.posePromptId ? (
                         <div>
                           <Typography variant="caption" tone="muted">
                             Pose prompt ID
                           </Typography>
-                          <Typography variant="body">{data.sexPoseId}</Typography>
+                          <Typography variant="body">{data.posePromptId}</Typography>
                         </div>
                       ) : null}
                     </Stack>

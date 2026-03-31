@@ -77,7 +77,7 @@ type GenerationFormValues = {
   mainLoraId: string;
   secondLoraId: string;
   userRequest: string;
-  sexPoseId: string;
+  posePromptId: string;
 };
 
 type BatchItemState = 'queued' | 'submitting' | 'created' | 'failed';
@@ -146,7 +146,7 @@ function buildInitialValues(
     mainLoraId: prefill?.mainLoraId ?? '',
     secondLoraId: prefill?.secondLoraId ?? '',
     userRequest: prefill?.userRequest ?? '',
-    sexPoseId: prefill?.sexPoseId ?? '',
+    posePromptId: prefill?.posePromptId ?? '',
   };
 }
 
@@ -163,7 +163,7 @@ function buildGenerationRequest(
   };
 
   if (isSexStage(values.stage)) {
-    payload.sexPoseId = values.sexPoseId;
+    payload.posePromptId = values.posePromptId;
   } else {
     payload.userRequest = values.userRequest.trim();
   }
@@ -308,10 +308,20 @@ export function GenerateImagePage() {
       setValues((prev) => ({
         ...prev,
         scenarioId: '',
+        type: '',
       }));
     }
     previousCharacterIdRef.current = values.characterId;
   }, [values.characterId]);
+
+  useEffect(() => {
+    const characterType = characterDetails?.type;
+    if (!characterType) return;
+
+    setValues((prev) =>
+      prev.type === characterType ? prev : { ...prev, type: characterType },
+    );
+  }, [characterDetails?.type]);
 
   const scenarios = useMemo(
     () => (characterDetails ? characterDetails.scenarios : []),
@@ -329,7 +339,7 @@ export function GenerateImagePage() {
       mainLoraId?: string;
       secondLoraId?: string;
       userRequest?: string;
-      sexPoseId?: string;
+      posePromptId?: string;
     } = {};
     if (!values.characterId) result.characterId = 'Select a character.';
     if (!values.scenarioId) result.scenarioId = 'Select a scenario.';
@@ -346,7 +356,7 @@ export function GenerateImagePage() {
       result.secondLoraId = 'Secondary LoRA must differ from main LoRA.';
     }
     if (isSexRequestStage) {
-      if (!values.sexPoseId) result.sexPoseId = 'Select a pose prompt.';
+      if (!values.posePromptId) result.posePromptId = 'Select a pose prompt.';
     } else if (!values.userRequest.trim()) {
       result.userRequest = 'Enter a request.';
     }
@@ -362,7 +372,7 @@ export function GenerateImagePage() {
         values.type &&
         (!values.secondLoraId || values.mainLoraId) &&
         (!values.secondLoraId || values.mainLoraId !== values.secondLoraId) &&
-        (isSexRequestStage ? values.sexPoseId : values.userRequest.trim()),
+        (isSexRequestStage ? values.posePromptId : values.userRequest.trim()),
       ),
     [isSexRequestStage, values],
   );
@@ -595,13 +605,13 @@ export function GenerateImagePage() {
       label: posePrompt.name,
       meta: posePrompt.id,
     })),
-    prefill?.sexPoseId &&
-      values.sexPoseId === prefill.sexPoseId &&
-      prefill.sexPoseName
+    prefill?.posePromptId &&
+      values.posePromptId === prefill.posePromptId &&
+      prefill.posePromptName
       ? {
-          id: prefill.sexPoseId,
-          label: prefill.sexPoseName,
-          meta: prefill.sexPoseId,
+          id: prefill.posePromptId,
+          label: prefill.posePromptName,
+          meta: prefill.posePromptId,
         }
       : undefined,
   );
@@ -723,7 +733,7 @@ export function GenerateImagePage() {
   };
 
   const handlePosePromptSelect = (value: string) => {
-    setValues((prev) => ({ ...prev, sexPoseId: value }));
+    setValues((prev) => ({ ...prev, posePromptId: value }));
   };
 
   return (
@@ -941,11 +951,11 @@ export function GenerateImagePage() {
               <Field
                 label="Pose prompt"
                 labelFor="generation-sex-pose"
-                error={errors.sexPoseId}
+                error={errors.posePromptId}
               >
                 <SearchSelect
                   id="generation-sex-pose"
-                  value={values.sexPoseId}
+                  value={values.posePromptId}
                   options={posePromptOptions.map((option) => ({
                     id: option.id,
                     label: option.label,
@@ -961,7 +971,7 @@ export function GenerateImagePage() {
                   }
                   disabled={isSubmitting}
                   loading={isPosePromptsLoading}
-                  invalid={Boolean(errors.sexPoseId)}
+                  invalid={Boolean(errors.posePromptId)}
                   emptyLabel="No pose prompts found."
                   loadingLabel="Loading pose prompts..."
                 />

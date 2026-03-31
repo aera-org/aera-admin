@@ -5,6 +5,7 @@ import type { ILora } from './lora.type';
 export interface ICharacter {
   id: string;
   name: string;
+  type?: CharacterType;
   description: string;
   promoImg?: IFile | null;
   isFeatured: boolean;

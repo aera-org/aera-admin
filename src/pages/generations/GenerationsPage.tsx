@@ -231,10 +231,8 @@ export function GenerationsPage() {
 
   const { data: characterData, isLoading: isCharactersLoading } =
     useCharacters(characterQueryParams);
-  const {
-    data: filterCharacterDetails,
-    isLoading: isFilterCharacterLoading,
-  } = useCharacterDetails(characterFilter || null);
+  const { data: filterCharacterDetails, isLoading: isFilterCharacterLoading } =
+    useCharacterDetails(characterFilter || null);
 
   useEffect(() => {
     if (!scenarioFilter) return;
@@ -340,7 +338,11 @@ export function GenerationsPage() {
   const skeletonCards = useMemo(
     () =>
       Array.from({ length: 6 }, (_, index) => (
-        <Card key={`generation-skel-${index}`} padding="md" className={s.generationCard}>
+        <Card
+          key={`generation-skel-${index}`}
+          padding="md"
+          className={s.generationCard}
+        >
           <div className={s.cardHeader}>
             <div className={s.titleBlock}>
               <Skeleton width={160} height={12} />
@@ -410,7 +412,9 @@ export function GenerationsPage() {
                 size="sm"
                 variant="ghost"
                 placeholder={
-                  isCharactersLoading ? 'Loading characters...' : 'All characters'
+                  isCharactersLoading
+                    ? 'Loading characters...'
+                    : 'All characters'
                 }
                 disabled={isCharactersLoading}
                 onChange={(value) =>
@@ -500,7 +504,7 @@ export function GenerationsPage() {
                     const status = getStatusMeta(generation.status);
                     const hasImage = Boolean(
                       generation.status === ImgGenerationStatus.Ready &&
-                        generation.file?.url,
+                      generation.file?.url,
                     );
 
                     return (
@@ -510,7 +514,9 @@ export function GenerationsPage() {
                         className={s.generationCard}
                         role="link"
                         tabIndex={0}
-                        onClick={() => navigate(`/generations/${generation.id}`)}
+                        onClick={() =>
+                          navigate(`/generations/${generation.id}`)
+                        }
                         onKeyDown={(event) => {
                           if (event.key === 'Enter' || event.key === ' ') {
                             event.preventDefault();
@@ -525,6 +531,9 @@ export function GenerationsPage() {
                             </Typography>
                             <Typography variant="caption" tone="muted">
                               {buildContext(generation) || generation.id}
+                            </Typography>
+                            <Typography variant="caption" tone="muted">
+                              {generation.posePrompt?.name}
                             </Typography>
                           </div>
                           <Badge tone={status.tone} outline={status.outline}>
@@ -557,9 +566,11 @@ export function GenerationsPage() {
                                 />
                               </div>
                             </>
-                          ) : generation.status === ImgGenerationStatus.Generating ? (
+                          ) : generation.status ===
+                            ImgGenerationStatus.Generating ? (
                             <Skeleton height="100%" />
-                          ) : generation.status === ImgGenerationStatus.Failed ? (
+                          ) : generation.status ===
+                            ImgGenerationStatus.Failed ? (
                             <div className={s.previewPlaceholder}>
                               <Typography variant="caption" tone="muted">
                                 Generation failed.

@@ -1,3 +1,5 @@
+import type { IPosePrompt } from '@/common/types/pose-prompt.type.ts';
+
 import type { IAdmin } from './admin.type.ts';
 import {
   CharacterType,
@@ -21,7 +23,7 @@ export interface ImgGenerationRequest {
   scenarioId: string;
   stage: RoleplayStage;
   userRequest?: string;
-  sexPoseId?: string;
+  posePromptId?: string;
   type: CharacterType;
 }
 
@@ -35,6 +37,7 @@ export interface IImgGeneration {
   type?: CharacterType;
   status: ImgGenerationStatus;
   file?: IFile;
+  posePrompt?: IPosePrompt;
   createdAt: string;
   updatedAt: string;
 }
@@ -42,7 +45,7 @@ export interface IImgGeneration {
 export interface IImgGenerationDetails extends IImgGeneration {
   prompt?: string;
   userRequest?: string;
-  sexPoseId?: string;
+  posePromptId?: string;
   madeBy: IAdmin;
   latency?: {
     promptGeneration: number;
