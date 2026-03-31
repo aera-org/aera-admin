@@ -37,6 +37,15 @@ import { AppShell } from '@/components/templates';
 import { SearchSelect } from './components/SearchSelect';
 import s from './GenerateImagePage.module.scss';
 import type { GenerateImagePrefillState } from './generationReuse';
+import {
+  buildUserRequestDraft,
+  buildUserRequestPayload,
+  type GenerationUserRequestDraft,
+  getVisibleUserRequestFieldKeys,
+  hasUserRequestContent,
+  USER_REQUEST_FIELD_CONFIG,
+  type UserRequestFieldKey,
+} from './userRequest';
 
 const PAGE_SIZE = 50;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -69,7 +78,7 @@ type GenerationFormValues = {
   stage: RoleplayStage | '';
   mainLoraId: string;
   secondLoraId: string;
-  userRequest: string;
+  userRequest: GenerationUserRequestDraft;
   posePromptId: string;
 };
 
@@ -133,7 +142,7 @@ function buildInitialValues(
     stage: (prefill?.stage ?? '') as RoleplayStage | '',
     mainLoraId: prefill?.mainLoraId ?? '',
     secondLoraId: prefill?.secondLoraId ?? '',
-    userRequest: prefill?.userRequest ?? '',
+    userRequest: buildUserRequestDraft(prefill?.userRequest, prefill?.stage),
     posePromptId: prefill?.posePromptId ?? '',
   };
 }
@@ -151,9 +160,9 @@ function buildGenerationRequest(
 
   if (isSexStage(values.stage)) {
     payload.posePromptId = values.posePromptId;
-  } else {
-    payload.userRequest = values.userRequest.trim();
   }
+
+  payload.userRequest = buildUserRequestPayload(values.userRequest, values.stage);
 
   return payload;
 }
@@ -305,6 +314,11 @@ export function GenerateImagePage() {
     [characterDetails],
   );
   const isSexRequestStage = isSexStage(values.stage);
+  const visibleUserRequestFieldKeys = useMemo(
+    () => getVisibleUserRequestFieldKeys(values.stage),
+    [values.stage],
+  );
+  const userRequestErrorFieldKey = visibleUserRequestFieldKeys[0];
 
   const errors = useMemo(() => {
     if (!showErrors) return {};
@@ -332,7 +346,11 @@ export function GenerateImagePage() {
     }
     if (isSexRequestStage) {
       if (!values.posePromptId) result.posePromptId = 'Select a pose prompt.';
-    } else if (!values.userRequest.trim()) {
+    }
+    if (
+      !isSexRequestStage &&
+      !hasUserRequestContent(values.userRequest, values.stage)
+    ) {
       result.userRequest = 'Enter a request.';
     }
     return result;
@@ -346,7 +364,9 @@ export function GenerateImagePage() {
         values.stage &&
         (!values.secondLoraId || values.mainLoraId) &&
         (!values.secondLoraId || values.mainLoraId !== values.secondLoraId) &&
-        (isSexRequestStage ? values.posePromptId : values.userRequest.trim()),
+        (isSexRequestStage
+          ? values.posePromptId
+          : hasUserRequestContent(values.userRequest, values.stage)),
       ),
     [isSexRequestStage, values],
   );
@@ -701,6 +721,57 @@ export function GenerateImagePage() {
     setValues((prev) => ({ ...prev, posePromptId: value }));
   };
 
+  const updateUserRequestField = (
+    fieldKey: UserRequestFieldKey,
+    value: string,
+  ) => {
+    setValues((prev) => ({
+      ...prev,
+      userRequest: {
+        ...prev.userRequest,
+        [fieldKey]: value,
+      },
+    }));
+  };
+
+  const renderUserRequestFields = (fieldKeys: UserRequestFieldKey[]) => {
+    const rows: UserRequestFieldKey[][] = [];
+
+    for (let index = 0; index < fieldKeys.length; index += 2) {
+      rows.push(fieldKeys.slice(index, index + 2));
+    }
+
+    return rows.map((row) => (
+      <FormRow key={row.join('-')} columns={row.length === 1 ? 1 : 2}>
+        {row.map((fieldKey) => {
+          const fieldConfig = USER_REQUEST_FIELD_CONFIG[fieldKey];
+          const isErrorField = userRequestErrorFieldKey === fieldKey;
+
+          return (
+            <Field
+              key={fieldKey}
+              label={fieldConfig.label}
+              labelFor={`generation-request-${fieldKey}`}
+              error={isErrorField ? errors.userRequest : undefined}
+            >
+              <Textarea
+                id={`generation-request-${fieldKey}`}
+                invalid={Boolean(isErrorField && errors.userRequest)}
+                value={values.userRequest[fieldKey]}
+                onChange={(event) =>
+                  updateUserRequestField(fieldKey, event.target.value)
+                }
+                placeholder={fieldConfig.placeholder}
+                fullWidth
+                disabled={isSubmitting}
+              />
+            </Field>
+          );
+        })}
+      </FormRow>
+    ));
+  };
+
   return (
     <AppShell>
       <Container size="wide" className={s.page}>
@@ -894,57 +965,41 @@ export function GenerateImagePage() {
           </FormRow>
 
           {isSexRequestStage ? (
-            <FormRow columns={1}>
-              <Field
-                label="Pose prompt"
-                labelFor="generation-sex-pose"
-                error={errors.posePromptId}
-              >
-                <SearchSelect
-                  id="generation-sex-pose"
-                  value={values.posePromptId}
-                  options={posePromptOptions.map((option) => ({
-                    id: option.id,
-                    label: option.label,
-                    meta: option.meta,
-                  }))}
-                  search={poseSearch}
-                  onSearchChange={setPoseSearch}
-                  onSelect={handlePosePromptSelect}
-                  placeholder={
-                    isPosePromptsLoading
-                      ? 'Loading pose prompts...'
-                      : 'Select pose prompt'
-                  }
-                  disabled={isSubmitting}
-                  loading={isPosePromptsLoading}
-                  invalid={Boolean(errors.posePromptId)}
-                  emptyLabel="No pose prompts found."
-                  loadingLabel="Loading pose prompts..."
-                />
-              </Field>
-            </FormRow>
+            <>
+              <FormRow columns={1}>
+                <Field
+                  label="Pose prompt"
+                  labelFor="generation-sex-pose"
+                  error={errors.posePromptId}
+                >
+                  <SearchSelect
+                    id="generation-sex-pose"
+                    value={values.posePromptId}
+                    options={posePromptOptions.map((option) => ({
+                      id: option.id,
+                      label: option.label,
+                      meta: option.meta,
+                    }))}
+                    search={poseSearch}
+                    onSearchChange={setPoseSearch}
+                    onSelect={handlePosePromptSelect}
+                    placeholder={
+                      isPosePromptsLoading
+                        ? 'Loading pose prompts...'
+                        : 'Select pose prompt'
+                    }
+                    disabled={isSubmitting}
+                    loading={isPosePromptsLoading}
+                    invalid={Boolean(errors.posePromptId)}
+                    emptyLabel="No pose prompts found."
+                    loadingLabel="Loading pose prompts..."
+                  />
+                </Field>
+              </FormRow>
+              {renderUserRequestFields(visibleUserRequestFieldKeys)}
+            </>
           ) : (
-            <Field
-              label="User request"
-              labelFor="generation-request"
-              error={errors.userRequest}
-            >
-              <Textarea
-                id="generation-request"
-                invalid={Boolean(errors.userRequest)}
-                value={values.userRequest}
-                onChange={(event) =>
-                  setValues((prev) => ({
-                    ...prev,
-                    userRequest: event.target.value,
-                  }))
-                }
-                placeholder="Describe what to generate..."
-                fullWidth
-                disabled={isSubmitting}
-              />
-            </Field>
+            renderUserRequestFields(visibleUserRequestFieldKeys)
           )}
         </Stack>
 

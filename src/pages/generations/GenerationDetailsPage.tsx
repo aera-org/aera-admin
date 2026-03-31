@@ -25,6 +25,7 @@ import { AppShell } from '@/components/templates';
 
 import s from './GenerationDetailsPage.module.scss';
 import type { GenerateImagePrefillState } from './generationReuse';
+import { formatUserRequestForDisplay } from './userRequest';
 
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -76,6 +77,9 @@ export function GenerationDetailsPage() {
   const isFailed = data?.status === ImgGenerationStatus.Failed;
   const showLatency =
     data?.status === ImgGenerationStatus.Ready && data?.latency;
+  const userRequestEntries = data
+    ? formatUserRequestForDisplay(data.userRequest, data.stage)
+    : [];
 
   const handleRegenerate = async () => {
     if (!id || isGenerating || regenerateMutation.isPending) return;
@@ -243,9 +247,19 @@ export function GenerationDetailsPage() {
                           <Typography variant="caption" tone="muted">
                             Pose prompt ID
                           </Typography>
-                          <Typography variant="body">{data.posePromptId}</Typography>
+                          <Typography variant="body">
+                            {data.posePromptId}
+                          </Typography>
                         </div>
                       ) : null}
+                      {userRequestEntries.map((entry) => (
+                        <div key={entry.label}>
+                          <Typography variant="caption" tone="muted">
+                            {entry.label}
+                          </Typography>
+                          <Typography variant="body">{entry.value}</Typography>
+                        </div>
+                      ))}
                     </Stack>
                   </div>
                 ) : (
@@ -253,9 +267,20 @@ export function GenerationDetailsPage() {
                     <Typography variant="meta" tone="muted">
                       Request
                     </Typography>
-                    <Typography variant="body">
-                      {data.userRequest || '-'}
-                    </Typography>
+                    {userRequestEntries.length > 0 ? (
+                      <Stack gap="8px">
+                        {userRequestEntries.map((entry) => (
+                          <div key={entry.label}>
+                            <Typography variant="caption" tone="muted">
+                              {entry.label}
+                            </Typography>
+                            <Typography variant="body">{entry.value}</Typography>
+                          </div>
+                        ))}
+                      </Stack>
+                    ) : (
+                      <Typography variant="body">-</Typography>
+                    )}
                   </div>
                 )}
                 {data.prompt ? (

@@ -1,4 +1,4 @@
-import type { RoleplayStage } from '@/common/types';
+import type { RoleplayStage, UserRequest } from '@/common/types';
 
 export type GenerateImagePrefillState = {
   characterId: string;
@@ -10,7 +10,7 @@ export type GenerateImagePrefillState = {
   mainLoraName?: string;
   secondLoraId?: string;
   secondLoraName?: string;
-  userRequest?: string;
+  userRequest?: UserRequest | string;
   posePromptId?: string;
   posePromptName?: string;
 };

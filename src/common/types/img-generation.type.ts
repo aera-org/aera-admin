@@ -16,13 +16,20 @@ export enum ImgGenerationStatus {
   Failed = 'failed',
 }
 
+export interface UserRequest {
+  clothesChanges?: string[];
+  actions?: string[];
+  environmentChanges?: string[];
+  faceExpression?: string;
+}
+
 export interface ImgGenerationRequest {
   mainLoraId?: string;
   secondLoraId?: string;
   characterId: string;
   scenarioId: string;
   stage: RoleplayStage;
-  userRequest?: string;
+  userRequest?: UserRequest;
   posePromptId?: string;
 }
 
@@ -43,7 +50,7 @@ export interface IImgGeneration {
 
 export interface IImgGenerationDetails extends IImgGeneration {
   prompt?: string;
-  userRequest?: string;
+  userRequest?: UserRequest | string;
   posePromptId?: string;
   madeBy: IAdmin;
   latency?: {
