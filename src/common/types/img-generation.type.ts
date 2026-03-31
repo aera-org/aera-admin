@@ -24,7 +24,6 @@ export interface ImgGenerationRequest {
   stage: RoleplayStage;
   userRequest?: string;
   posePromptId?: string;
-  type: CharacterType;
 }
 
 export interface IImgGeneration {

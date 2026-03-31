@@ -91,7 +91,6 @@ export function GenerationDetailsPage() {
       scenarioId: data.scenario.id,
       scenarioName: data.scenario.name,
       stage: data.stage,
-      type: data.character.type ?? data.type,
       mainLoraId: data.mainLora?.id,
       mainLoraName: data.mainLora?.fileName,
       secondLoraId: data.secondLora?.id,

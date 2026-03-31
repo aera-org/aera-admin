@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { notifyError, notifySuccess } from '@/app/toast';
+import type { CharacterType } from '@/common/types';
 
 import {
   deleteLora,
@@ -27,13 +28,15 @@ export function useUpdateLora() {
   return useMutation({
     mutationFn: ({
       id,
+      type,
       strength,
       triggerWord,
     }: {
       id: string;
+      type?: CharacterType;
       strength?: number;
       triggerWord?: string;
-    }) => updateLora(id, { strength, triggerWord }),
+    }) => updateLora(id, { type, strength, triggerWord }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loras'] });
       notifySuccess('LoRA updated.', 'LoRA updated.');

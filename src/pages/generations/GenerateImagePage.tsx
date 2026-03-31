@@ -26,7 +26,6 @@ import {
   Typography,
 } from '@/atoms';
 import {
-  CharacterType,
   type IImgGenerationDetails,
   type ImgGenerationRequest,
   ImgGenerationStatus,
@@ -56,11 +55,6 @@ const STAGE_LABELS: Record<RoleplayStage, string> = {
   [RoleplayStage.Aftercare]: 'Aftercare',
 };
 
-const TYPE_LABELS: Record<CharacterType, string> = {
-  [CharacterType.Realistic]: 'Realistic',
-  [CharacterType.Anime]: 'Anime',
-};
-
 const BATCH_OPTIONS = Array.from({ length: MAX_BATCH_SIZE }, (_, index) => {
   const value = String(index + 1);
   return {
@@ -73,7 +67,6 @@ type GenerationFormValues = {
   characterId: string;
   scenarioId: string;
   stage: RoleplayStage | '';
-  type: CharacterType | '';
   mainLoraId: string;
   secondLoraId: string;
   userRequest: string;
@@ -99,10 +92,6 @@ type GenerationBatchSession = {
 
 function formatStage(stage: RoleplayStage) {
   return STAGE_LABELS[stage] ?? stage;
-}
-
-function formatType(type: CharacterType) {
-  return TYPE_LABELS[type] ?? type;
 }
 
 function isSexStage(stage: RoleplayStage | '') {
@@ -142,7 +131,6 @@ function buildInitialValues(
     characterId: prefill?.characterId ?? '',
     scenarioId: prefill?.scenarioId ?? '',
     stage: (prefill?.stage ?? '') as RoleplayStage | '',
-    type: (prefill?.type ?? '') as CharacterType | '',
     mainLoraId: prefill?.mainLoraId ?? '',
     secondLoraId: prefill?.secondLoraId ?? '',
     userRequest: prefill?.userRequest ?? '',
@@ -157,7 +145,6 @@ function buildGenerationRequest(
     characterId: values.characterId,
     scenarioId: values.scenarioId,
     stage: values.stage as RoleplayStage,
-    type: values.type as CharacterType,
     mainLoraId: values.mainLoraId || undefined,
     secondLoraId: values.secondLoraId || undefined,
   };
@@ -308,20 +295,10 @@ export function GenerateImagePage() {
       setValues((prev) => ({
         ...prev,
         scenarioId: '',
-        type: '',
       }));
     }
     previousCharacterIdRef.current = values.characterId;
   }, [values.characterId]);
-
-  useEffect(() => {
-    const characterType = characterDetails?.type;
-    if (!characterType) return;
-
-    setValues((prev) =>
-      prev.type === characterType ? prev : { ...prev, type: characterType },
-    );
-  }, [characterDetails?.type]);
 
   const scenarios = useMemo(
     () => (characterDetails ? characterDetails.scenarios : []),
@@ -335,7 +312,6 @@ export function GenerateImagePage() {
       characterId?: string;
       scenarioId?: string;
       stage?: string;
-      type?: string;
       mainLoraId?: string;
       secondLoraId?: string;
       userRequest?: string;
@@ -344,7 +320,6 @@ export function GenerateImagePage() {
     if (!values.characterId) result.characterId = 'Select a character.';
     if (!values.scenarioId) result.scenarioId = 'Select a scenario.';
     if (!values.stage) result.stage = 'Select a stage.';
-    if (!values.type) result.type = 'Select a type.';
     if (values.secondLoraId && !values.mainLoraId) {
       result.secondLoraId = 'Select main LoRA first.';
     }
@@ -369,7 +344,6 @@ export function GenerateImagePage() {
         values.characterId &&
         values.scenarioId &&
         values.stage &&
-        values.type &&
         (!values.secondLoraId || values.mainLoraId) &&
         (!values.secondLoraId || values.mainLoraId !== values.secondLoraId) &&
         (isSexRequestStage ? values.posePromptId : values.userRequest.trim()),
@@ -625,15 +599,6 @@ export function GenerateImagePage() {
     [],
   );
 
-  const typeOptions = useMemo(
-    () =>
-      Object.values(CharacterType).map((type) => ({
-        label: formatType(type),
-        value: type,
-      })),
-    [],
-  );
-
   const updateBatchItem = (
     sessionId: string,
     clientId: string,
@@ -860,25 +825,7 @@ export function GenerateImagePage() {
             </Field>
           </FormRow>
 
-          <FormRow columns={3}>
-            <Field label="Type" labelFor="generation-type" error={errors.type}>
-              <Select
-                id="generation-type"
-                size="sm"
-                options={typeOptions}
-                value={values.type}
-                placeholder="Select type"
-                onChange={(value) =>
-                  setValues((prev) => ({
-                    ...prev,
-                    type: value as CharacterType,
-                  }))
-                }
-                fullWidth
-                disabled={isSubmitting}
-                invalid={Boolean(errors.type)}
-              />
-            </Field>
+          <FormRow columns={2}>
             <Field
               label="Main LoRA"
               labelFor="generation-main-lora"

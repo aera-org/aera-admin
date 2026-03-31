@@ -1,12 +1,13 @@
 import { apiFetch } from '@/app/api';
 import { buildApiError } from '@/app/api/apiErrors';
-import type { ILora, LoraUpdateDto, LoraUploadDto } from '@/common/types';
+import { CharacterType, type ILora, type LoraUpdateDto, type LoraUploadDto } from '@/common/types';
 
 import type { PaginatedResponse } from '../paginated-response.type';
 
 export type LorasListParams = {
   search?: string;
   order?: string;
+  type?: CharacterType;
   skip?: number;
   take?: number;
 };
@@ -33,6 +34,7 @@ export async function getLoras(params: LorasListParams) {
   const query = new URLSearchParams();
   if (params.search) query.set('search', params.search);
   if (params.order) query.set('order', params.order);
+  if (params.type) query.set('type', params.type);
   if (typeof params.skip === 'number') query.set('skip', String(params.skip));
   if (typeof params.take === 'number') query.set('take', String(params.take));
 
@@ -47,6 +49,7 @@ export async function getLoras(params: LorasListParams) {
 export async function uploadLora(payload: LoraUploadDto, file: File) {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('type', payload.type);
   formData.append('strength', String(payload.strength));
   formData.append('triggerWord', payload.triggerWord);
 

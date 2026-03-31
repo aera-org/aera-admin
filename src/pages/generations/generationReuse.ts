@@ -1,4 +1,4 @@
-import type { CharacterType, RoleplayStage } from '@/common/types';
+import type { RoleplayStage } from '@/common/types';
 
 export type GenerateImagePrefillState = {
   characterId: string;
@@ -6,7 +6,6 @@ export type GenerateImagePrefillState = {
   scenarioId: string;
   scenarioName: string;
   stage: RoleplayStage;
-  type?: CharacterType;
   mainLoraId?: string;
   mainLoraName?: string;
   secondLoraId?: string;

@@ -27,7 +27,8 @@ import {
   Table,
   Typography,
 } from '@/atoms';
-import type { ILora } from '@/common/types';
+import { CharacterType, type ILora } from '@/common/types';
+import { characterTypeOptions, formatCharacterType } from '@/common/utils';
 import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
 import { AppShell } from '@/components/templates';
 
@@ -36,6 +37,7 @@ import s from './LorasPage.module.scss';
 type QueryUpdate = {
   search?: string;
   order?: string;
+  type?: CharacterType | '';
   page?: number;
   pageSize?: number;
 };
@@ -46,10 +48,15 @@ const ORDER_OPTIONS = [
 ];
 
 const ORDER_VALUES = new Set(ORDER_OPTIONS.map((option) => option.value));
+const TYPE_VALUES = new Set(Object.values(CharacterType));
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
 const DEFAULT_ORDER = 'DESC';
 const DEFAULT_PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 400;
+const TYPE_FILTER_OPTIONS = [
+  { label: 'All types', value: '' },
+  ...characterTypeOptions,
+];
 
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -99,11 +106,16 @@ function resolveTriggerWord(value: string) {
   return trimmed ? trimmed : null;
 }
 
+function isCharacterType(value: string | null | undefined): value is CharacterType {
+  return Boolean(value) && TYPE_VALUES.has(value as CharacterType);
+}
+
 export function LorasPage() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSearch = searchParams.get('search') ?? '';
   const rawOrder = searchParams.get('order');
+  const rawType = searchParams.get('type');
   const rawPage = searchParams.get('page');
   const rawPageSize = searchParams.get('pageSize');
 
@@ -112,6 +124,7 @@ export function LorasPage() {
   const normalizedSearch = debouncedSearch.trim();
 
   const order = ORDER_VALUES.has(rawOrder ?? '') ? rawOrder! : DEFAULT_ORDER;
+  const type = isCharacterType(rawType) ? rawType : '';
   const page = parsePositiveNumber(rawPage, 1);
   const pageSize = parsePageSize(rawPageSize);
 
@@ -133,6 +146,14 @@ export function LorasPage() {
           next.set('order', update.order);
         } else {
           next.delete('order');
+        }
+      }
+
+      if (update.type !== undefined) {
+        if (update.type) {
+          next.set('type', update.type);
+        } else {
+          next.delete('type');
         }
       }
 
@@ -170,10 +191,11 @@ export function LorasPage() {
     () => ({
       search: normalizedSearch || undefined,
       order,
+      type: type || undefined,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    [normalizedSearch, order, page, pageSize],
+    [normalizedSearch, order, page, pageSize, type],
   );
 
   const { data, error, isLoading, refetch } = useLoras(queryParams);
@@ -195,6 +217,7 @@ export function LorasPage() {
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadType, setUploadType] = useState<CharacterType | ''>('');
   const [strengthInput, setStrengthInput] = useState('1');
   const [triggerWordInput, setTriggerWordInput] = useState('');
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
@@ -203,6 +226,7 @@ export function LorasPage() {
 
   const resetUpload = () => {
     setUploadFile(null);
+    setUploadType('');
     setStrengthInput('1');
     setTriggerWordInput('');
     if (uploadInputRef.current) {
@@ -217,6 +241,7 @@ export function LorasPage() {
 
   const handleUpload = async () => {
     if (!uploadFile) return;
+    if (!uploadType) return;
     const strengthValue = resolveStrength(strengthInput);
     if (strengthValue === null) return;
     const triggerWordValue = resolveTriggerWord(triggerWordInput);
@@ -227,6 +252,7 @@ export function LorasPage() {
       await uploadLora(
         {
           fileName: uploadFile.name,
+          type: uploadType,
           strength: strengthValue,
           triggerWord: triggerWordValue,
         },
@@ -244,11 +270,13 @@ export function LorasPage() {
 
   const [strengthModalOpen, setStrengthModalOpen] = useState(false);
   const [strengthTarget, setStrengthTarget] = useState<ILora | null>(null);
+  const [editType, setEditType] = useState<CharacterType | ''>('');
   const [strengthValue, setStrengthValue] = useState('');
   const [triggerWordValue, setTriggerWordValue] = useState('');
 
   const openStrengthModal = (lora: ILora) => {
     setStrengthTarget(lora);
+    setEditType(lora.type);
     setStrengthValue(String(lora.strength));
     setTriggerWordValue(lora.triggerWord ?? '');
     setStrengthModalOpen(true);
@@ -257,18 +285,21 @@ export function LorasPage() {
   const closeStrengthModal = () => {
     setStrengthModalOpen(false);
     setStrengthTarget(null);
+    setEditType('');
     setStrengthValue('');
     setTriggerWordValue('');
   };
 
   const handleStrengthSave = async () => {
     if (!strengthTarget) return;
+    if (!editType) return;
     const nextStrength = resolveStrength(strengthValue);
     if (nextStrength === null) return;
     const nextTriggerWord = resolveTriggerWord(triggerWordValue);
     if (!nextTriggerWord) return;
     await updateLoraMutation.mutateAsync({
       id: strengthTarget.id,
+      type: editType,
       strength: nextStrength,
       triggerWord: nextTriggerWord,
     });
@@ -286,6 +317,7 @@ export function LorasPage() {
   const columns = useMemo(
     () => [
       { key: 'file', label: 'File' },
+      { key: 'type', label: 'Type' },
       { key: 'triggerWord', label: 'Trigger word' },
       { key: 'strength', label: 'Strength' },
       { key: 'updated', label: <span className={s.alignRight}>Updated</span> },
@@ -304,6 +336,11 @@ export function LorasPage() {
               {lora.id}
             </Typography>
           </div>
+        ),
+        type: (
+          <Typography variant="body" tone="muted">
+            {formatCharacterType(lora.type)}
+          </Typography>
         ),
         triggerWord: (
           <Typography variant="body" tone="muted">
@@ -375,6 +412,7 @@ export function LorasPage() {
             <Skeleton width={90} height={10} />
           </div>
         ),
+        type: <Skeleton width={90} height={12} />,
         triggerWord: <Skeleton width={110} height={12} />,
         strength: <Skeleton width={60} height={12} />,
         updated: (
@@ -437,6 +475,20 @@ export function LorasPage() {
                 variant="ghost"
                 onChange={(value) =>
                   updateSearchParams({ order: value, page: 1 })
+                }
+              />
+            </Field>
+            <Field label="Type" labelFor="loras-type">
+              <Select
+                id="loras-type"
+                options={TYPE_FILTER_OPTIONS}
+                value={type}
+                variant="ghost"
+                onChange={(value) =>
+                  updateSearchParams({
+                    type: (value as CharacterType | ''),
+                    page: 1,
+                  })
                 }
               />
             </Field>
@@ -525,6 +577,7 @@ export function LorasPage() {
               disabled={
                 isUploading ||
                 !uploadFile ||
+                !uploadType ||
                 resolveStrength(strengthInput) === null ||
                 !resolveTriggerWord(triggerWordInput)
               }
@@ -535,6 +588,17 @@ export function LorasPage() {
         }
       >
         <Stack gap="16px">
+          <Field label="Type" labelFor="lora-upload-type">
+            <Select
+              id="lora-upload-type"
+              value={uploadType}
+              options={characterTypeOptions}
+              placeholder="Select type"
+              onChange={(value) => setUploadType(value as CharacterType)}
+              fullWidth
+              disabled={isUploading}
+            />
+          </Field>
           <Field label="File">
             <div className={s.filePicker}>
               <Input
@@ -606,6 +670,7 @@ export function LorasPage() {
               onClick={handleStrengthSave}
               loading={updateLoraMutation.isPending}
               disabled={
+                !editType ||
                 resolveStrength(strengthValue) === null ||
                 !resolveTriggerWord(triggerWordValue) ||
                 updateLoraMutation.isPending
@@ -617,6 +682,16 @@ export function LorasPage() {
         }
       >
         <Stack gap="12px">
+          <Field label="Type" labelFor="lora-edit-type">
+            <Select
+              id="lora-edit-type"
+              value={editType}
+              options={characterTypeOptions}
+              placeholder="Select type"
+              onChange={(value) => setEditType(value as CharacterType)}
+              fullWidth
+            />
+          </Field>
           <Field label="Trigger word">
             <Input
               value={triggerWordValue}
