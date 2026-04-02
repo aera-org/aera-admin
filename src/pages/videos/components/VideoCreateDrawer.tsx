@@ -42,7 +42,7 @@ type CreateVideoValues = {
 };
 
 const QUALITY_OPTIONS = [
-  { label: 'Low (15)', value: VideoQuality.Low },
+  { label: 'Low (24)', value: VideoQuality.Low },
   { label: 'Medium (30)', value: VideoQuality.Medium },
   { label: 'High (60)', value: VideoQuality.High },
 ];
@@ -50,7 +50,7 @@ const QUALITY_OPTIONS = [
 const RESOLUTION_OPTIONS = [
   { label: '720p', value: String(VideoResolution.Low) },
   { label: '1080p', value: String(VideoResolution.Medium) },
-  { label: '1440p', value: String(VideoResolution.High) },
+  // { label: '1440p', value: String(VideoResolution.High) },
 ];
 
 const ASPECT_RATIO_OPTIONS = [
@@ -183,15 +183,15 @@ export function VideoCreateDrawer({
     () =>
       Boolean(
         values.name.trim() &&
-          values.prompt.trim() &&
-          startFrame?.id &&
-          isVideoQuality(values.quality) &&
-          isVideoResolution(values.resolution) &&
-          isVideoAspectRatio(values.aspectRatio) &&
-          parsedDuration !== null &&
-          parsedDuration >= MIN_DURATION &&
-          parsedCount !== null &&
-          parsedCount >= MIN_COUNT,
+        values.prompt.trim() &&
+        startFrame?.id &&
+        isVideoQuality(values.quality) &&
+        isVideoResolution(values.resolution) &&
+        isVideoAspectRatio(values.aspectRatio) &&
+        parsedDuration !== null &&
+        parsedDuration >= MIN_DURATION &&
+        parsedCount !== null &&
+        parsedCount >= MIN_COUNT,
       ),
     [
       parsedCount,
@@ -256,7 +256,11 @@ export function VideoCreateDrawer({
       }}
     >
       <Stack gap="16px">
-        <Field label="Name" labelFor="video-create-name" error={validationErrors.name}>
+        <Field
+          label="Name"
+          labelFor="video-create-name"
+          error={validationErrors.name}
+        >
           <Input
             id="video-create-name"
             size="sm"
@@ -281,7 +285,10 @@ export function VideoCreateDrawer({
               options={QUALITY_OPTIONS}
               value={values.quality}
               onChange={(value) =>
-                setValues((prev) => ({ ...prev, quality: value as VideoQuality }))
+                setValues((prev) => ({
+                  ...prev,
+                  quality: value as VideoQuality,
+                }))
               }
               fullWidth
             />
@@ -347,7 +354,11 @@ export function VideoCreateDrawer({
           </Field>
         </FormRow>
 
-        <Field label="Count" labelFor="video-create-count" error={validationErrors.count}>
+        <Field
+          label="Count"
+          labelFor="video-create-count"
+          error={validationErrors.count}
+        >
           <Input
             id="video-create-count"
             type="number"
@@ -362,7 +373,11 @@ export function VideoCreateDrawer({
           />
         </Field>
 
-        <Field label="Prompt" labelFor="video-create-prompt" error={validationErrors.prompt}>
+        <Field
+          label="Prompt"
+          labelFor="video-create-prompt"
+          error={validationErrors.prompt}
+        >
           <Textarea
             id="video-create-prompt"
             size="sm"
@@ -405,7 +420,9 @@ export function VideoCreateDrawer({
               onSelect={(value) =>
                 setValues((prev) => ({ ...prev, highLoraId: value }))
               }
-              placeholder={isHighLoraLoading ? 'Loading LoRAs...' : 'Select LoRA'}
+              placeholder={
+                isHighLoraLoading ? 'Loading LoRAs...' : 'Select LoRA'
+              }
               disabled={isHighLoraLoading}
               loading={isHighLoraLoading}
             />
@@ -423,7 +440,9 @@ export function VideoCreateDrawer({
               onSelect={(value) =>
                 setValues((prev) => ({ ...prev, lowLoraId: value }))
               }
-              placeholder={isLowLoraLoading ? 'Loading LoRAs...' : 'Select LoRA'}
+              placeholder={
+                isLowLoraLoading ? 'Loading LoRAs...' : 'Select LoRA'
+              }
               disabled={isLowLoraLoading}
               loading={isLowLoraLoading}
             />

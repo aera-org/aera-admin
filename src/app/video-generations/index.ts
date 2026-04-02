@@ -3,6 +3,7 @@ export {
   useCreateVideoGenerationItem,
   useDeleteVideoGeneration,
   useDeleteVideoGenerationItem,
+  useRegenerateVideoGenerationItem,
   useUpdateVideoGeneration,
   useVideoGenerationDetails,
   useVideoGenerations,
@@ -15,5 +16,6 @@ export {
   deleteVideoGenerationItem,
   getVideoGenerationDetails,
   getVideoGenerations,
+  regenerateVideoGenerationItem,
   updateVideoGeneration,
 } from './videoGenerationsApi';

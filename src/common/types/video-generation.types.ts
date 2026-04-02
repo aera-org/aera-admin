@@ -2,15 +2,15 @@ import type { IFile } from './file.type.ts';
 import type { ILora } from './lora.type.ts';
 
 export enum VideoQuality {
-  Low = '15',
+  Low = '24',
   Medium = '30',
   High = '60',
 }
 
 export enum VideoResolution {
   Low = 720,
-  Medium = 1080,
-  High = 1440,
+  Medium = 1024,
+  // High = 1440,
 }
 
 export enum VideoAspectRatio {

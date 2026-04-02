@@ -1,3 +1,4 @@
+import { ReloadIcon } from '@radix-ui/react-icons';
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -5,6 +6,7 @@ import {
   useCreateVideoGenerationItem,
   useDeleteVideoGeneration,
   useDeleteVideoGenerationItem,
+  useRegenerateVideoGenerationItem,
   useUpdateVideoGeneration,
   useVideoGenerationDetails,
 } from '@/app/video-generations';
@@ -96,6 +98,7 @@ export function VideoDetailsPage() {
   const updateMutation = useUpdateVideoGeneration();
   const createItemMutation = useCreateVideoGenerationItem();
   const deleteMutation = useDeleteVideoGeneration();
+  const regenerateItemMutation = useRegenerateVideoGenerationItem();
   const deleteItemMutation = useDeleteVideoGenerationItem();
 
   const [itemToDelete, setItemToDelete] = useState<IVideoGenerationItem | null>(
@@ -105,6 +108,9 @@ export function VideoDetailsPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [editShowErrors, setEditShowErrors] = useState(false);
   const [editName, setEditName] = useState('');
+  const [regeneratingItemId, setRegeneratingItemId] = useState<string | null>(
+    null,
+  );
 
   const editValidationError = useMemo(() => {
     if (!editShowErrors) return undefined;
@@ -167,6 +173,19 @@ export function VideoDetailsPage() {
       itemId: itemToDelete.id,
     });
     setItemToDelete(null);
+  };
+
+  const handleRegenerateItem = async (item: IVideoGenerationItem) => {
+    if (!videoId) return;
+    setRegeneratingItemId(item.id);
+    try {
+      await regenerateItemMutation.mutateAsync({
+        id: videoId,
+        itemId: item.id,
+      });
+    } finally {
+      setRegeneratingItemId((prev) => (prev === item.id ? null : prev));
+    }
   };
 
   return (
@@ -370,6 +389,22 @@ export function VideoDetailsPage() {
                       )}
                       <div className={s.itemPreviewActions}>
                         <IconButton
+                          aria-label="Regenerate item"
+                          tooltip="Regenerate item"
+                          size="sm"
+                          variant="ghost"
+                          icon={<ReloadIcon />}
+                          loading={
+                            regenerateItemMutation.isPending &&
+                            regeneratingItemId === item.id
+                          }
+                          disabled={
+                            regenerateItemMutation.isPending ||
+                            deleteItemMutation.isPending
+                          }
+                          onClick={() => handleRegenerateItem(item)}
+                        />
+                        <IconButton
                           aria-label="Delete item"
                           tooltip="Delete item"
                           size="sm"
@@ -377,7 +412,10 @@ export function VideoDetailsPage() {
                           tone="danger"
                           icon={<TrashIcon />}
                           onClick={() => setItemToDelete(item)}
-                          disabled={deleteItemMutation.isPending}
+                          disabled={
+                            deleteItemMutation.isPending ||
+                            regenerateItemMutation.isPending
+                          }
                         />
                       </div>
                     </div>
