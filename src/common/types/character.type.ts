@@ -126,6 +126,19 @@ export interface IScenario {
   updatedAt: string;
 }
 
+export enum StoryType {
+  Photo = 'photo',
+  Video = 'video',
+}
+
+export interface ICharacterStory {
+  id: string;
+  idx: number;
+  file: IFile;
+  type: StoryType;
+  isActive: boolean;
+}
+
 export interface ICharacterDetails extends ICharacter {
   lora: ILora;
   scenarios: IScenario[];
@@ -133,4 +146,5 @@ export interface ICharacterDetails extends ICharacter {
   ethnicity: CharacterEthnicity;
   bodyType: CharacterBodyType;
   breastSize: CharacterBreastSize;
+  stories: ICharacterStory[];
 }

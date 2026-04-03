@@ -49,7 +49,7 @@ const QUALITY_OPTIONS = [
 
 const RESOLUTION_OPTIONS = [
   { label: '720p', value: String(VideoResolution.Low) },
-  { label: '1080p', value: String(VideoResolution.Medium) },
+  { label: '1024p', value: String(VideoResolution.Medium) },
   // { label: '1440p', value: String(VideoResolution.High) },
 ];
 

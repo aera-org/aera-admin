@@ -4,8 +4,13 @@ import { notifyError, notifySuccess } from '@/app/toast';
 import type { ICharacter, RoleplayStage } from '@/common/types';
 import {
   addScenarioStageGift,
+  createCharacterStory,
   deleteScenarioStageGift,
+  deleteCharacterStory,
   type CharacterUpdateDto,
+  type CharacterStoryCreateDto,
+  type CharacterStoriesOrderDto,
+  type CharacterStoryUpdateDto,
   type CharactersListParams,
   type ScenarioCreateDto,
   type ScenarioUpdateDto,
@@ -17,7 +22,9 @@ import {
   deleteCharacter,
   getCharacterDetails,
   getCharacters,
+  reorderCharacterStories,
   updateCharacter,
+  updateCharacterStory,
   updateScenario,
   updateScenarioStage,
   updateScenarioStageGift,
@@ -249,6 +256,99 @@ export function useUpdateCharacter() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to update the character.');
+    },
+  });
+}
+
+export function useCreateCharacterStory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      payload,
+    }: {
+      characterId: string;
+      payload: CharacterStoryCreateDto;
+    }) => createCharacterStory(characterId, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Story created.', 'Story created.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to create the story.');
+    },
+  });
+}
+
+export function useUpdateCharacterStory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      storyId,
+      payload,
+    }: {
+      characterId: string;
+      storyId: string;
+      payload: CharacterStoryUpdateDto;
+    }) => updateCharacterStory(characterId, storyId, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Story updated.', 'Story updated.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to update the story.');
+    },
+  });
+}
+
+export function useReorderCharacterStories() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      payload,
+    }: {
+      characterId: string;
+      payload: CharacterStoriesOrderDto;
+    }) => reorderCharacterStories(characterId, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to reorder the stories.');
+    },
+  });
+}
+
+export function useDeleteCharacterStory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      storyId,
+    }: {
+      characterId: string;
+      storyId: string;
+    }) => deleteCharacterStory(characterId, storyId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Story deleted.', 'Story deleted.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to delete the story.');
     },
   });
 }

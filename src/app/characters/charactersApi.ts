@@ -8,6 +8,7 @@ import type {
   ICharacter,
   ICharacterDetails,
   RoleplayStage,
+  StoryType,
   StageDirectives,
 } from '@/common/types';
 
@@ -28,6 +29,10 @@ const createScenarioFallbackError = 'Unable to create the scenario.';
 const createScenarioGiftFallbackError = 'Unable to add the gift.';
 const updateScenarioGiftFallbackError = 'Unable to update the gift.';
 const deleteScenarioGiftFallbackError = 'Unable to delete the gift.';
+const createStoryFallbackError = 'Unable to create the story.';
+const updateStoryFallbackError = 'Unable to update the story.';
+const deleteStoryFallbackError = 'Unable to delete the story.';
+const reorderStoriesFallbackError = 'Unable to reorder the stories.';
 
 export type CharacterUpdateDto = {
   name: string;
@@ -88,6 +93,17 @@ export type StageGiftCreateDto = {
 export type StageGiftUpdateDto = {
   reason: string;
   buyText: string;
+};
+export type CharacterStoryCreateDto = {
+  fileId: string;
+  type: StoryType;
+};
+export type CharacterStoryUpdateDto = {
+  idx: number;
+  isActive: boolean;
+};
+export type CharacterStoriesOrderDto = {
+  order: string[];
 };
 
 async function parseJsonIfPresent(res: Response) {
@@ -201,6 +217,62 @@ export async function addScenarioStageGift(
   );
   if (!res.ok) {
     throw await buildApiError(res, createScenarioGiftFallbackError);
+  }
+  return await parseJsonIfPresent(res);
+}
+
+export async function createCharacterStory(
+  characterId: string,
+  payload: CharacterStoryCreateDto,
+) {
+  const res = await apiFetch(`/admin/characters/${characterId}/stories`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, createStoryFallbackError);
+  }
+  return (await res.json()) as ICharacterDetails['stories'][number];
+}
+
+export async function updateCharacterStory(
+  characterId: string,
+  storyId: string,
+  payload: CharacterStoryUpdateDto,
+) {
+  const res = await apiFetch(`/admin/characters/${characterId}/stories/${storyId}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, updateStoryFallbackError);
+  }
+  return (await res.json()) as ICharacterDetails['stories'][number];
+}
+
+export async function deleteCharacterStory(characterId: string, storyId: string) {
+  const res = await apiFetch(`/admin/characters/${characterId}/stories/${storyId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, deleteStoryFallbackError);
+  }
+  return await parseJsonIfPresent(res);
+}
+
+export async function reorderCharacterStories(
+  characterId: string,
+  payload: CharacterStoriesOrderDto,
+) {
+  const res = await apiFetch(`/admin/characters/${characterId}/stories/order`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, reorderStoriesFallbackError);
   }
   return await parseJsonIfPresent(res);
 }

@@ -11,6 +11,9 @@ import { CharacterHeader } from './components/CharacterHeader';
 import { CharacterOverview } from './components/CharacterOverview';
 import { CharacterEditDrawer } from './components/CharacterEditDrawer';
 import { ScenarioSection } from './components/ScenarioSection';
+import { StoriesSection } from './components/StoriesSection';
+
+const isStoriesEnabled = import.meta.env.VITE_STORIES_ON === 'true';
 
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -38,6 +41,7 @@ export function CharacterDetailsPage() {
   const deleteMutation = useDeleteCharacter();
 
   const scenarios = useMemo(() => data?.scenarios ?? [], [data?.scenarios]);
+  const stories = useMemo(() => data?.stories ?? [], [data?.stories]);
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(
     null,
   );
@@ -105,6 +109,13 @@ export function CharacterDetailsPage() {
           isLoading={Boolean(isLoading && !data)}
           formatDate={formatDate}
         />
+        {isStoriesEnabled ? (
+          <StoriesSection
+            characterId={id ?? null}
+            stories={stories}
+            isLoading={Boolean(isLoading && !data)}
+          />
+        ) : null}
 
         <CharacterEditDrawer
           character={data ?? null}
