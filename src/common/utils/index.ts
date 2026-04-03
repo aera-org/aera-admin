@@ -1,6 +1,7 @@
 export { capitalize } from './capitalize';
 export {
   characterTypeOptions,
+  formatCharacterSelectLabel,
   formatCharacterType,
 } from './characterType';
 export { cn } from './classnames';

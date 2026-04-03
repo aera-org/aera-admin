@@ -16,6 +16,7 @@ import {
   Textarea,
   Typography,
 } from '@/atoms';
+import { formatCharacterSelectLabel } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 
 import s from './ScenarioGenCreatePage.module.scss';
@@ -61,7 +62,7 @@ export function ScenarioGenCreatePage() {
   const characterOptions = useMemo(
     () =>
       (charactersData?.data ?? []).map((character) => ({
-        label: character.name,
+        label: formatCharacterSelectLabel(character.name, character.type),
         value: character.id,
       })),
     [charactersData?.data],

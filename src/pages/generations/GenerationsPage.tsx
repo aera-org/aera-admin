@@ -27,6 +27,7 @@ import {
   type RoleplayStage,
   STAGES_IN_ORDER,
 } from '@/common/types';
+import { formatCharacterSelectLabel } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 
 import s from './GenerationsPage.module.scss';
@@ -256,7 +257,7 @@ export function GenerationsPage() {
 
   const characterOptions = useMemo(() => {
     const options = (characterData?.data ?? []).map((character) => ({
-      label: character.name,
+      label: formatCharacterSelectLabel(character.name, character.type),
       value: character.id,
     }));
 
@@ -266,7 +267,10 @@ export function GenerationsPage() {
       !options.some((option) => option.value === characterFilter)
     ) {
       options.unshift({
-        label: filterCharacterDetails.name,
+        label: formatCharacterSelectLabel(
+          filterCharacterDetails.name,
+          filterCharacterDetails.type,
+        ),
         value: filterCharacterDetails.id,
       });
     }

@@ -33,6 +33,7 @@ import {
   STAGES_IN_ORDER,
 } from '@/common/types';
 import {
+  formatCharacterSelectLabel,
   getVisibleUserRequestFieldKeys,
   USER_REQUEST_FIELD_CONFIG,
 } from '@/common/utils';
@@ -510,7 +511,7 @@ export function GenerateImagePage() {
   const characterOptions = mergeSelectedOption(
     (characterData?.data ?? []).map((character) => ({
       id: character.id,
-      label: character.name,
+      label: formatCharacterSelectLabel(character.name, character.type),
       meta: character.id,
     })),
     prefill?.characterId &&

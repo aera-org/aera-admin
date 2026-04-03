@@ -66,7 +66,7 @@ import {
   Typography,
 } from '@/atoms';
 import { UserRole } from '@/common/types';
-import { cn } from '@/common/utils';
+import { cn, formatCharacterSelectLabel } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 
 import s from './AnalyticsPage.module.scss';
@@ -1320,7 +1320,7 @@ export function AnalyticsPage() {
   const characterOptions = useMemo(() => {
     const options = characters.map((character) => ({
       value: character.id,
-      label: character.name,
+      label: formatCharacterSelectLabel(character.name, character.type),
     }));
     if (
       deeplinkCharacterId &&

@@ -15,3 +15,11 @@ export const characterTypeOptions = Object.values(CharacterType).map(
 export function formatCharacterType(value: CharacterType | null | undefined) {
   return value ? CHARACTER_TYPE_LABELS[value] : '-';
 }
+
+export function formatCharacterSelectLabel(
+  name: string | null | undefined,
+  type: CharacterType | null | undefined,
+) {
+  const normalizedName = name?.trim() || 'Character';
+  return type ? `${normalizedName} (${type})` : normalizedName;
+}

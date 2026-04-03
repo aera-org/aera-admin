@@ -20,6 +20,7 @@ import {
 } from '@/atoms';
 import type { ITgUser, RoleplayStage } from '@/common/types';
 import { STAGES_IN_ORDER } from '@/common/types';
+import { formatCharacterSelectLabel } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 
 import { SearchSelect } from './components/SearchSelect';
@@ -248,7 +249,7 @@ export function ChatsPage() {
     () =>
       (charactersData?.data ?? []).map((character) => ({
         id: character.id,
-        label: character.name,
+        label: formatCharacterSelectLabel(character.name, character.type),
         meta: character.id,
       })),
     [charactersData?.data],

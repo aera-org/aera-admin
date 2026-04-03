@@ -20,6 +20,7 @@ import {
   Typography,
 } from '@/atoms';
 import type { IScenarioGen } from '@/common/types';
+import { formatCharacterSelectLabel } from '@/common/utils';
 import { ConfirmModal } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 
@@ -234,7 +235,7 @@ export function ScenarioGenPage() {
     () => [
       { label: 'All characters', value: '' },
       ...((charactersData?.data ?? []).map((character) => ({
-        label: character.name,
+        label: formatCharacterSelectLabel(character.name, character.type),
         value: character.id,
       })) ?? []),
     ],

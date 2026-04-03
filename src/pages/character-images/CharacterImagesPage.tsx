@@ -54,6 +54,7 @@ import {
   RoleplayStage,
   STAGES_IN_ORDER,
 } from '@/common/types';
+import { formatCharacterSelectLabel } from '@/common/utils';
 import { Drawer } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 import { SearchSelect } from '@/pages/generations/components/SearchSelect';
@@ -517,7 +518,7 @@ export function CharacterImagesPage() {
     () =>
       (characterData?.data ?? []).map((character) => ({
         id: character.id,
-        label: character.name,
+        label: formatCharacterSelectLabel(character.name, character.type),
         meta: character.id,
       })),
     [characterData?.data],
@@ -527,7 +528,7 @@ export function CharacterImagesPage() {
     () =>
       (drawerCharacterData?.data ?? []).map((character) => ({
         id: character.id,
-        label: character.name,
+        label: formatCharacterSelectLabel(character.name, character.type),
         meta: character.id,
       })),
     [drawerCharacterData?.data],
