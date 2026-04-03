@@ -146,6 +146,15 @@ function parseFuelValue(value: string) {
   return parsed;
 }
 
+function parseAirValue(value: string) {
+  if (!value.trim()) return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  if (!Number.isInteger(parsed)) return null;
+  if (parsed < 0) return null;
+  return parsed;
+}
+
 export function UsersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSearch = searchParams.get('search') ?? '';
@@ -250,6 +259,9 @@ export function UsersPage() {
   const [fuelTarget, setFuelTarget] = useState<ITgUser | null>(null);
   const [fuelValue, setFuelValue] = useState('');
   const [fuelShowErrors, setFuelShowErrors] = useState(false);
+  const [airTarget, setAirTarget] = useState<ITgUser | null>(null);
+  const [airValue, setAirValue] = useState('');
+  const [airShowErrors, setAirShowErrors] = useState(false);
   const [actionTarget, setActionTarget] = useState<string | null>(null);
 
   const openSubscriptionModal = (user: ITgUser) => {
@@ -274,6 +286,18 @@ export function UsersPage() {
     if (updateUserMutation.isPending) return;
     setFuelTarget(null);
     setFuelValue('');
+  };
+
+  const openAirModal = (user: ITgUser) => {
+    setAirTarget(user);
+    setAirValue(String(user.air ?? 0));
+    setAirShowErrors(false);
+  };
+
+  const closeAirModal = () => {
+    if (updateUserMutation.isPending) return;
+    setAirTarget(null);
+    setAirValue('');
   };
 
   const subscriptionErrors = useMemo(() => {
@@ -345,6 +369,39 @@ export function UsersPage() {
     }
   };
 
+  const airErrors = useMemo(() => {
+    if (!airShowErrors) return {};
+    const errors: { air?: string } = {};
+    if (parseAirValue(airValue) === null) {
+      errors.air = 'Enter a whole number greater than or equal to 0.';
+    }
+    return errors;
+  }, [airShowErrors, airValue]);
+
+  const airIsValid = useMemo(
+    () => parseAirValue(airValue) !== null,
+    [airValue],
+  );
+
+  const handleAirSave = async () => {
+    if (!airTarget) return;
+    const nextAir = parseAirValue(airValue);
+    if (nextAir === null) {
+      setAirShowErrors(true);
+      return;
+    }
+    setActionTarget(airTarget.id);
+    try {
+      await updateUserMutation.mutateAsync({
+        id: airTarget.id,
+        payload: { air: nextAir },
+      });
+      closeAirModal();
+    } finally {
+      setActionTarget(null);
+    }
+  };
+
   const handleConfirmBlock = async () => {
     if (!confirmTarget) return;
     setActionTarget(confirmTarget.user.id);
@@ -365,6 +422,7 @@ export function UsersPage() {
       { key: 'status', label: 'Status' },
       { key: 'subscription', label: 'Subscription' },
       { key: 'fuel', label: 'Fuel' },
+      { key: 'air', label: 'Air' },
       {
         key: 'lastActivity',
         label: <span className={s.alignRight}>Last activity</span>,
@@ -413,6 +471,11 @@ export function UsersPage() {
               {Number.isFinite(user.fuel) ? user.fuel : '-'}
             </Typography>
           ),
+          air: (
+            <Typography variant="body" tone="muted">
+              {Number.isFinite(user.air) ? user.air : '-'}
+            </Typography>
+          ),
           lastActivity: (
             <Typography variant="caption" tone="muted" className={s.alignRight}>
               {formatDate(user.lastActivityAt)}
@@ -444,6 +507,15 @@ export function UsersPage() {
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={() => openAirModal(user)}
+                loading={isUpdating && airTarget?.id === user.id}
+                disabled={updateUserMutation.isPending}
+              >
+                Air
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => openSubscriptionModal(user)}
                 loading={isUpdating && subscriptionTarget?.id === user.id}
                 disabled={updateUserMutation.isPending}
@@ -456,6 +528,7 @@ export function UsersPage() {
       }),
     [
       actionTarget,
+      airTarget?.id,
       confirmTarget?.user.id,
       fuelTarget?.id,
       subscriptionTarget?.id,
@@ -481,6 +554,7 @@ export function UsersPage() {
           </div>
         ),
         fuel: <Skeleton width={40} height={12} />,
+        air: <Skeleton width={40} height={12} />,
         lastActivity: (
           <div className={s.alignRight}>
             <Skeleton width={120} height={12} />
@@ -489,6 +563,7 @@ export function UsersPage() {
         actions: (
           <div className={s.actionsCell}>
             <Skeleton width={70} height={28} />
+            <Skeleton width={90} height={28} />
             <Skeleton width={90} height={28} />
             <Skeleton width={90} height={28} />
           </div>
@@ -702,6 +777,51 @@ export function UsersPage() {
           </Field>
           <Typography variant="caption" tone="muted" className={s.helperText}>
             Set a value from 0 to 100.
+          </Typography>
+        </Stack>
+      </Modal>
+
+      <Modal
+        open={Boolean(airTarget)}
+        title="Update air"
+        onClose={closeAirModal}
+        actions={
+          <div className={s.modalActions}>
+            <Button
+              variant="secondary"
+              onClick={closeAirModal}
+              disabled={updateUserMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAirSave}
+              loading={updateUserMutation.isPending && Boolean(airTarget)}
+              disabled={!airIsValid || updateUserMutation.isPending}
+            >
+              Save
+            </Button>
+          </div>
+        }
+      >
+        <Stack gap="12px">
+          <Field
+            label="Air"
+            labelFor="user-air"
+            error={airErrors.air}
+          >
+            <Input
+              id="user-air"
+              type="number"
+              min={0}
+              step={1}
+              value={airValue}
+              onChange={(event) => setAirValue(event.target.value)}
+              fullWidth
+            />
+          </Field>
+          <Typography variant="caption" tone="muted" className={s.helperText}>
+            Set a whole number greater than or equal to 0.
           </Typography>
         </Stack>
       </Modal>

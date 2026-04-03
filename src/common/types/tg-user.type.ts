@@ -2,6 +2,7 @@ export type UpdateTgUser = {
   isBlocked?: boolean;
   subscribedUntil?: string;
   fuel?: number;
+  air?: number;
 };
 
 export interface ITgUser {
@@ -9,6 +10,7 @@ export interface ITgUser {
   firstName: string;
   lastName: string;
   username: string;
+  air: number;
   fuel: number;
   isBlocked: boolean;
   subscribedUntil?: string | null;
