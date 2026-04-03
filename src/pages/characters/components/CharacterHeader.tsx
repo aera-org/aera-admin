@@ -1,12 +1,16 @@
 import { TrashIcon } from '@/assets/icons';
-import { Badge, IconButton, Skeleton, Typography } from '@/atoms';
-import type { ICharacterDetails } from '@/common/types';
+import { Badge, Button, IconButton, Skeleton, Typography } from '@/atoms';
+import { CharacterType, type ICharacterDetails } from '@/common/types';
+import { capitalize } from '@/common/utils';
 
 import s from '../CharacterDetailsPage.module.scss';
 
 type CharacterHeaderProps = {
   data: ICharacterDetails | undefined;
   isLoading: boolean;
+  onAddAnime: () => void;
+  canAddAnime: boolean;
+  isAddingAnime: boolean;
   onDelete: () => void;
   canDelete: boolean;
   isDeleting: boolean;
@@ -15,6 +19,9 @@ type CharacterHeaderProps = {
 export function CharacterHeader({
   data,
   isLoading,
+  onAddAnime,
+  canAddAnime,
+  isAddingAnime,
   onDelete,
   canDelete,
   isDeleting,
@@ -33,9 +40,12 @@ export function CharacterHeader({
               {data?.name ?? 'Character'}
             </Typography>
             {data ? (
-              <Badge tone={data.isActive ? 'success' : 'warning'}>
-                {data.isActive ? 'Active' : 'Inactive'}
-              </Badge>
+              <>
+                <Badge tone={data.isActive ? 'success' : 'warning'}>
+                  {data.isActive ? 'Active' : 'Inactive'}
+                </Badge>
+                <Badge tone={'success'}>{capitalize(data.type)}</Badge>
+              </>
             ) : null}
           </div>
         )}
@@ -48,6 +58,17 @@ export function CharacterHeader({
         )}
       </div>
       <div className={s.actions}>
+        {data?.type === CharacterType.Realistic ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onAddAnime}
+            loading={isAddingAnime}
+            disabled={!canAddAnime || isDeleting}
+          >
+            Add Anime
+          </Button>
+        ) : null}
         <IconButton
           aria-label="Delete character"
           icon={<TrashIcon />}
@@ -55,7 +76,7 @@ export function CharacterHeader({
           variant="ghost"
           size="sm"
           onClick={onDelete}
-          disabled={!canDelete || isDeleting}
+          disabled={!canDelete || isDeleting || isAddingAnime}
         />
       </div>
     </div>

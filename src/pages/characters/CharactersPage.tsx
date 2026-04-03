@@ -19,6 +19,7 @@ import {
   Table,
   Typography,
 } from '@/atoms';
+import { formatCharacterType } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 
 import s from './CharactersPage.module.scss';
@@ -195,7 +196,12 @@ export function CharactersPage() {
                 {emoji || '-'}
               </Typography>
               <div className={s.characterInfo}>
-                <Typography variant="body">{character.name}</Typography>
+                <div className={s.characterNameRow}>
+                  <Typography variant="caption" tone="muted">
+                    {formatCharacterType(character.type)}
+                  </Typography>
+                  <Typography variant="body">{character.name}</Typography>
+                </div>
                 <Typography variant="caption" tone="muted">
                   {character.id}
                 </Typography>

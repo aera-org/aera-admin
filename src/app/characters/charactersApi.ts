@@ -1,6 +1,7 @@
 import { apiFetch } from '@/app/api';
 import { buildApiError } from '@/app/api/apiErrors';
 import type {
+  CharacterType,
   CharacterBodyType,
   CharacterBreastSize,
   CharacterEthnicity,
@@ -53,14 +54,16 @@ export type CharacterUpdateDto = {
 export type CharacterCreateDto = {
   name: string;
   emoji: string;
-  loraId: string;
+  loraId?: string;
   gender: string;
   hairColor: CharacterHairColor;
   ethnicity: CharacterEthnicity;
   bodyType: CharacterBodyType;
   breastSize: CharacterBreastSize;
   description: string;
-  avatarId: string;
+  avatarId?: string;
+  type?: CharacterType;
+  isActive?: boolean;
   isFeatured?: boolean;
   promoImgId?: string;
 };
@@ -80,7 +83,7 @@ export type ScenarioCreateDto = {
   appearance: string;
   situation: string;
   openingMessage: string;
-  openingImageId: string;
+  openingImageId?: string;
 };
 
 export type ScenarioUpdateDto = ScenarioCreateDto;

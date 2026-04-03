@@ -1,8 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { useCharacterDetails, useDeleteCharacter } from '@/app/characters';
+import {
+  useCharacterDetails,
+  useCloneCharacterAsAnime,
+  useDeleteCharacter,
+} from '@/app/characters';
 import { Alert, Button, Container, EmptyState, Stack } from '@/atoms';
+import { CharacterType } from '@/common/types';
 import { ConfirmModal } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 
@@ -38,6 +43,7 @@ export function CharacterDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data, error, isLoading, refetch } = useCharacterDetails(id ?? null);
+  const cloneAnimeMutation = useCloneCharacterAsAnime();
   const deleteMutation = useDeleteCharacter();
 
   const scenarios = useMemo(() => data?.scenarios ?? [], [data?.scenarios]);
@@ -66,12 +72,33 @@ export function CharacterDetailsPage() {
     navigate('/characters');
   };
 
+  const handleAddAnime = async () => {
+    if (!data || data.type !== CharacterType.Realistic) return;
+
+    try {
+      const createdCharacter = await cloneAnimeMutation.mutateAsync(data);
+      navigate(`/characters/${createdCharacter.id}`);
+    } catch (error) {
+      const createdCharacterId =
+        error instanceof Error && 'createdCharacterId' in error
+          ? error.createdCharacterId
+          : undefined;
+
+      if (typeof createdCharacterId === 'string' && createdCharacterId) {
+        navigate(`/characters/${createdCharacterId}`);
+      }
+    }
+  };
+
   return (
     <AppShell>
       <Container size="wide" className={s.page}>
         <CharacterHeader
           data={data}
           isLoading={isLoading}
+          onAddAnime={() => void handleAddAnime()}
+          canAddAnime={Boolean(data && data.type === CharacterType.Realistic)}
+          isAddingAnime={cloneAnimeMutation.isPending}
           onDelete={() => setIsDeleteOpen(true)}
           canDelete={Boolean(data)}
           isDeleting={deleteMutation.isPending}

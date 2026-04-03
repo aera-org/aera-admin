@@ -1,4 +1,5 @@
 export {
+  useCloneCharacterAsAnime,
   useCharacterDetails,
   useCharacters,
   useCreateCharacter,

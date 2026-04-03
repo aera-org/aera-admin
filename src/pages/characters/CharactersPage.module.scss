@@ -59,6 +59,13 @@
   gap: 2px;
 }
 
+.characterNameRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 .footer {
   display: flex;
   align-items: center;

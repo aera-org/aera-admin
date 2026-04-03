@@ -1,12 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { notifyError, notifySuccess } from '@/app/toast';
-import type { ICharacter, RoleplayStage } from '@/common/types';
 import {
-  addScenarioStageGift,
-  createCharacterStory,
-  deleteScenarioStageGift,
-  deleteCharacterStory,
+  CharacterType,
+  STAGES_IN_ORDER,
+  type ICharacter,
+  type ICharacterDetails,
+  type RoleplayStage,
+  type StageDirectives,
+} from '@/common/types';
+import {
+  type CharacterCreateDto,
   type CharacterUpdateDto,
   type CharacterStoryCreateDto,
   type CharacterStoriesOrderDto,
@@ -17,9 +21,13 @@ import {
   type StageGiftCreateDto,
   type StageGiftUpdateDto,
   type StageUpdateDto,
+  addScenarioStageGift,
   createCharacter,
+  createCharacterStory,
   createScenario,
   deleteCharacter,
+  deleteCharacterStory,
+  deleteScenarioStageGift,
   getCharacterDetails,
   getCharacters,
   reorderCharacterStories,
@@ -35,6 +43,105 @@ const characterKeys = {
   list: (params: CharactersListParams) => ['characters', params] as const,
   details: (id: string) => ['character', id] as const,
 };
+
+type CharacterCloneAsAnimeError = Error & {
+  createdCharacterId?: string;
+};
+
+function isStageDirectivesEmpty(stage: StageDirectives | undefined) {
+  if (!stage) return true;
+
+  return Object.values(stage).every((value) => !value.trim());
+}
+
+function buildAnimeCharacterPayload(
+  character: ICharacterDetails,
+): CharacterCreateDto {
+  return {
+    name: character.name,
+    emoji: character.emoji,
+    gender: character.gender,
+    hairColor: character.hairColor,
+    ethnicity: character.ethnicity,
+    bodyType: character.bodyType,
+    breastSize: character.breastSize,
+    description: character.description,
+    isFeatured: character.isFeatured,
+    type: CharacterType.Anime,
+    isActive: false,
+  };
+}
+
+function buildScenarioClonePayload(
+  scenario: ICharacterDetails['scenarios'][number],
+): ScenarioCreateDto {
+  const normalizedSlug = scenario.slug?.trim() || '';
+
+  return {
+    name: scenario.name.trim(),
+    emoji: scenario.emoji.trim(),
+    slug: normalizedSlug
+      ? normalizedSlug.startsWith('anime-')
+        ? normalizedSlug
+        : `anime-${normalizedSlug}`
+      : undefined,
+    description: scenario.description.trim(),
+    isActive: scenario.isActive,
+    shortDescription: scenario.shortDescription?.trim() || undefined,
+    isNew: scenario.isNew,
+    personality: scenario.personality.trim(),
+    messagingStyle: scenario.messagingStyle.trim(),
+    appearance: scenario.appearance.trim(),
+    situation: scenario.situation.trim(),
+    openingMessage: scenario.openingMessage.trim(),
+  };
+}
+
+async function cloneCharacterScenarios(
+  sourceCharacter: ICharacterDetails,
+  targetCharacterId: string,
+) {
+  for (const scenario of sourceCharacter.scenarios) {
+    const createdScenario = await createScenario(
+      targetCharacterId,
+      buildScenarioClonePayload(scenario),
+    );
+
+    for (const stage of STAGES_IN_ORDER) {
+      const stagePayload = scenario.stages[stage];
+      if (isStageDirectivesEmpty(stagePayload)) {
+        continue;
+      }
+
+      await updateScenarioStage(targetCharacterId, createdScenario.id, stage, {
+        toneAndBehavior: stagePayload.toneAndBehavior.trim(),
+        restrictions: stagePayload.restrictions.trim(),
+        environment: stagePayload.environment.trim(),
+        characterLook: stagePayload.characterLook.trim(),
+        goal: stagePayload.goal.trim(),
+        escalationTrigger: stagePayload.escalationTrigger.trim(),
+      });
+    }
+
+    for (const gift of scenario.gifts) {
+      const sourceGiftId = gift.gift?.id || gift.giftId;
+      if (!sourceGiftId) {
+        throw new Error('Unable to copy scenario gift without gift id.');
+      }
+
+      await addScenarioStageGift(
+        targetCharacterId,
+        createdScenario.id,
+        gift.stage,
+        {
+          giftId: sourceGiftId,
+          reason: gift.reason.trim(),
+          buyText: gift.buyText,
+        },
+      );
+    }
+  }
+}
 
 type CharactersQueryOptions<T> = {
   enabled?: boolean;
@@ -73,6 +180,40 @@ export function useCreateCharacter() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to create the character.');
+    },
+  });
+}
+
+export function useCloneCharacterAsAnime() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (character: ICharacterDetails) => {
+      const createdCharacter = await createCharacter(
+        buildAnimeCharacterPayload(character),
+      );
+
+      try {
+        await cloneCharacterScenarios(character, createdCharacter.id);
+      } catch {
+        const error = new Error(
+          'Anime character created, but scenario copy stopped.',
+        ) as CharacterCloneAsAnimeError;
+        error.createdCharacterId = createdCharacter.id;
+        throw error;
+      }
+
+      return createdCharacter;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['characters'] });
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(data.id),
+      });
+      notifySuccess('Anime character created.', 'Anime character created.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to create the anime character.');
     },
   });
 }

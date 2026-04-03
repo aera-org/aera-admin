@@ -5,7 +5,7 @@ import type { ILora } from './lora.type';
 export interface ICharacter {
   id: string;
   name: string;
-  type?: CharacterType;
+  type: CharacterType;
   description: string;
   promoImg?: IFile | null;
   isFeatured: boolean;
@@ -94,7 +94,7 @@ export enum CharacterBreastSize {
 interface ICharacterGift {
   id: string;
   scenarioId: string;
-  giftId: string;
+  giftId?: string;
   gift: IGift;
   stage: RoleplayStage;
   reason: string;
