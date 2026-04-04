@@ -1,6 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { getChatDetails, getChats, type ChatsListParams } from './chatsApi';
+import { notifyError, notifySuccess } from '@/app/toast';
+import type { UpdateChatStageDto } from '@/common/types';
+
+import {
+  getChatDetails,
+  getChats,
+  type ChatsListParams,
+  updateChatStage,
+} from './chatsApi';
 
 const chatKeys = {
   list: (params: ChatsListParams) => ['chats', params] as const,
@@ -21,5 +29,27 @@ export function useChatDetails(id: string | null) {
     queryKey: chatKeys.details(id ?? ''),
     queryFn: () => getChatDetails(id ?? ''),
     enabled: Boolean(id),
+  });
+}
+
+export function useUpdateChatStage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: UpdateChatStageDto;
+    }) => updateChatStage(id, payload),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
+      queryClient.setQueryData(chatKeys.details(variables.id), data);
+      notifySuccess('Chat stage updated.', 'Chat stage updated.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to update the chat stage.');
+    },
   });
 }

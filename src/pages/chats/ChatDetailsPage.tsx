@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { useChatDetails } from '@/app/chats';
+import { useChatDetails, useUpdateChatStage } from '@/app/chats';
 import {
   Alert,
   Badge,
@@ -10,6 +10,8 @@ import {
   EmptyState,
   Field,
   Grid,
+  FormRow,
+  Select,
   Section,
   Skeleton,
   Stack,
@@ -17,6 +19,7 @@ import {
   Typography,
 } from '@/atoms';
 import type { IChatMessage, ITgUser, RoleplayStage } from '@/common/types';
+import { STAGES_IN_ORDER } from '@/common/types';
 import { AppShell } from '@/components/templates';
 
 import s from './ChatDetailsPage.module.scss';
@@ -72,8 +75,14 @@ export function ChatDetailsPage() {
   const navigate = useNavigate();
   const chatId = id ?? '';
   const { data, error, isLoading, refetch } = useChatDetails(chatId || null);
+  const updateStageMutation = useUpdateChatStage();
+  const [selectedStage, setSelectedStage] = useState<RoleplayStage | ''>('');
 
   const history = data?.history?.filter((message) => message.content) ?? [];
+
+  useEffect(() => {
+    setSelectedStage(data?.stage ?? '');
+  }, [data?.id, data?.stage]);
 
   const historyColumns = useMemo(
     () => [
@@ -118,6 +127,26 @@ export function ChatDetailsPage() {
 
   const showSkeleton = isLoading && !data;
   const showEmpty = !showSkeleton && !error && !data;
+  const stageOptions = useMemo(
+    () =>
+      STAGES_IN_ORDER.map((stage) => ({
+        label: formatStage(stage),
+        value: stage,
+      })),
+    [],
+  );
+  const isUpdatingStage = updateStageMutation.isPending;
+  const canUpdateStage =
+    Boolean(data?.id) && Boolean(selectedStage) && selectedStage !== data?.stage;
+
+  const handleUpdateStage = async () => {
+    if (!data || !selectedStage || selectedStage === data.stage) return;
+
+    await updateStageMutation.mutateAsync({
+      id: data.id,
+      payload: { stage: selectedStage },
+    });
+  };
 
   return (
     <AppShell>
@@ -202,11 +231,33 @@ export function ChatDetailsPage() {
                 </Typography>
               </Field>
               <Field label="Stage">
-                <div>
-                  <Badge tone="accent" outline>
-                    {formatStage(data.stage)}
-                  </Badge>
-                </div>
+                <Stack gap="12px">
+                  <div>
+                    <Badge tone="accent" outline>
+                      {formatStage(data.stage)}
+                    </Badge>
+                  </div>
+                  <FormRow columns={2}>
+                    <Select
+                      size="sm"
+                      value={selectedStage}
+                      options={stageOptions}
+                      onChange={(value) =>
+                        setSelectedStage(value as RoleplayStage)
+                      }
+                      disabled={isUpdatingStage}
+                      fullWidth
+                    />
+                    <Button
+                      size="sm"
+                      onClick={handleUpdateStage}
+                      loading={isUpdatingStage}
+                      disabled={!canUpdateStage || isUpdatingStage}
+                    >
+                      Update
+                    </Button>
+                  </FormRow>
+                </Stack>
               </Field>
               <Field label="History length">
                 <Typography variant="body">

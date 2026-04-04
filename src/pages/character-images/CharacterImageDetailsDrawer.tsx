@@ -12,8 +12,7 @@ import {
   Typography,
 } from '@/atoms';
 import {
-  formatSexPose,
-  formatSexType,
+  formatPose,
   USER_REQUEST_FIELD_CONFIG,
 } from '@/common/utils';
 import { Drawer } from '@/components/molecules';
@@ -61,7 +60,10 @@ export function CharacterImageDetailsDrawer({
           fieldKey === 'faceExpression'
             ? data.userRequest?.faceExpression?.trim()
             : data.userRequest?.[
-                fieldKey as Exclude<keyof typeof USER_REQUEST_FIELD_CONFIG, 'faceExpression'>
+                fieldKey as Exclude<
+                  keyof typeof USER_REQUEST_FIELD_CONFIG,
+                  'faceExpression'
+                >
               ]?.join(', ');
 
         return {
@@ -75,7 +77,9 @@ export function CharacterImageDetailsDrawer({
     ? [
         {
           label: data.isPregenerated ? 'Pregenerated' : 'Generated',
-          tone: data.isPregenerated ? ('accent' as const) : ('warning' as const),
+          tone: data.isPregenerated
+            ? ('accent' as const)
+            : ('warning' as const),
           outline: !data.isPregenerated,
         },
         {
@@ -210,32 +214,36 @@ export function CharacterImageDetailsDrawer({
                 ))}
                 <div>
                   <Typography variant="caption" tone="muted">
-                    Sex pose
+                    Pose
                   </Typography>
                   <Typography variant="body">
-                    {data.sexPose ? formatSexPose(data.sexPose) : '-'}
+                    {data.pose ? formatPose(data.pose) : '-'}
                   </Typography>
                 </div>
                 <div>
                   <Typography variant="caption" tone="muted">
-                    Sex type
+                    Anal
                   </Typography>
                   <Typography variant="body">
-                    {data.sexType ? formatSexType(data.sexType) : '-'}
+                    {data.isAnal ? 'Yes' : 'No'}
                   </Typography>
                 </div>
               </Stack>
             </Field>
 
             <Field label="Character">
-              <Typography variant="body">{data.character?.name || '-'}</Typography>
+              <Typography variant="body">
+                {data.character?.name || '-'}
+              </Typography>
               <Typography variant="caption" tone="muted">
                 {data.character?.id || '-'}
               </Typography>
             </Field>
 
             <Field label="Scenario">
-              <Typography variant="body">{data.scenario?.name || '-'}</Typography>
+              <Typography variant="body">
+                {data.scenario?.name || '-'}
+              </Typography>
               <Typography variant="caption" tone="muted">
                 {data.scenario?.id || '-'}
               </Typography>
@@ -260,11 +268,15 @@ export function CharacterImageDetailsDrawer({
             </Field>
 
             <Field label="Updated">
-              <Typography variant="body">{formatDate(data.updatedAt)}</Typography>
+              <Typography variant="body">
+                {formatDate(data.updatedAt)}
+              </Typography>
             </Field>
 
             <Field label="Created">
-              <Typography variant="body">{formatDate(data.createdAt)}</Typography>
+              <Typography variant="body">
+                {formatDate(data.createdAt)}
+              </Typography>
             </Field>
           </div>
         </div>

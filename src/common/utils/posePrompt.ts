@@ -1,13 +1,4 @@
-import { PhotoAngle, SexPose, SexType } from '../types';
-
-export const SEX_TYPE_LABELS: Record<SexType, string> = {
-  [SexType.Vagina]: 'Vagina',
-  [SexType.Anal]: 'Anal',
-  [SexType.Oral]: 'Oral',
-  [SexType.Hand]: 'Hand',
-  [SexType.Foot]: 'Foot',
-  [SexType.Tits]: 'Tits',
-};
+import { PhotoAngle, Pose } from '../types';
 
 export const PHOTO_ANGLE_LABELS: Record<PhotoAngle, string> = {
   [PhotoAngle.Pov]: 'POV',
@@ -18,41 +9,37 @@ export const PHOTO_ANGLE_LABELS: Record<PhotoAngle, string> = {
   [PhotoAngle.Side]: 'Side',
 };
 
-export const SEX_POSE_LABELS: Record<SexPose, string> = {
-  [SexPose.Blowjob]: 'Blowjob',
-  [SexPose.Handjob]: 'Handjob',
-  [SexPose.Titjob]: 'Titjob',
-  [SexPose.Cowgirl]: 'Cowgirl',
-  [SexPose.Doggy]: 'Doggy',
-  [SexPose.Missionary]: 'Missionary',
-  [SexPose.Footjob]: 'Footjob',
-  [SexPose.LegsUp]: 'Legs Up',
-  [SexPose.Cumshot]: 'Cumshot',
+export const POSE_LABELS: Record<Pose, string> = {
+  [Pose.LegsSpread]: 'Legs Spread',
+  [Pose.Masturbation]: 'Masturbation',
+  [Pose.Cumshot]: 'Cumshot',
+  [Pose.LegRaised]: 'Leg Raised',
+  [Pose.Creampie]: 'Creampie',
+  [Pose.Squirting]: 'Squirting',
+  [Pose.Blowjob]: 'Blowjob',
+  [Pose.Handjob]: 'Handjob',
+  [Pose.Titjob]: 'Titjob',
+  [Pose.Cowgirl]: 'Cowgirl',
+  [Pose.Doggy]: 'Doggy',
+  [Pose.Missionary]: 'Missionary',
+  [Pose.Footjob]: 'Footjob',
+  [Pose.LegsUp]: 'Legs Up',
 };
-
-export const sexTypeOptions = Object.values(SexType).map((value) => ({
-  value,
-  label: SEX_TYPE_LABELS[value],
-}));
 
 export const photoAngleOptions = Object.values(PhotoAngle).map((value) => ({
   value,
   label: PHOTO_ANGLE_LABELS[value],
 }));
 
-export const sexPoseOptions = Object.values(SexPose).map((value) => ({
+export const poseOptions = Object.values(Pose).map((value) => ({
   value,
-  label: SEX_POSE_LABELS[value],
+  label: POSE_LABELS[value],
 }));
-
-export function formatSexType(value: SexType | null | undefined) {
-  return value ? SEX_TYPE_LABELS[value] : '-';
-}
 
 export function formatPhotoAngle(value: PhotoAngle | null | undefined) {
   return value ? PHOTO_ANGLE_LABELS[value] : '-';
 }
 
-export function formatSexPose(value: SexPose | null | undefined) {
-  return value ? SEX_POSE_LABELS[value] : '-';
+export function formatPose(value: Pose | null | undefined) {
+  return value ? POSE_LABELS[value] : '-';
 }

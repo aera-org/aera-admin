@@ -1,3 +1,5 @@
+import type { RoleplayStage } from '@/common/types/character.type.ts';
+
 export interface IPosePrompt {
   id: string;
   name: string;
@@ -5,16 +7,26 @@ export interface IPosePrompt {
   updatedAt: string;
 }
 
-export enum SexPose {
+export enum Pose {
+  // Prelude
+  LegsSpread = 'legs-spread',
+  Masturbation = 'masturbation',
+  Cumshot = 'cumshot',
+  LegRaised = 'leg-raised',
+  Creampie = 'creampie',
+  Squirting = 'squirting',
+
+  // Prelude & sex
   Blowjob = 'blowjob',
   Handjob = 'handjob',
   Titjob = 'titjob',
+  Footjob = 'footjob',
+  LegsUp = 'legs-up',
+
+  // Sex
   Cowgirl = 'cowgirl',
   Doggy = 'doggy',
   Missionary = 'missionary',
-  Footjob = 'footjob',
-  LegsUp = 'legs-up',
-  Cumshot = 'cumshot',
 }
 
 export enum PhotoAngle {
@@ -26,35 +38,29 @@ export enum PhotoAngle {
   Side = 'side',
 }
 
-export enum SexType {
-  Vagina = 'vagina',
-  Anal = 'anal',
-  Oral = 'oral',
-  Hand = 'hand',
-  Foot = 'foot',
-  Tits = 'tits',
-}
-
 export interface IPosePromptDetails extends IPosePrompt {
   idx: number;
-  sexType: SexType;
+  isAnal: boolean;
+  stages: RoleplayStage[];
   angle: PhotoAngle;
-  pose: SexPose;
+  pose: Pose;
   prompt: string;
 }
 
 export type CreatePosePromptDto = {
   idx: number;
-  sexType: SexType;
+  isAnal: boolean;
+  stages: RoleplayStage[];
   angle: PhotoAngle;
-  pose: SexPose;
+  pose: Pose;
   prompt: string;
 };
 
 export type UpdatePosePromptDto = {
   idx: number;
-  sexType: SexType;
+  isAnal: boolean;
+  stages: RoleplayStage[];
   angle: PhotoAngle;
-  pose: SexPose;
+  pose: Pose;
   prompt: string;
 };

@@ -1,18 +1,20 @@
 import {
-  PhotoAngle,
-  SexPose,
-  SexType,
   type IPosePromptDetails,
+  PhotoAngle,
+  Pose,
+  RoleplayStage,
+  STAGES_IN_ORDER,
 } from '@/common/types';
 
 const POSES_TRANSFER_SCHEMA = 'aera-poses';
-const POSES_TRANSFER_VERSION = 1;
+const POSES_TRANSFER_VERSION = 3;
 
 export type PoseTransferItem = {
   idx: number;
-  sexType: SexType;
+  isAnal: boolean;
+  stages: RoleplayStage[];
   angle: PhotoAngle;
-  pose: SexPose;
+  pose: Pose;
   prompt: string;
 };
 
@@ -63,6 +65,13 @@ function ensureNonNegativeInteger(value: unknown, path: string) {
   return value;
 }
 
+function ensureBoolean(value: unknown, path: string) {
+  if (typeof value !== 'boolean') {
+    throw new Error(`Invalid import file: "${path}" must be a boolean.`);
+  }
+  return value;
+}
+
 function ensureEnumValue<T extends string>(
   value: unknown,
   path: string,
@@ -75,28 +84,54 @@ function ensureEnumValue<T extends string>(
   return parsed as T;
 }
 
+function normalizeStages(stages: RoleplayStage[]) {
+  return STAGES_IN_ORDER.filter((stage) => stages.includes(stage));
+}
+
+function parseStages(value: unknown, path: string) {
+  if (!Array.isArray(value)) {
+    throw new Error(`Invalid import file: "${path}" must be an array.`);
+  }
+
+  const stages = value.map((stage, index) =>
+    ensureEnumValue(
+      stage,
+      `${path}[${index}]`,
+      STAGES_IN_ORDER,
+    ),
+  );
+
+  const normalized = normalizeStages(Array.from(new Set(stages)));
+  if (normalized.length === 0) {
+    throw new Error(`Invalid import file: "${path}" must not be empty.`);
+  }
+
+  return normalized;
+}
+
 function parseTransferPose(value: unknown, path: string): PoseTransferItem {
   const obj = ensureRecord(value, path);
 
-  return {
+  const parsed = {
     idx: ensureNonNegativeInteger(obj.idx, `${path}.idx`),
-    sexType: ensureEnumValue(
-      obj.sexType,
-      `${path}.sexType`,
-      Object.values(SexType),
-    ),
+    isAnal: ensureBoolean(obj.isAnal, `${path}.isAnal`),
+    stages: parseStages(obj.stages, `${path}.stages`),
     angle: ensureEnumValue(
       obj.angle,
       `${path}.angle`,
       Object.values(PhotoAngle),
     ),
-    pose: ensureEnumValue(
-      obj.pose,
-      `${path}.pose`,
-      Object.values(SexPose),
-    ),
+    pose: ensureEnumValue(obj.pose, `${path}.pose`, Object.values(Pose)),
     prompt: ensureNonEmptyString(obj.prompt, `${path}.prompt`),
-  };
+  } satisfies PoseTransferItem;
+
+  if (parsed.isAnal && !parsed.stages.includes(RoleplayStage.Sex)) {
+    throw new Error(
+      `Invalid import file: "${path}.isAnal" requires "SEX" in "${path}.stages".`,
+    );
+  }
+
+  return parsed;
 }
 
 function ensureUniquePoseIdx(poses: PoseTransferItem[], path: string) {
@@ -118,9 +153,10 @@ function ensureUniquePoseIdx(poses: PoseTransferItem[], path: string) {
 
 function sortTransferPoses(a: PoseTransferItem, b: PoseTransferItem) {
   if (a.idx !== b.idx) return a.idx - b.idx;
-  if (a.sexType !== b.sexType) return a.sexType.localeCompare(b.sexType);
+  if (a.isAnal !== b.isAnal) return Number(a.isAnal) - Number(b.isAnal);
   if (a.pose !== b.pose) return a.pose.localeCompare(b.pose);
-  return a.angle.localeCompare(b.angle);
+  if (a.angle !== b.angle) return a.angle.localeCompare(b.angle);
+  return a.stages.join(',').localeCompare(b.stages.join(','));
 }
 
 export function buildPosesTransferPayload(poses: IPosePromptDetails[]) {
@@ -136,9 +172,22 @@ export function buildPosesTransferPayload(poses: IPosePromptDetails[]) {
       );
     }
 
+    const stages = normalizeStages(Array.from(new Set(pose.stages ?? [])));
+    if (stages.length === 0) {
+      throw new Error(
+        `Unable to export poses: pose idx "${pose.idx}" has no stages.`,
+      );
+    }
+    if (pose.isAnal && !stages.includes(RoleplayStage.Sex)) {
+      throw new Error(
+        `Unable to export poses: pose idx "${pose.idx}" is anal but missing SEX stage.`,
+      );
+    }
+
     return {
       idx: pose.idx,
-      sexType: pose.sexType,
+      isAnal: pose.isAnal,
+      stages,
       angle: pose.angle,
       pose: pose.pose,
       prompt: pose.prompt.trim(),

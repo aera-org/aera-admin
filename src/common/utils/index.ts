@@ -7,11 +7,9 @@ export {
 export { cn } from './classnames';
 export {
   formatPhotoAngle,
-  formatSexPose,
-  formatSexType,
+  formatPose,
   photoAngleOptions,
-  sexPoseOptions,
-  sexTypeOptions,
+  poseOptions,
 } from './posePrompt';
 export {
   formatUserRequestForDisplay,

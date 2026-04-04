@@ -35,7 +35,11 @@ import {
   Table,
   Typography,
 } from '@/atoms';
-import type { CreatePosePromptDto, IPosePrompt, IPosePromptDetails } from '@/common/types';
+import type {
+  CreatePosePromptDto,
+  IPosePrompt,
+  IPosePromptDetails,
+} from '@/common/types';
 import { AppShell } from '@/components/templates';
 
 import s from './PosesPage.module.scss';
@@ -304,7 +308,8 @@ export function PosesPage() {
       for (const pose of imported.poses) {
         const payload: CreatePosePromptDto = {
           idx: pose.idx,
-          sexType: pose.sexType,
+          isAnal: pose.isAnal,
+          stages: pose.stages,
           pose: pose.pose,
           angle: pose.angle,
           prompt: pose.prompt,

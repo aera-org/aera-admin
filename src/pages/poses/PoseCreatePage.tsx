@@ -4,7 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { useCreatePosePrompt } from '@/app/pose-prompts';
 import { PlusIcon } from '@/assets/icons';
 import { Button, Container, Stack, Typography } from '@/atoms';
-import type { CreatePosePromptDto } from '@/common/types';
+import {
+  type CreatePosePromptDto,
+  RoleplayStage,
+} from '@/common/types';
 import { AppShell } from '@/components/templates';
 
 import s from './PoseFormPage.module.scss';
@@ -17,7 +20,8 @@ import {
 function getInitialValues(): PosePromptFormValues {
   return {
     idx: '',
-    sexType: '',
+    isAnal: false,
+    stages: [],
     pose: '',
     angle: '',
     prompt: '',
@@ -38,8 +42,11 @@ function getErrors(values: PosePromptFormValues): PosePromptFormErrors {
   if (parseIdx(values.idx) === null) {
     errors.idx = 'Enter a non-negative integer.';
   }
-  if (!values.sexType) {
-    errors.sexType = 'Select a sex type.';
+  if (values.stages.length === 0) {
+    errors.stages = 'Select at least one stage.';
+  }
+  if (values.isAnal && !values.stages.includes(RoleplayStage.Sex)) {
+    errors.isAnal = 'Anal poses must include the Sex stage.';
   }
   if (!values.pose) {
     errors.pose = 'Select a pose.';
@@ -69,11 +76,42 @@ export function PoseCreatePage() {
     [values],
   );
 
-  const handleChange = (field: keyof PosePromptFormValues, value: string) => {
-    setValues((previous) => ({
-      ...previous,
-      [field]: value,
-    }));
+  const handleChange = (
+    field: keyof PosePromptFormValues | RoleplayStage,
+    value: string | boolean,
+  ) => {
+    setValues((previous) => {
+      if (Object.values(RoleplayStage).includes(field as RoleplayStage)) {
+        const stage = field as RoleplayStage;
+        const checked = Boolean(value);
+        const nextStages = checked
+          ? Array.from(new Set([...previous.stages, stage]))
+          : previous.stages.filter((item) => item !== stage);
+
+        return {
+          ...previous,
+          stages: nextStages,
+          isAnal:
+            previous.isAnal && nextStages.includes(RoleplayStage.Sex),
+        };
+      }
+
+      if (field === 'isAnal') {
+        const nextIsAnal = Boolean(value);
+        return {
+          ...previous,
+          isAnal: nextIsAnal,
+          stages: nextIsAnal
+            ? Array.from(new Set([...previous.stages, RoleplayStage.Sex]))
+            : previous.stages,
+        };
+      }
+
+      return {
+        ...previous,
+        [field]: value,
+      };
+    });
   };
 
   const handleCreate = async () => {
@@ -85,7 +123,8 @@ export function PoseCreatePage() {
 
     await createMutation.mutateAsync({
       idx: parseIdx(values.idx) as CreatePosePromptDto['idx'],
-      sexType: values.sexType as CreatePosePromptDto['sexType'],
+      isAnal: values.isAnal,
+      stages: values.stages,
       pose: values.pose as CreatePosePromptDto['pose'],
       angle: values.angle as CreatePosePromptDto['angle'],
       prompt: values.prompt.trim(),

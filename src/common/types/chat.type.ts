@@ -24,6 +24,10 @@ export interface IChatDetails extends IChat {
   history: IChatMessage[];
 }
 
+export type UpdateChatStageDto = {
+  stage: RoleplayStage;
+};
+
 export interface ChatSearchParams {
   characterId?: string;
   scenarioId?: string;

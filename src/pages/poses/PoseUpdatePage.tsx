@@ -16,7 +16,10 @@ import {
   Stack,
   Typography,
 } from '@/atoms';
-import type { UpdatePosePromptDto } from '@/common/types';
+import {
+  type UpdatePosePromptDto,
+  RoleplayStage,
+} from '@/common/types';
 import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
 import { AppShell } from '@/components/templates';
 
@@ -30,7 +33,8 @@ import {
 function getInitialValues(): PosePromptFormValues {
   return {
     idx: '',
-    sexType: '',
+    isAnal: false,
+    stages: [],
     pose: '',
     angle: '',
     prompt: '',
@@ -51,8 +55,11 @@ function getErrors(values: PosePromptFormValues): PosePromptFormErrors {
   if (parseIdx(values.idx) === null) {
     errors.idx = 'Enter a non-negative integer.';
   }
-  if (!values.sexType) {
-    errors.sexType = 'Select a sex type.';
+  if (values.stages.length === 0) {
+    errors.stages = 'Select at least one stage.';
+  }
+  if (values.isAnal && !values.stages.includes(RoleplayStage.Sex)) {
+    errors.isAnal = 'Anal poses must include the Sex stage.';
   }
   if (!values.pose) {
     errors.pose = 'Select a pose.';
@@ -92,7 +99,8 @@ export function PoseUpdatePage() {
     if (draft?.id === data.id) return draft.values;
     return {
       idx: String(data.idx),
-      sexType: data.sexType,
+      isAnal: data.isAnal,
+      stages: data.stages ?? [],
       pose: data.pose,
       angle: data.angle,
       prompt: data.prompt ?? '',
@@ -108,14 +116,43 @@ export function PoseUpdatePage() {
     [values],
   );
 
-  const handleChange = (field: keyof PosePromptFormValues, value: string) => {
+  const handleChange = (
+    field: keyof PosePromptFormValues | RoleplayStage,
+    value: string | boolean,
+  ) => {
     if (!data) return;
+
+    const nextValues =
+      Object.values(RoleplayStage).includes(field as RoleplayStage)
+        ? (() => {
+            const stage = field as RoleplayStage;
+            const checked = Boolean(value);
+            const nextStages = checked
+              ? Array.from(new Set([...values.stages, stage]))
+              : values.stages.filter((item) => item !== stage);
+
+            return {
+              ...values,
+              stages: nextStages,
+              isAnal: values.isAnal && nextStages.includes(RoleplayStage.Sex),
+            };
+          })()
+        : field === 'isAnal'
+        ? {
+            ...values,
+            isAnal: Boolean(value),
+            stages: Boolean(value)
+              ? Array.from(new Set([...values.stages, RoleplayStage.Sex]))
+              : values.stages,
+          }
+          : {
+              ...values,
+              [field]: value,
+            };
+
     setDraft({
       id: data.id,
-      values: {
-        ...values,
-        [field]: value,
-      },
+      values: nextValues,
     });
   };
 
@@ -132,7 +169,8 @@ export function PoseUpdatePage() {
       id: data.id,
       payload: {
         idx: parseIdx(values.idx) as UpdatePosePromptDto['idx'],
-        sexType: values.sexType as UpdatePosePromptDto['sexType'],
+        isAnal: values.isAnal,
+        stages: values.stages,
         pose: values.pose as UpdatePosePromptDto['pose'],
         angle: values.angle as UpdatePosePromptDto['angle'],
         prompt: values.prompt.trim(),
