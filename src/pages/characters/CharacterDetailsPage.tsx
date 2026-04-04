@@ -12,9 +12,9 @@ import { ConfirmModal } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 
 import s from './CharacterDetailsPage.module.scss';
+import { CharacterEditDrawer } from './components/CharacterEditDrawer';
 import { CharacterHeader } from './components/CharacterHeader';
 import { CharacterOverview } from './components/CharacterOverview';
-import { CharacterEditDrawer } from './components/CharacterEditDrawer';
 import { ScenarioSection } from './components/ScenarioSection';
 import { StoriesSection } from './components/StoriesSection';
 
