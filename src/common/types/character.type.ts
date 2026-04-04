@@ -103,6 +103,10 @@ interface ICharacterGift {
   updatedAt: string;
 }
 
+export interface ScenarioLiveGenerations {
+  stages: Record<RoleplayStage, boolean>;
+}
+
 export interface IScenario {
   id: string;
   name: string;
@@ -122,6 +126,7 @@ export interface IScenario {
   openingImage: IFile;
   stages: StageDirectivesMap;
   gifts: ICharacterGift[];
+  liveGenerations: ScenarioLiveGenerations;
   createdAt: string;
   updatedAt: string;
 }

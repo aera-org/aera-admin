@@ -9,6 +9,7 @@ import type {
   ICharacter,
   ICharacterDetails,
   RoleplayStage,
+  ScenarioLiveGenerations,
   StoryType,
   StageDirectives,
 } from '@/common/types';
@@ -86,7 +87,9 @@ export type ScenarioCreateDto = {
   openingImageId?: string;
 };
 
-export type ScenarioUpdateDto = ScenarioCreateDto;
+export type ScenarioUpdateDto = ScenarioCreateDto & {
+  liveGenerations?: ScenarioLiveGenerations;
+};
 export type StageUpdateDto = StageDirectives;
 export type StageGiftCreateDto = {
   giftId: string;

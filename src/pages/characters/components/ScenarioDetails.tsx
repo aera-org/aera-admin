@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import {
   useCreateScenarioStageGift,
   useDeleteScenarioStageGift,
+  useUpdateScenario,
   useUpdateScenarioStage,
   useUpdateScenarioStageGift,
 } from '@/app/characters';
@@ -16,6 +17,7 @@ import {
   IconButton,
   Select,
   Stack,
+  Switch,
   Textarea,
   Typography,
 } from '@/atoms';
@@ -57,6 +59,55 @@ const STAGE_LABELS: Record<RoleplayStage, string> = {
   [RoleplayStage.Aftercare]: 'Aftercare',
 };
 
+function buildStagePayload(
+  stage: StageDirectives,
+) {
+  return {
+    toneAndBehavior: stage.toneAndBehavior?.trim() ?? '',
+    restrictions: stage.restrictions?.trim() ?? '',
+    environment: stage.environment?.trim() ?? '',
+    characterLook: stage.characterLook?.trim() ?? '',
+    goal: stage.goal?.trim() ?? '',
+    escalationTrigger: stage.escalationTrigger?.trim() ?? '',
+  };
+}
+
+function buildScenarioPayload(
+  scenario: ICharacterDetails['scenarios'][number],
+  stageKey: RoleplayStage,
+  liveGenerationEnabled: boolean,
+) {
+  const nextLiveGenerationStages = Object.fromEntries(
+    STAGES_IN_ORDER.map((currentStage) => [
+      currentStage,
+      currentStage === stageKey
+        ? liveGenerationEnabled
+        : Boolean(scenario.liveGenerations?.stages?.[currentStage]),
+    ]),
+  ) as Record<RoleplayStage, boolean>;
+
+  return {
+    name: scenario.name.trim(),
+    emoji: scenario.emoji.trim(),
+    slug: scenario.slug?.trim() || undefined,
+    description: scenario.description.trim(),
+    isActive: scenario.isActive,
+    shortDescription: scenario.shortDescription?.trim() || undefined,
+    isNew: scenario.isNew,
+    promoImgId: scenario.promoImg?.id,
+    promoImgHorizontalId: scenario.promoImgHorizontal?.id,
+    personality: scenario.personality.trim(),
+    messagingStyle: scenario.messagingStyle.trim(),
+    appearance: scenario.appearance.trim(),
+    situation: scenario.situation.trim(),
+    openingMessage: scenario.openingMessage.trim(),
+    openingImageId: scenario.openingImage?.id,
+    liveGenerations: {
+      stages: nextLiveGenerationStages,
+    },
+  };
+}
+
 export function ScenarioDetails({
   characterId,
   scenario,
@@ -64,6 +115,7 @@ export function ScenarioDetails({
   onEdit,
   canEdit,
 }: ScenarioDetailsProps) {
+  const updateScenarioMutation = useUpdateScenario();
   const updateStageMutation = useUpdateScenarioStage();
   const createGiftMutation = useCreateScenarioStageGift();
   const updateGiftMutation = useUpdateScenarioStageGift();
@@ -94,8 +146,13 @@ export function ScenarioDetails({
   const [giftEditBuyText, setGiftEditBuyText] = useState('');
   const [giftToEditId, setGiftToEditId] = useState<string | null>(null);
   const [giftToDeleteId, setGiftToDeleteId] = useState<string | null>(null);
+  const [liveGenerationStage, setLiveGenerationStage] =
+    useState<RoleplayStage | null>(null);
 
   const selectedStageContent = scenario.stages?.[selectedStage] ?? EMPTY_STAGE;
+  const selectedStageLiveGeneration = Boolean(
+    scenario.liveGenerations?.stages?.[selectedStage],
+  );
   const stageGift = useMemo(
     () => scenario.gifts.find((gift) => gift.stage === selectedStage) ?? null,
     [scenario.gifts, selectedStage],
@@ -200,17 +257,25 @@ export function ScenarioDetails({
       characterId,
       scenarioId: scenario.id,
       stage: activeStage,
-      payload: {
-        toneAndBehavior: stageValues.toneAndBehavior.trim(),
-        restrictions: stageValues.restrictions.trim(),
-        environment: stageValues.environment.trim(),
-        characterLook: stageValues.characterLook.trim(),
-        goal: stageValues.goal.trim(),
-        escalationTrigger: stageValues.escalationTrigger.trim(),
-      },
+      payload: buildStagePayload(stageValues),
     });
 
     setIsStageDrawerOpen(false);
+  };
+
+  const handleLiveGenerationChange = async (checked: boolean) => {
+    if (!characterId) return;
+
+    setLiveGenerationStage(selectedStage);
+    try {
+      await updateScenarioMutation.mutateAsync({
+        characterId,
+        scenarioId: scenario.id,
+        payload: buildScenarioPayload(scenario, selectedStage, checked),
+      });
+    } finally {
+      setLiveGenerationStage(null);
+    }
   };
 
   const openGiftAddDrawer = () => {
@@ -601,6 +666,25 @@ export function ScenarioDetails({
                     )}
                   </Stack>
                 </div>
+              </div>
+              <div className={s.stageSection}>
+                <Typography variant="caption" tone="muted">
+                  Live generations
+                </Typography>
+                <Switch
+                  checked={selectedStageLiveGeneration}
+                  onChange={(event) =>
+                    void handleLiveGenerationChange(event.target.checked)
+                  }
+                  label={
+                    selectedStageLiveGeneration ? 'Enabled' : 'Disabled'
+                  }
+                  disabled={
+                    !characterId ||
+                    updateScenarioMutation.isPending ||
+                    liveGenerationStage === selectedStage
+                  }
+                />
               </div>
             </div>
           </div>
