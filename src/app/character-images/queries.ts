@@ -5,6 +5,7 @@ import type { CreateCharacterImageDto } from '@/common/types';
 
 import {
   createCharacterImage,
+  deleteCharacterImage,
   getCharacterImageDetails,
   getCharacterImages,
   type CharacterImagesListParams,
@@ -44,6 +45,22 @@ export function useCreateCharacterImage() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to create the image.');
+    },
+  });
+}
+
+export function useDeleteCharacterImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteCharacterImage(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['character-images'] });
+      queryClient.removeQueries({ queryKey: characterImageKeys.detail(id) });
+      notifySuccess('Image deleted.', 'Image deleted.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to delete the image.');
     },
   });
 }

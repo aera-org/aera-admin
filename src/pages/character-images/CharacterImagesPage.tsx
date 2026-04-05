@@ -17,6 +17,7 @@ import {
   getCharacterImageDetails,
   getCharacterImages,
   useCharacterImages,
+  useDeleteCharacterImage,
 } from '@/app/character-images';
 import { useCharacterDetails, useCharacters } from '@/app/characters';
 import {
@@ -25,7 +26,7 @@ import {
 } from '@/app/characters/charactersApi';
 import { copyFile, markFileUploaded, signUpload } from '@/app/files/filesApi';
 import { notifyError, notifySuccess } from '@/app/toast';
-import { DownloadIcon, PlusIcon, UploadIcon } from '@/assets/icons';
+import { DownloadIcon, PlusIcon, TrashIcon, UploadIcon } from '@/assets/icons';
 import {
   Alert,
   Badge,
@@ -292,6 +293,7 @@ export function CharacterImagesPage() {
   const normalizedSearch = debouncedSearch.trim();
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const deleteImageMutation = useDeleteCharacterImage();
 
   const order = ORDER_VALUES.has(rawOrder ?? '') ? rawOrder! : DEFAULT_ORDER;
   const page = parsePositiveNumber(rawPage, 1);
@@ -664,6 +666,13 @@ export function CharacterImagesPage() {
     setCreateShowErrors(false);
     setIsCreating(false);
     setIsDrawerOpen(true);
+  };
+
+  const handleDeleteImage = async (imageId: string) => {
+    await deleteImageMutation.mutateAsync(imageId);
+    if (selectedImageId === imageId) {
+      updateSearchParams({ imageId: '' }, true);
+    }
   };
 
   const closeCreateDrawer = () => {
@@ -1419,6 +1428,23 @@ export function CharacterImagesPage() {
                                 icon={<DownloadIcon />}
                                 // @ts-expect-error Radix anchor event types are incorrect
                                 onClick={(event) => event.stopPropagation()}
+                              />
+                              <IconButton
+                                aria-label="Delete image"
+                                tooltip="Delete image"
+                                variant="ghost"
+                                tone="danger"
+                                size="sm"
+                                icon={<TrashIcon />}
+                                loading={
+                                  deleteImageMutation.isPending &&
+                                  deleteImageMutation.variables === image.id
+                                }
+                                disabled={deleteImageMutation.isPending}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  void handleDeleteImage(image.id);
+                                }}
                               />
                             </div>
                           </>

@@ -24,6 +24,7 @@ export type CharacterImagesListParams = {
 const fallbackError = 'Unable to load images.';
 const createFallbackError = 'Unable to create the image.';
 const detailsFallbackError = 'Unable to load the image details.';
+const deleteFallbackError = 'Unable to delete the image.';
 
 export async function getCharacterImages(params: CharacterImagesListParams) {
   const query = new URLSearchParams();
@@ -69,4 +70,13 @@ export async function createCharacterImage(payload: CreateCharacterImageDto) {
     throw await buildApiError(res, createFallbackError);
   }
   return (await res.json()) as ICharacterImageDetails;
+}
+
+export async function deleteCharacterImage(id: string) {
+  const res = await apiFetch(`/admin/character-images/${id}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, deleteFallbackError);
+  }
 }
