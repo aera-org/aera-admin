@@ -85,7 +85,7 @@ export function AuthPage() {
                   <Input
                     id="signin-email"
                     type="email"
-                    placeholder={`you${projNameLowercase}online.com`}
+                    placeholder={`you@${projNameLowercase}online.com`}
                     autoComplete="email"
                     value={signInValues.email}
                     onChange={(event) =>
