@@ -17,6 +17,8 @@ import {
 
 import s from './AuthPage.module.scss';
 
+const PROJECT_NAME = import.meta.env.VITE_PROJECT_NAME || 'Aera';
+
 export function AuthPage() {
   const { status, signIn } = useAuth();
   const location = useLocation();
@@ -58,7 +60,7 @@ export function AuthPage() {
             <header className={s.logo}>
               <img src={Logo} alt="Logo" />
             </header>
-            <Typography variant="h1">Aera Admin Console</Typography>
+            <Typography variant="h1">{PROJECT_NAME} Admin Console</Typography>
             <Typography variant="proseCompact" readingWidth className={s.copy}>
               Manage characters, send broadcasts, and monitor analytics from one
               console.
