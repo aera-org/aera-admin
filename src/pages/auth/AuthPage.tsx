@@ -18,6 +18,7 @@ import {
 import s from './AuthPage.module.scss';
 
 const PROJECT_NAME = import.meta.env.VITE_PROJECT_NAME || 'Aera';
+const projNameLowercase = PROJECT_NAME.toLowerCase();
 
 export function AuthPage() {
   const { status, signIn } = useAuth();
@@ -84,7 +85,7 @@ export function AuthPage() {
                   <Input
                     id="signin-email"
                     type="email"
-                    placeholder="you@gmail.com"
+                    placeholder={`you${projNameLowercase}online.com`}
                     autoComplete="email"
                     value={signInValues.email}
                     onChange={(event) =>
