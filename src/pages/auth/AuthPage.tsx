@@ -56,7 +56,7 @@ export function AuthPage() {
         <Grid columns={2} gap="48px" className={s.grid}>
           <Stack gap="24px" className={s.intro}>
             <header className={s.logo}>
-              <img src={Logo} alt="Aera" />
+              <img src={Logo} alt="Logo" />
             </header>
             <Typography variant="h1">Aera Admin Console</Typography>
             <Typography variant="proseCompact" readingWidth className={s.copy}>
@@ -82,7 +82,7 @@ export function AuthPage() {
                   <Input
                     id="signin-email"
                     type="email"
-                    placeholder="you@aeraonline.com"
+                    placeholder="you@gmail.com"
                     autoComplete="email"
                     value={signInValues.email}
                     onChange={(event) =>

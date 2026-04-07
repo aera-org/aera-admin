@@ -6,7 +6,7 @@ import {
   STAGES_IN_ORDER,
 } from '@/common/types';
 
-const POSES_TRANSFER_SCHEMA = 'aera-poses';
+const POSES_TRANSFER_SCHEMA = 'poses';
 const POSES_TRANSFER_VERSION = 3;
 
 export type PoseTransferItem = {
@@ -94,11 +94,7 @@ function parseStages(value: unknown, path: string) {
   }
 
   const stages = value.map((stage, index) =>
-    ensureEnumValue(
-      stage,
-      `${path}[${index}]`,
-      STAGES_IN_ORDER,
-    ),
+    ensureEnumValue(stage, `${path}[${index}]`, STAGES_IN_ORDER),
   );
 
   const normalized = normalizeStages(Array.from(new Set(stages)));

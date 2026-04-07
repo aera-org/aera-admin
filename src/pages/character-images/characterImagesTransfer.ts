@@ -6,7 +6,7 @@ import {
   STAGES_IN_ORDER,
 } from '@/common/types';
 
-const CHARACTER_IMAGES_TRANSFER_SCHEMA = 'aera-character-images';
+const CHARACTER_IMAGES_TRANSFER_SCHEMA = 'character-images';
 const CHARACTER_IMAGES_TRANSFER_VERSION = 1;
 
 export type CharacterImageTransferFile = {
@@ -73,7 +73,9 @@ function ensureBoolean(value: unknown, path: string) {
 function ensureStage(value: unknown, path: string): RoleplayStage {
   const stage = ensureString(value, path);
   if (!STAGES_IN_ORDER.includes(stage as RoleplayStage)) {
-    throw new Error(`Invalid import file: "${path}" has unknown stage "${stage}".`);
+    throw new Error(
+      `Invalid import file: "${path}" has unknown stage "${stage}".`,
+    );
   }
   return stage as RoleplayStage;
 }
@@ -87,10 +89,14 @@ function parseTransferFile(
   const status = ensureString(obj.status, `${path}.status`);
 
   if (!Object.values(FileDir).includes(dir as FileDir)) {
-    throw new Error(`Invalid import file: "${path}.dir" has unsupported value.`);
+    throw new Error(
+      `Invalid import file: "${path}.dir" has unsupported value.`,
+    );
   }
   if (!Object.values(FileStatus).includes(status as FileStatus)) {
-    throw new Error(`Invalid import file: "${path}.status" has unsupported value.`);
+    throw new Error(
+      `Invalid import file: "${path}.status" has unsupported value.`,
+    );
   }
 
   const urlValue = obj.url;
@@ -133,8 +139,14 @@ function parseTransferItem(
     stage: ensureStage(obj.stage, `${path}.stage`),
     isPregenerated: ensureBoolean(obj.isPregenerated, `${path}.isPregenerated`),
     isPromotional: ensureBoolean(obj.isPromotional, `${path}.isPromotional`),
-    characterName: ensureNonEmptyString(obj.characterName, `${path}.characterName`),
-    scenarioName: ensureNonEmptyString(obj.scenarioName, `${path}.scenarioName`),
+    characterName: ensureNonEmptyString(
+      obj.characterName,
+      `${path}.characterName`,
+    ),
+    scenarioName: ensureNonEmptyString(
+      obj.scenarioName,
+      `${path}.scenarioName`,
+    ),
     file: parseTransferFile(obj.file, `${path}.file`),
     blurredFile,
   };

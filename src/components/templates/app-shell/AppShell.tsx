@@ -11,21 +11,23 @@ type AppShellProps = {
   className?: string;
 };
 
+const PROJECT_NAME = import.meta.env.VITE_PROJECT_NAME || 'Aera';
+
 export function AppShell({ children, className }: AppShellProps) {
   const { user } = useAuth();
   const name =
     user?.firstName || user?.lastName
       ? [user?.firstName, user?.lastName].filter(Boolean).join(' ')
-      : (user?.email ?? 'Aera admin');
+      : (user?.email ?? 'Project admin');
 
   return (
     <div className={cn(s.page, [className])}>
       <aside className={s.sidebar}>
         <div className={s.brandLogo}>
-          <img src={Logo} alt="Aera" />
+          <img src={Logo} alt="Logo" />
 
           <Typography variant="h2" className={s.logoText}>
-            Aera
+            {PROJECT_NAME}
           </Typography>
         </div>
 

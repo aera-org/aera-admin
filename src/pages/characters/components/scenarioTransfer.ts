@@ -7,7 +7,7 @@ import {
   STAGES_IN_ORDER,
 } from '@/common/types';
 
-const SCENARIO_TRANSFER_SCHEMA = 'aera-scenario';
+const SCENARIO_TRANSFER_SCHEMA = 'scenario';
 const SCENARIO_TRANSFER_VERSION = 1;
 
 type ScenarioTransferCharacter = {

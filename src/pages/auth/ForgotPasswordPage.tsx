@@ -1,9 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { type FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { Button, Container, Field, Input, Stack, Typography } from '@/atoms';
 import { useAuth } from '@/app/auth';
 import { toast } from '@/app/toast';
+import { Button, Container, Field, Input, Stack, Typography } from '@/atoms';
 
 import s from './AuthFormPage.module.scss';
 
@@ -64,7 +64,7 @@ export function ForgotPasswordPage() {
                   <Input
                     id="forgot-email"
                     type="email"
-                    placeholder="you@aeraonline.com"
+                    placeholder="you@gmail.com"
                     autoComplete="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}

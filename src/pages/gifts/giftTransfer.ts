@@ -1,10 +1,6 @@
-import {
-  FileDir,
-  FileStatus,
-  type IGiftDetails,
-} from '@/common/types';
+import { FileDir, FileStatus, type IGiftDetails } from '@/common/types';
 
-const GIFTS_TRANSFER_SCHEMA = 'aera-gifts';
+const GIFTS_TRANSFER_SCHEMA = 'gifts';
 const GIFTS_TRANSFER_VERSION = 1;
 
 export type GiftTransferFile = {
@@ -80,10 +76,14 @@ function parseTransferFile(value: unknown, path: string): GiftTransferFile {
   const status = ensureString(obj.status, `${path}.status`);
 
   if (!Object.values(FileDir).includes(dir as FileDir)) {
-    throw new Error(`Invalid import file: "${path}.dir" has unsupported value.`);
+    throw new Error(
+      `Invalid import file: "${path}.dir" has unsupported value.`,
+    );
   }
   if (!Object.values(FileStatus).includes(status as FileStatus)) {
-    throw new Error(`Invalid import file: "${path}.status" has unsupported value.`);
+    throw new Error(
+      `Invalid import file: "${path}.status" has unsupported value.`,
+    );
   }
 
   const urlValue = obj.url;
@@ -153,7 +153,12 @@ export function buildGiftsTransferPayload(gifts: IGiftDetails[]) {
         `Unable to export gifts: gift "${name}" has invalid price.`,
       );
     }
-    if (!gift.img?.id || !gift.img?.name || !gift.img?.path || !gift.img?.mime) {
+    if (
+      !gift.img?.id ||
+      !gift.img?.name ||
+      !gift.img?.path ||
+      !gift.img?.mime
+    ) {
       throw new Error(
         `Unable to export gifts: gift "${name}" has incomplete image metadata.`,
       );

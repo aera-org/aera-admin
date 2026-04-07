@@ -5,7 +5,7 @@ import {
   PlanType,
 } from '@/common/types';
 
-const PLANS_TRANSFER_SCHEMA = 'aera-plans';
+const PLANS_TRANSFER_SCHEMA = 'plans';
 const PLANS_TRANSFER_VERSION = 1;
 
 const PLAN_CODE_PATTERN = /^[a-z0-9-]+$/;

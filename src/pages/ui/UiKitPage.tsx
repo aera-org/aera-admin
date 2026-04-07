@@ -136,7 +136,7 @@ export function UiKitPage() {
               required
               labelFor="project-name"
             >
-              <Input id="project-name" placeholder="Aera" fullWidth />
+              <Input id="project-name" placeholder="Project" fullWidth />
             </Field>
             <Field label="Category" labelFor="project-category">
               <Select
@@ -170,7 +170,7 @@ export function UiKitPage() {
               <Input
                 id="project-email"
                 type="email"
-                placeholder="you@aeraonline.com"
+                placeholder="you@gmail.com"
                 invalid
                 fullWidth
               />
@@ -260,7 +260,7 @@ export function UiKitPage() {
           <div className={s.stack}>
             <Alert
               title="Draft saved"
-              description="Your note is safely stored in Aera."
+              description="Your note is safely stored."
               tone="success"
             />
             <Alert
@@ -298,7 +298,7 @@ export function UiKitPage() {
             <Tag onRemove={() => null}>Prompt</Tag>
             <Tag tone="danger">Sensitive</Tag>
             <Avatar fallback="EB" />
-            <Avatar size="lg" fallback="Aera" />
+            <Avatar size="lg" fallback="Logo" />
           </div>
           <List
             items={[
