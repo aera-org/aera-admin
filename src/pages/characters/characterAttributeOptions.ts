@@ -3,6 +3,7 @@ import {
   CharacterBreastSize,
   CharacterEthnicity,
   CharacterHairColor,
+  CharacterPersonality,
 } from '@/common/types';
 
 const hairColorLabels: Record<CharacterHairColor, string> = {
@@ -36,6 +37,12 @@ const breastSizeLabels: Record<CharacterBreastSize, string> = {
   [CharacterBreastSize.ExtraLarge]: 'Extra large',
 };
 
+const personalityLabels: Record<CharacterPersonality, string> = {
+  [CharacterPersonality.Hot]: 'Hot',
+  [CharacterPersonality.Playful]: 'Playful',
+  [CharacterPersonality.Devoted]: 'Devoted',
+};
+
 export const HAIR_COLOR_OPTIONS = Object.values(CharacterHairColor).map(
   (value) => ({
     value,
@@ -64,6 +71,13 @@ export const BREAST_SIZE_OPTIONS = Object.values(CharacterBreastSize).map(
   }),
 );
 
+export const PERSONALITY_OPTIONS = Object.values(CharacterPersonality).map(
+  (value) => ({
+    value,
+    label: personalityLabels[value],
+  }),
+);
+
 export function getHairColorLabel(value: CharacterHairColor | null | undefined) {
   return value ? hairColorLabels[value] : '-';
 }
@@ -82,4 +96,18 @@ export function getBreastSizeLabel(
   value: CharacterBreastSize | null | undefined,
 ) {
   return value ? breastSizeLabels[value] : '-';
+}
+
+export function getCharacterPersonalityLabel(
+  value: CharacterPersonality | null | undefined,
+) {
+  return value ? personalityLabels[value] : '-';
+}
+
+export function formatCharacterPersonalities(
+  values: CharacterPersonality[] | null | undefined,
+) {
+  if (!values?.length) return '-';
+
+  return values.map((value) => getCharacterPersonalityLabel(value)).join(', ');
 }

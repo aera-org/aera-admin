@@ -4,6 +4,7 @@ import { useLoras } from '@/app/loras';
 import { notifyError } from '@/app/toast';
 import {
   Button,
+  Checkbox,
   Divider,
   Field,
   FormRow,
@@ -19,6 +20,7 @@ import {
   CharacterBreastSize,
   CharacterEthnicity,
   CharacterHairColor,
+  CharacterPersonality,
   FileDir,
   type IFile,
 } from '@/common/types';
@@ -29,6 +31,7 @@ import {
   BREAST_SIZE_OPTIONS,
   ETHNICITY_OPTIONS,
   HAIR_COLOR_OPTIONS,
+  PERSONALITY_OPTIONS,
 } from '../characterAttributeOptions';
 import { LoraSelect } from './LoraSelect';
 import s from './CharacterFormDrawer.module.scss';
@@ -45,6 +48,7 @@ export type CharacterFormValues = {
   isFeatured: boolean;
   loraId: string;
   description: string;
+  personality: CharacterPersonality[];
   avatarId: string;
   promoImgId: string;
 };
@@ -66,6 +70,7 @@ export const DEFAULT_CHARACTER_FORM_VALUES: CharacterFormValues = {
   isFeatured: false,
   loraId: '',
   description: '',
+  personality: [],
   avatarId: '',
   promoImgId: '',
 };
@@ -83,6 +88,7 @@ type CharacterFormDrawerProps = {
   isSubmitting?: boolean;
   requireDirty?: boolean;
   showStatus?: boolean;
+  showPersonality?: boolean;
 };
 
 function useDebouncedValue<T>(value: T, delay: number) {
@@ -94,6 +100,12 @@ function useDebouncedValue<T>(value: T, delay: number) {
   }, [value, delay]);
 
   return debounced;
+}
+
+function normalizePersonality(values: CharacterPersonality[]) {
+  return PERSONALITY_OPTIONS.map((option) => option.value).filter((value) =>
+    values.includes(value),
+  );
 }
 
 export function CharacterFormDrawer({
@@ -109,6 +121,7 @@ export function CharacterFormDrawer({
   isSubmitting = false,
   requireDirty = false,
   showStatus = false,
+  showPersonality = false,
 }: CharacterFormDrawerProps) {
   const [values, setValues] = useState(initialValues);
   const [avatarFile, setAvatarFile] = useState<IFile | null>(initialAvatarFile);
@@ -225,6 +238,8 @@ export function CharacterFormDrawer({
       values.isFeatured !== initialValues.isFeatured ||
       values.loraId !== initialValues.loraId ||
       values.description !== initialValues.description ||
+      normalizePersonality(values.personality).join('|') !==
+        normalizePersonality(initialValues.personality).join('|') ||
       values.avatarId !== initialValues.avatarId ||
       values.promoImgId !== initialValues.promoImgId,
     [initialValues, values],
@@ -267,6 +282,7 @@ export function CharacterFormDrawer({
       emoji: values.emoji.trim(),
       gender: values.gender.trim(),
       description: values.description.trim(),
+      personality: normalizePersonality(values.personality),
       promoImgId: values.promoImgId || '',
     });
   };
@@ -490,6 +506,41 @@ export function CharacterFormDrawer({
                 />
               </Field>
             </FormRow>
+
+            {showPersonality ? (
+              <Field
+                label="Personality"
+                hint="Select the traits that apply to this character."
+              >
+                <div className={s.checkboxGroup}>
+                  {PERSONALITY_OPTIONS.map((option) => {
+                    const checkboxId = `character-form-personality-${option.value}`;
+
+                    return (
+                      <Checkbox
+                        key={option.value}
+                        id={checkboxId}
+                        checked={values.personality.includes(option.value)}
+                        onChange={(event) =>
+                          setValues((prev) => ({
+                            ...prev,
+                            personality: event.target.checked
+                              ? normalizePersonality([
+                                  ...prev.personality,
+                                  option.value,
+                                ])
+                              : prev.personality.filter(
+                                  (value) => value !== option.value,
+                                ),
+                          }))
+                        }
+                        label={option.label}
+                      />
+                    );
+                  })}
+                </div>
+              </Field>
+            ) : null}
           </Stack>
         </div>
 

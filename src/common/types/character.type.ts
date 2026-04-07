@@ -144,6 +144,12 @@ export interface ICharacterStory {
   isActive: boolean;
 }
 
+export enum CharacterPersonality {
+  Hot = 'hot',
+  Playful = 'playful',
+  Devoted = 'devoted',
+}
+
 export interface ICharacterDetails extends ICharacter {
   lora: ILora;
   scenarios: IScenario[];
@@ -152,4 +158,5 @@ export interface ICharacterDetails extends ICharacter {
   bodyType: CharacterBodyType;
   breastSize: CharacterBreastSize;
   stories: ICharacterStory[];
+  personality: CharacterPersonality[];
 }

@@ -14,6 +14,8 @@ import {
   type CharacterFormValues,
 } from './CharacterFormDrawer';
 
+const isPersonalityEnabled = import.meta.env.VITE_PERSONALITY_ON === 'true';
+
 type CharacterEditDrawerProps = {
   character: ICharacterDetails | null;
   open: boolean;
@@ -41,6 +43,7 @@ export function CharacterEditDrawer({
         isFeatured: false,
         loraId: '',
         description: '',
+        personality: [],
         avatarId: '',
         promoImgId: '',
       };
@@ -58,6 +61,7 @@ export function CharacterEditDrawer({
       isFeatured: Boolean(character.isFeatured),
       loraId: character.lora?.id ?? '',
       description: character.description ?? '',
+      personality: character.personality ?? [],
       avatarId: character.avatar?.id ?? '',
       promoImgId: character.promoImg?.id ?? '',
     };
@@ -85,6 +89,7 @@ export function CharacterEditDrawer({
       isSubmitting={updateMutation.isPending}
       requireDirty
       showStatus
+      showPersonality={isPersonalityEnabled}
       onSubmit={async (values) => {
         await updateMutation.mutateAsync({
           id: character.id,
@@ -100,6 +105,7 @@ export function CharacterEditDrawer({
             isFeatured: values.isFeatured,
             loraId: values.loraId,
             description: values.description,
+            personality: values.personality,
             avatarId: values.avatarId,
             promoImgId: values.promoImgId || undefined,
           },

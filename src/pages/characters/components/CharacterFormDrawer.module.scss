@@ -18,6 +18,12 @@
   gap: 2px;
 }
 
+.checkboxGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;

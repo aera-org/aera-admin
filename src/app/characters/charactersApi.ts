@@ -6,6 +6,7 @@ import type {
   CharacterBreastSize,
   CharacterEthnicity,
   CharacterHairColor,
+  CharacterPersonality,
   ICharacter,
   ICharacterDetails,
   RoleplayStage,
@@ -48,6 +49,7 @@ export type CharacterUpdateDto = {
   isActive: boolean;
   isFeatured?: boolean;
   description: string;
+  personality: CharacterPersonality[];
   avatarId: string;
   promoImgId?: string;
 };
