@@ -234,6 +234,7 @@ export async function getAnalyticsDeeplinks(params: {
   startDate: string;
   endDate: string;
   ref?: string;
+  exclude?: string;
   characterId?: string;
   scenarioId?: string;
 }) {
@@ -241,6 +242,7 @@ export async function getAnalyticsDeeplinks(params: {
   query.set('startDate', params.startDate);
   query.set('endDate', params.endDate);
   if (params.ref) query.set('ref', params.ref);
+  if (params.exclude) query.set('exclude', params.exclude);
   if (params.characterId) query.set('characterId', params.characterId);
   if (params.scenarioId) query.set('scenarioId', params.scenarioId);
 

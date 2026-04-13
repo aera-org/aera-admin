@@ -80,6 +80,7 @@ type QueryUpdate = {
   startDate?: string;
   endDate?: string;
   ref?: string;
+  exclude?: string;
   characterId?: string;
   scenarioId?: string;
   sort?: string;
@@ -240,6 +241,14 @@ function getDeeplinkActivationRate(
     return null;
   }
   return (item.total / item.visits) * 100;
+}
+
+function normalizeRefList(value: string) {
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .join(',');
 }
 
 function formatDayLabel(value: string, variant: 'short' | 'long' = 'short') {
@@ -438,6 +447,7 @@ export function AnalyticsPage() {
   const rawStartDate = searchParams.get('startDate');
   const rawEndDate = searchParams.get('endDate');
   const rawRef = searchParams.get('ref');
+  const rawExclude = searchParams.get('exclude');
   const rawCharacterId = searchParams.get('characterId');
   const rawScenarioId = searchParams.get('scenarioId');
   const rawSort = searchParams.get('sort');
@@ -529,6 +539,7 @@ export function AnalyticsPage() {
     : 'desc';
   const countryLimit = getCountryLimit(rawCountryLimit);
   const deeplinkRef = rawRef ?? '';
+  const deeplinkExclude = rawExclude ?? '';
   const deeplinkCharacterId = rawCharacterId ?? '';
   const deeplinkScenarioId = rawScenarioId ?? '';
   const deeplinkSort = isValidDeeplinkSort(rawSort) ? rawSort : 'total';
@@ -598,6 +609,14 @@ export function AnalyticsPage() {
           next.set('ref', update.ref);
         } else {
           next.delete('ref');
+        }
+      }
+
+      if (update.exclude !== undefined) {
+        if (update.exclude) {
+          next.set('exclude', update.exclude);
+        } else {
+          next.delete('exclude');
         }
       }
 
@@ -809,6 +828,10 @@ export function AnalyticsPage() {
 
   const currentRow = kpiDataByMonth.get(kpiMonth);
   const previousRow = kpiDataByMonth.get(addMonths(kpiMonth, -1));
+  const deeplinkExcludeParam = useMemo(
+    () => normalizeRefList(deeplinkExclude),
+    [deeplinkExclude],
+  );
 
   const {
     data: conversionBreakdown,
@@ -846,6 +869,7 @@ export function AnalyticsPage() {
       startDate: deeplinkStart,
       endDate: deeplinkEnd,
       ref: deeplinkRef.trim() || undefined,
+      exclude: deeplinkExcludeParam || undefined,
       characterId: deeplinkCharacterId || undefined,
       scenarioId: deeplinkScenarioId || undefined,
     },
@@ -862,6 +886,7 @@ export function AnalyticsPage() {
       startDate: deeplinkStart,
       endDate: deeplinkEnd,
       ref: deeplinkRef.trim() || undefined,
+      exclude: deeplinkExcludeParam || undefined,
     },
     {
       enabled:
@@ -2868,7 +2893,7 @@ export function AnalyticsPage() {
                     />
                   </Field>
                 </FormRow>
-                <FormRow columns={3}>
+                <FormRow columns={2}>
                   <Field label="Ref" className={s.filterField}>
                     <Input
                       type="text"
@@ -2878,6 +2903,18 @@ export function AnalyticsPage() {
                         updateSearchParams({ ref: event.target.value })
                       }
                       placeholder="All refs"
+                      fullWidth
+                    />
+                  </Field>
+                  <Field label="Exclude refs" className={s.filterField}>
+                    <Input
+                      type="text"
+                      size="sm"
+                      value={deeplinkExclude}
+                      onChange={(event) =>
+                        updateSearchParams({ exclude: event.target.value })
+                      }
+                      placeholder="ref123,ref456"
                       fullWidth
                     />
                   </Field>

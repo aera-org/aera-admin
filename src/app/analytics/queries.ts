@@ -139,6 +139,7 @@ export function useAnalyticsDeeplinks(
     startDate: string;
     endDate: string;
     ref?: string;
+    exclude?: string;
     characterId?: string;
     scenarioId?: string;
   },
