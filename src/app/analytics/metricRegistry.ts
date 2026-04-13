@@ -21,6 +21,7 @@ export type AnalyticsMetricKey =
   | 'averagePurchaseValue'
   | 'cohortLtvM0'
   | 'averageRevenuePerUser'
+  | 'averageRevenuePerUniqueUser'
   | 'averageRevenuePerCustomer'
   | 'revenue'
   | 'customers'
@@ -159,6 +160,15 @@ const PAYMENTS_METRICS: AnalyticsMetricDefinition[] = [
     key: 'averageRevenuePerUser',
     label: 'ARPU',
     description: 'Total revenue in month / active users in month.',
+    format: 'currency',
+    section: 'payments',
+    precision: 2,
+    currency: 'usd',
+  },
+  {
+    key: 'averageRevenuePerUniqueUser',
+    label: 'ARPUU',
+    description: 'Total revenue in month / unique users in month.',
     format: 'currency',
     section: 'payments',
     precision: 2,

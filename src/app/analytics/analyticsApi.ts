@@ -37,6 +37,7 @@ export type DailyAnalyticsItem = {
   revenue: number;
   conversion: number;
   arpu: number;
+  arpuu: number;
   arpc: number;
 };
 
@@ -52,6 +53,7 @@ export type DailyCountryTopItem = {
   revenue: number;
   conversion: number;
   arpu: number;
+  arpuu: number;
   arpc: number;
 };
 
@@ -87,6 +89,7 @@ export type DeeplinkAnalyticsItem = {
   revenue: number;
   conversion: number;
   arpu: number;
+  arpuu: number;
   arpc: number;
 };
 
