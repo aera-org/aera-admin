@@ -137,6 +137,7 @@ type DeeplinkViewItem = DeeplinkAnalyticsItem & {
 const MAX_RANGE_MONTHS = 24;
 const DEFAULT_DEEPLINK_RANGE_DAYS = 30;
 const DEFAULT_DAILY_RANGE_DAYS = 30;
+const DEEPLINK_TEXT_FILTER_DEBOUNCE_MS = 400;
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const COUNTRY_LIMIT_OPTIONS = [20, 50, 100] as const;
 
@@ -462,6 +463,10 @@ export function AnalyticsPage() {
   const [revenueGroupBy, setRevenueGroupBy] =
     useState<PaymentsRevenueGroupBy>('character');
   const [isExporting, setIsExporting] = useState(false);
+  const [deeplinkRefInput, setDeeplinkRefInput] = useState(rawRef ?? '');
+  const [deeplinkExcludeInput, setDeeplinkExcludeInput] = useState(
+    rawExclude ?? '',
+  );
   const isTargetUser = user?.role === UserRole.Target;
   const section = isTargetUser
     ? 'deeplinks'
@@ -688,6 +693,46 @@ export function AnalyticsPage() {
     },
     [searchParams, setSearchParams],
   );
+
+  useEffect(() => {
+    setDeeplinkRefInput(deeplinkRef);
+  }, [deeplinkRef]);
+
+  useEffect(() => {
+    setDeeplinkExcludeInput(deeplinkExclude);
+  }, [deeplinkExclude]);
+
+  useEffect(() => {
+    if (!isDeeplinksSection) return;
+    if (
+      deeplinkRefInput === deeplinkRef &&
+      deeplinkExcludeInput === deeplinkExclude
+    ) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      const updates: QueryUpdate = {};
+      if (deeplinkRefInput !== deeplinkRef) {
+        updates.ref = deeplinkRefInput;
+      }
+      if (deeplinkExcludeInput !== deeplinkExclude) {
+        updates.exclude = deeplinkExcludeInput;
+      }
+      if (Object.keys(updates).length > 0) {
+        updateSearchParams(updates, true);
+      }
+    }, DEEPLINK_TEXT_FILTER_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [
+    deeplinkExclude,
+    deeplinkExcludeInput,
+    deeplinkRef,
+    deeplinkRefInput,
+    isDeeplinksSection,
+    updateSearchParams,
+  ]);
 
   useEffect(() => {
     const updates: QueryUpdate = {};
@@ -2898,9 +2943,9 @@ export function AnalyticsPage() {
                     <Input
                       type="text"
                       size="sm"
-                      value={deeplinkRef}
+                      value={deeplinkRefInput}
                       onChange={(event) =>
-                        updateSearchParams({ ref: event.target.value })
+                        setDeeplinkRefInput(event.target.value)
                       }
                       placeholder="All refs"
                       fullWidth
@@ -2910,9 +2955,9 @@ export function AnalyticsPage() {
                     <Input
                       type="text"
                       size="sm"
-                      value={deeplinkExclude}
+                      value={deeplinkExcludeInput}
                       onChange={(event) =>
-                        updateSearchParams({ exclude: event.target.value })
+                        setDeeplinkExcludeInput(event.target.value)
                       }
                       placeholder="ref123,ref456"
                       fullWidth
