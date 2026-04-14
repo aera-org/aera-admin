@@ -1,8 +1,8 @@
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import { useUpdateUser, useUsers } from '@/app/users';
+import { useUsers } from '@/app/users';
 import {
   Alert,
   Badge,
@@ -11,7 +11,6 @@ import {
   EmptyState,
   Field,
   Input,
-  Modal,
   Pagination,
   Select,
   Skeleton,
@@ -19,11 +18,16 @@ import {
   Table,
   Typography,
 } from '@/atoms';
-import type { ITgUser } from '@/common/types';
-import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
 import { AppShell } from '@/components/templates';
 
+import {
+  formatDate,
+  formatUserMeta,
+  formatUserName,
+  getSubscriptionStatus,
+} from './userFormat';
 import s from './UsersPage.module.scss';
+import { useUserActionModals } from './useUserActionModals';
 
 type QueryUpdate = {
   search?: string;
@@ -43,11 +47,6 @@ const DEFAULT_ORDER = 'DESC';
 const DEFAULT_PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 400;
 
-const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-});
-
 function useDebouncedValue<T>(value: T, delay: number) {
   const [debounced, setDebounced] = useState(value);
 
@@ -57,13 +56,6 @@ function useDebouncedValue<T>(value: T, delay: number) {
   }, [value, delay]);
 
   return debounced;
-}
-
-function formatDate(value: string | null | undefined) {
-  if (!value) return '-';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return '-';
-  return dateTimeFormatter.format(parsed);
 }
 
 function parsePositiveNumber(value: string | null, fallback: number) {
@@ -78,84 +70,8 @@ function parsePageSize(value: string | null) {
   return PAGE_SIZE_OPTIONS.includes(parsed) ? parsed : DEFAULT_PAGE_SIZE;
 }
 
-function formatUserName(user: ITgUser) {
-  const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
-  if (fullName) return fullName;
-  const username = user.username?.trim();
-  if (username) return `@${username}`;
-  return 'Unknown user';
-}
-
-function formatUserMeta(user: ITgUser) {
-  const username = user.username?.trim();
-  if (username) {
-    return `@${username} / ${user.id}`;
-  }
-  return user.id;
-}
-
-function getSubscriptionStatus(user: ITgUser) {
-  if (!user.subscribedUntil) {
-    return {
-      label: 'None',
-      tone: 'accent' as const,
-      outline: true,
-      dateLabel: null,
-    };
-  }
-  const parsed = new Date(user.subscribedUntil);
-  if (Number.isNaN(parsed.getTime())) {
-    return {
-      label: 'Unknown',
-      tone: 'warning' as const,
-      outline: true,
-      dateLabel: '-',
-    };
-  }
-  const isActive = parsed.getTime() > Date.now();
-  return {
-    label: isActive ? 'Active' : 'Expired',
-    tone: isActive ? ('success' as const) : ('warning' as const),
-    outline: !isActive,
-    dateLabel: `${isActive ? 'Until' : 'Ended'} ${formatDate(user.subscribedUntil)}`,
-  };
-}
-
-function toLocalInputValue(value: string | null | undefined) {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  const pad = (segment: number) => String(segment).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-    date.getDate(),
-  )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-function toIsoString(value: string) {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.toISOString();
-}
-
-function parseFuelValue(value: string) {
-  if (!value.trim()) return null;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return null;
-  if (!Number.isInteger(parsed)) return null;
-  if (parsed < 0 || parsed > 100) return null;
-  return parsed;
-}
-
-function parseAirValue(value: string) {
-  if (!value.trim()) return null;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return null;
-  if (!Number.isInteger(parsed)) return null;
-  if (parsed < 0) return null;
-  return parsed;
-}
-
 export function UsersPage() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSearch = searchParams.get('search') ?? '';
   const rawOrder = searchParams.get('order');
@@ -232,9 +148,9 @@ export function UsersPage() {
   );
 
   const { data, error, isLoading, refetch } = useUsers(queryParams);
-  const updateUserMutation = useUpdateUser();
+  const userActions = useUserActionModals();
 
-  const users = data?.data ?? [];
+  const users = useMemo(() => data?.data ?? [], [data?.data]);
   const total = data?.total ?? 0;
   const effectiveTake = data?.take ?? pageSize;
   const effectiveSkip = data?.skip ?? (page - 1) * pageSize;
@@ -246,175 +162,6 @@ export function UsersPage() {
       updateSearchParams({ page: totalPages }, true);
     }
   }, [data, page, total, totalPages, updateSearchParams]);
-
-  const [confirmTarget, setConfirmTarget] = useState<{
-    user: ITgUser;
-    nextBlocked: boolean;
-  } | null>(null);
-  const [subscriptionTarget, setSubscriptionTarget] = useState<ITgUser | null>(
-    null,
-  );
-  const [subscriptionValue, setSubscriptionValue] = useState('');
-  const [subscriptionShowErrors, setSubscriptionShowErrors] = useState(false);
-  const [fuelTarget, setFuelTarget] = useState<ITgUser | null>(null);
-  const [fuelValue, setFuelValue] = useState('');
-  const [fuelShowErrors, setFuelShowErrors] = useState(false);
-  const [airTarget, setAirTarget] = useState<ITgUser | null>(null);
-  const [airValue, setAirValue] = useState('');
-  const [airShowErrors, setAirShowErrors] = useState(false);
-  const [actionTarget, setActionTarget] = useState<string | null>(null);
-
-  const openSubscriptionModal = (user: ITgUser) => {
-    setSubscriptionTarget(user);
-    setSubscriptionValue(toLocalInputValue(user.subscribedUntil));
-    setSubscriptionShowErrors(false);
-  };
-
-  const closeSubscriptionModal = () => {
-    if (updateUserMutation.isPending) return;
-    setSubscriptionTarget(null);
-    setSubscriptionValue('');
-  };
-
-  const openFuelModal = (user: ITgUser) => {
-    setFuelTarget(user);
-    setFuelValue(String(user.fuel ?? 0));
-    setFuelShowErrors(false);
-  };
-
-  const closeFuelModal = () => {
-    if (updateUserMutation.isPending) return;
-    setFuelTarget(null);
-    setFuelValue('');
-  };
-
-  const openAirModal = (user: ITgUser) => {
-    setAirTarget(user);
-    setAirValue(String(user.air ?? 0));
-    setAirShowErrors(false);
-  };
-
-  const closeAirModal = () => {
-    if (updateUserMutation.isPending) return;
-    setAirTarget(null);
-    setAirValue('');
-  };
-
-  const subscriptionErrors = useMemo(() => {
-    if (!subscriptionShowErrors) return {};
-    const errors: { date?: string } = {};
-    if (!subscriptionValue) {
-      errors.date = 'Set a date.';
-    } else if (!toIsoString(subscriptionValue)) {
-      errors.date = 'Enter a valid date.';
-    }
-    return errors;
-  }, [subscriptionShowErrors, subscriptionValue]);
-
-  const subscriptionIsValid = useMemo(
-    () => Boolean(subscriptionValue && toIsoString(subscriptionValue)),
-    [subscriptionValue],
-  );
-
-  const handleSubscriptionSave = async () => {
-    if (!subscriptionTarget) return;
-    if (!subscriptionIsValid) {
-      setSubscriptionShowErrors(true);
-      return;
-    }
-    const nextValue = toIsoString(subscriptionValue);
-    if (!nextValue) return;
-    setActionTarget(subscriptionTarget.id);
-    try {
-      await updateUserMutation.mutateAsync({
-        id: subscriptionTarget.id,
-        payload: { subscribedUntil: nextValue },
-      });
-      closeSubscriptionModal();
-    } finally {
-      setActionTarget(null);
-    }
-  };
-
-  const fuelErrors = useMemo(() => {
-    if (!fuelShowErrors) return {};
-    const errors: { fuel?: string } = {};
-    if (parseFuelValue(fuelValue) === null) {
-      errors.fuel = 'Enter a number between 0 and 100.';
-    }
-    return errors;
-  }, [fuelShowErrors, fuelValue]);
-
-  const fuelIsValid = useMemo(
-    () => parseFuelValue(fuelValue) !== null,
-    [fuelValue],
-  );
-
-  const handleFuelSave = async () => {
-    if (!fuelTarget) return;
-    const nextFuel = parseFuelValue(fuelValue);
-    if (nextFuel === null) {
-      setFuelShowErrors(true);
-      return;
-    }
-    setActionTarget(fuelTarget.id);
-    try {
-      await updateUserMutation.mutateAsync({
-        id: fuelTarget.id,
-        payload: { fuel: nextFuel },
-      });
-      closeFuelModal();
-    } finally {
-      setActionTarget(null);
-    }
-  };
-
-  const airErrors = useMemo(() => {
-    if (!airShowErrors) return {};
-    const errors: { air?: string } = {};
-    if (parseAirValue(airValue) === null) {
-      errors.air = 'Enter a whole number greater than or equal to 0.';
-    }
-    return errors;
-  }, [airShowErrors, airValue]);
-
-  const airIsValid = useMemo(
-    () => parseAirValue(airValue) !== null,
-    [airValue],
-  );
-
-  const handleAirSave = async () => {
-    if (!airTarget) return;
-    const nextAir = parseAirValue(airValue);
-    if (nextAir === null) {
-      setAirShowErrors(true);
-      return;
-    }
-    setActionTarget(airTarget.id);
-    try {
-      await updateUserMutation.mutateAsync({
-        id: airTarget.id,
-        payload: { air: nextAir },
-      });
-      closeAirModal();
-    } finally {
-      setActionTarget(null);
-    }
-  };
-
-  const handleConfirmBlock = async () => {
-    if (!confirmTarget) return;
-    setActionTarget(confirmTarget.user.id);
-    try {
-      await updateUserMutation.mutateAsync({
-        id: confirmTarget.user.id,
-        payload: { isBlocked: confirmTarget.nextBlocked },
-      });
-      setConfirmTarget(null);
-    } finally {
-      setActionTarget(null);
-    }
-  };
 
   const columns = useMemo(
     () => [
@@ -437,7 +184,7 @@ export function UsersPage() {
       users.map((user) => {
         const subscription = getSubscriptionStatus(user);
         const isUpdating =
-          updateUserMutation.isPending && actionTarget === user.id;
+          userActions.isUpdatingUser && userActions.actionTarget === user.id;
         return {
           user: (
             <div className={s.userCell}>
@@ -488,53 +235,52 @@ export function UsersPage() {
                 variant="outline"
                 tone={user.isBlocked ? 'success' : 'warning'}
                 onClick={() =>
-                  setConfirmTarget({ user, nextBlocked: !user.isBlocked })
+                  userActions.openBlockModal(user, !user.isBlocked)
                 }
-                loading={isUpdating && confirmTarget?.user.id === user.id}
-                disabled={updateUserMutation.isPending}
+                loading={isUpdating}
+                disabled={userActions.isUpdatingUser}
               >
                 {user.isBlocked ? 'Unblock' : 'Block'}
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => openFuelModal(user)}
-                loading={isUpdating && fuelTarget?.id === user.id}
-                disabled={updateUserMutation.isPending}
+                onClick={() => userActions.openFuelModal(user)}
+                loading={isUpdating}
+                disabled={userActions.isUpdatingUser}
               >
                 Fuel
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => openAirModal(user)}
-                loading={isUpdating && airTarget?.id === user.id}
-                disabled={updateUserMutation.isPending}
+                onClick={() => userActions.openAirModal(user)}
+                loading={isUpdating}
+                disabled={userActions.isUpdatingUser}
               >
                 Air
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => openSubscriptionModal(user)}
-                loading={isUpdating && subscriptionTarget?.id === user.id}
-                disabled={updateUserMutation.isPending}
+                onClick={() => userActions.openSubscriptionModal(user)}
+                loading={isUpdating}
+                disabled={userActions.isUpdatingUser}
               >
                 Subscription
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(`/users/${user.id}`)}
+              >
+                Details
               </Button>
             </div>
           ),
         };
       }),
-    [
-      actionTarget,
-      airTarget?.id,
-      confirmTarget?.user.id,
-      fuelTarget?.id,
-      subscriptionTarget?.id,
-      updateUserMutation.isPending,
-      users,
-    ],
+    [navigate, userActions, users],
   );
 
   const skeletonRows = useMemo(
@@ -566,6 +312,7 @@ export function UsersPage() {
             <Skeleton width={90} height={28} />
             <Skeleton width={90} height={28} />
             <Skeleton width={90} height={28} />
+            <Skeleton width={80} height={28} />
           </div>
         ),
       })),
@@ -690,158 +437,7 @@ export function UsersPage() {
         ) : null}
       </Container>
 
-      <Modal
-        open={Boolean(subscriptionTarget)}
-        title="Manage subscription"
-        onClose={closeSubscriptionModal}
-        actions={
-          <div className={s.modalActions}>
-            <Button
-              variant="secondary"
-              onClick={closeSubscriptionModal}
-              disabled={updateUserMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubscriptionSave}
-              loading={
-                updateUserMutation.isPending && Boolean(subscriptionTarget)
-              }
-              disabled={!subscriptionIsValid || updateUserMutation.isPending}
-            >
-              Save
-            </Button>
-          </div>
-        }
-      >
-        <Stack gap="12px">
-          <Field
-            label="Subscribed until"
-            labelFor="user-subscription"
-            error={subscriptionErrors.date}
-          >
-            <Input
-              id="user-subscription"
-              type="datetime-local"
-              value={subscriptionValue}
-              onChange={(event) => setSubscriptionValue(event.target.value)}
-              fullWidth
-            />
-          </Field>
-          <Typography variant="caption" tone="muted" className={s.helperText}>
-            Set a past date to expire the subscription.
-          </Typography>
-        </Stack>
-      </Modal>
-
-      <Modal
-        open={Boolean(fuelTarget)}
-        title="Update fuel"
-        onClose={closeFuelModal}
-        actions={
-          <div className={s.modalActions}>
-            <Button
-              variant="secondary"
-              onClick={closeFuelModal}
-              disabled={updateUserMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleFuelSave}
-              loading={updateUserMutation.isPending && Boolean(fuelTarget)}
-              disabled={!fuelIsValid || updateUserMutation.isPending}
-            >
-              Save
-            </Button>
-          </div>
-        }
-      >
-        <Stack gap="12px">
-          <Field
-            label="Fuel"
-            labelFor="user-fuel"
-            error={fuelErrors.fuel}
-          >
-            <Input
-              id="user-fuel"
-              type="number"
-              min={0}
-              max={100}
-              step={1}
-              value={fuelValue}
-              onChange={(event) => setFuelValue(event.target.value)}
-              fullWidth
-            />
-          </Field>
-          <Typography variant="caption" tone="muted" className={s.helperText}>
-            Set a value from 0 to 100.
-          </Typography>
-        </Stack>
-      </Modal>
-
-      <Modal
-        open={Boolean(airTarget)}
-        title="Update air"
-        onClose={closeAirModal}
-        actions={
-          <div className={s.modalActions}>
-            <Button
-              variant="secondary"
-              onClick={closeAirModal}
-              disabled={updateUserMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAirSave}
-              loading={updateUserMutation.isPending && Boolean(airTarget)}
-              disabled={!airIsValid || updateUserMutation.isPending}
-            >
-              Save
-            </Button>
-          </div>
-        }
-      >
-        <Stack gap="12px">
-          <Field
-            label="Air"
-            labelFor="user-air"
-            error={airErrors.air}
-          >
-            <Input
-              id="user-air"
-              type="number"
-              min={0}
-              step={1}
-              value={airValue}
-              onChange={(event) => setAirValue(event.target.value)}
-              fullWidth
-            />
-          </Field>
-          <Typography variant="caption" tone="muted" className={s.helperText}>
-            Set a whole number greater than or equal to 0.
-          </Typography>
-        </Stack>
-      </Modal>
-
-      <ConfirmModal
-        open={Boolean(confirmTarget)}
-        title={confirmTarget?.nextBlocked ? 'Block user' : 'Unblock user'}
-        description={
-          confirmTarget
-            ? confirmTarget.nextBlocked
-              ? `Block ${formatUserName(confirmTarget.user)}? User will lose access.`
-              : `Unblock ${formatUserName(confirmTarget.user)}? User can access again.`
-            : undefined
-        }
-        confirmLabel={confirmTarget?.nextBlocked ? 'Block' : 'Unblock'}
-        tone={confirmTarget?.nextBlocked ? 'danger' : 'default'}
-        isConfirming={updateUserMutation.isPending && Boolean(confirmTarget)}
-        onConfirm={handleConfirmBlock}
-        onClose={() => setConfirmTarget(null)}
-      />
+      {userActions.modals}
     </AppShell>
   );
 }

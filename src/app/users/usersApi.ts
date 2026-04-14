@@ -1,6 +1,6 @@
 import { apiFetch } from '@/app/api';
 import { buildApiError } from '@/app/api/apiErrors';
-import type { ITgUser, UpdateTgUser } from '@/common/types';
+import type { ITgUser, ITgUserDetails, UpdateTgUser } from '@/common/types';
 
 import type { PaginatedResponse } from '../paginated-response.type';
 
@@ -12,6 +12,7 @@ export type UsersListParams = {
 };
 
 const fallbackError = 'Unable to load users.';
+const detailsFallbackError = 'Unable to load user.';
 const updateFallbackError = 'Unable to update the user.';
 
 export async function getUsers(params: UsersListParams) {
@@ -27,6 +28,14 @@ export async function getUsers(params: UsersListParams) {
     throw await buildApiError(res, fallbackError);
   }
   return (await res.json()) as PaginatedResponse<ITgUser>;
+}
+
+export async function getUserDetails(id: string) {
+  const res = await apiFetch(`/admin/users/${id}`);
+  if (!res.ok) {
+    throw await buildApiError(res, detailsFallbackError);
+  }
+  return (await res.json()) as ITgUserDetails;
 }
 
 export async function updateUser(id: string, payload: UpdateTgUser) {

@@ -1,12 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { notifyError, notifySuccess } from '@/app/toast';
-import type { UpdateTgUser } from '@/common/types';
+import type { ITgUserDetails, UpdateTgUser } from '@/common/types';
 
-import { getUsers, updateUser, type UsersListParams } from './usersApi';
+import {
+  getUserDetails,
+  getUsers,
+  updateUser,
+  type UsersListParams,
+} from './usersApi';
 
 const userKeys = {
   list: (params: UsersListParams) => ['users', params] as const,
+  details: (id: string) => ['user', id] as const,
 };
 
 export function useUsers(params: UsersListParams, enabled = true) {
@@ -18,14 +24,27 @@ export function useUsers(params: UsersListParams, enabled = true) {
   });
 }
 
+export function useUserDetails(id: string | null) {
+  return useQuery({
+    queryKey: userKeys.details(id ?? ''),
+    queryFn: () => getUserDetails(id ?? ''),
+    enabled: Boolean(id),
+  });
+}
+
 export function useUpdateUser() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: UpdateTgUser }) =>
       updateUser(id, payload),
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: userKeys.details(variables.id) });
+      queryClient.setQueryData<ITgUserDetails | undefined>(
+        userKeys.details(variables.id),
+        (previous) => (previous ? { ...previous, ...data } : previous),
+      );
       if (variables.payload.isBlocked !== undefined) {
         notifySuccess(
           variables.payload.isBlocked ? 'User blocked.' : 'User unblocked.',

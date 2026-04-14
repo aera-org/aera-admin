@@ -1,3 +1,3 @@
-export { getUsers, updateUser } from './usersApi';
+export { useUpdateUser, useUserDetails, useUsers } from './queries';
 export type { UsersListParams } from './usersApi';
-export { useUpdateUser, useUsers } from './queries';
+export { getUserDetails, getUsers, updateUser } from './usersApi';

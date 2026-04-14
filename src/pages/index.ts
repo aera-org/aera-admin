@@ -34,6 +34,7 @@ export { ScenarioGenCreatePage } from './scenario-gen/ScenarioGenCreatePage';
 export { ScenarioGenDetailsPage } from './scenario-gen/ScenarioGenDetailsPage';
 export { ScenarioGenPage } from './scenario-gen/ScenarioGenPage';
 export { UiKitPage } from './ui/UiKitPage';
+export { UserDetailsPage } from './users/UserDetailsPage';
 export { UsersPage } from './users/UsersPage';
 export { VideoDetailsPage } from './videos/VideoDetailsPage';
 export { VideosPage } from './videos/VideosPage';

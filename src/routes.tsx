@@ -44,6 +44,7 @@ import {
   ScenarioGenDetailsPage,
   ScenarioGenPage,
   UiKitPage,
+  UserDetailsPage,
   UsersPage,
   VideoDetailsPage,
   VideosPage,
@@ -88,6 +89,7 @@ export function AppRoutes() {
           element={<BatchImageDetailsPage />}
         />
         <Route path="/users" element={<UsersPage />} />
+        <Route path="/users/:id" element={<UserDetailsPage />} />
         <Route path="/chats" element={<ChatsPage />} />
         <Route path="/chats/:id" element={<ChatDetailsPage />} />
         <Route path="/generations/new" element={<GenerateImagePage />} />

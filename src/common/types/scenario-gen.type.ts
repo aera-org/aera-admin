@@ -8,6 +8,7 @@ export interface ScenarioData {
   stages: StageDirectivesMap;
 }
 
+
 export interface IScenarioGen {
   id: string;
   characterId: string;
