@@ -19,7 +19,7 @@ export type AnalyticsMetricKey =
   | 'conversionRate'
   | 'repeatPurchaseRate'
   | 'averagePurchaseValue'
-  | 'cohortLtvM0'
+  | 'ltv'
   | 'averageRevenuePerUser'
   | 'averageRevenuePerUniqueUser'
   | 'averageRevenuePerCustomer'
@@ -84,7 +84,7 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
     key: 'retentionRate',
     label: 'Retention rate',
     description:
-      'Active users this month minus new users this month, divided by active users last month.',
+      'Users whose first message was in the month and who returned with a chat session in the next month, divided by users whose first message was in the month.',
     format: 'percent',
     section: 'main',
     precision: 1,
@@ -92,7 +92,7 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
   {
     key: 'churnRate',
     label: 'Churn rate',
-    description: 'One minus retention rate.',
+    description: 'One minus M1 cohort retention rate.',
     format: 'percent',
     section: 'main',
     precision: 1,
@@ -212,10 +212,9 @@ const PAYMENTS_METRICS: AnalyticsMetricDefinition[] = [
     precision: 1,
   },
   {
-    key: 'cohortLtvM0',
+    key: 'ltv',
     label: 'LTV',
-    description:
-      'Average revenue in the first month from users whose first payment is in that month.',
+    description: 'Average revenue per unique user divided by churn rate.',
     format: 'currency',
     section: 'payments',
     precision: 2,
