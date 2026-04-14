@@ -1,18 +1,18 @@
 import { apiFetch } from '@/app/api';
 import { buildApiError } from '@/app/api/apiErrors';
 import type {
-  CharacterType,
   CharacterBodyType,
   CharacterBreastSize,
   CharacterEthnicity,
   CharacterHairColor,
   CharacterPersonality,
+  CharacterType,
   ICharacter,
   ICharacterDetails,
   RoleplayStage,
   ScenarioLiveGenerations,
-  StoryType,
   StageDirectives,
+  StoryType,
 } from '@/common/types';
 
 import type { PaginatedResponse } from '../paginated-response.type.ts';
@@ -29,6 +29,7 @@ const createFallbackError = 'Unable to create the character.';
 const updateFallbackError = 'Unable to update the character.';
 const deleteFallbackError = 'Unable to delete the character.';
 const createScenarioFallbackError = 'Unable to create the scenario.';
+const deleteScenarioFallbackError = 'Unable to delete the scenario.';
 const createScenarioGiftFallbackError = 'Unable to add the gift.';
 const updateScenarioGiftFallbackError = 'Unable to update the gift.';
 const deleteScenarioGiftFallbackError = 'Unable to delete the gift.';
@@ -187,6 +188,19 @@ export async function updateScenario(
     throw await buildApiError(res, updateFallbackError);
   }
   return (await res.json()) as ICharacterDetails['scenarios'][number];
+}
+
+export async function deleteScenario(characterId: string, scenarioId: string) {
+  const res = await apiFetch(
+    `/admin/characters/${characterId}/scenarios/${scenarioId}`,
+    {
+      method: 'DELETE',
+    },
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, deleteScenarioFallbackError);
+  }
+  return await parseJsonIfPresent(res);
 }
 
 export async function updateScenarioStage(

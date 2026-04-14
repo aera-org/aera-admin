@@ -3,41 +3,43 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { notifyError, notifySuccess } from '@/app/toast';
 import {
   CharacterType,
-  STAGES_IN_ORDER,
   type ICharacter,
   type ICharacterDetails,
   type RoleplayStage,
   type StageDirectives,
+  STAGES_IN_ORDER,
 } from '@/common/types';
+
+import type { PaginatedResponse } from '../paginated-response.type.ts';
 import {
-  type CharacterCreateDto,
-  type CharacterUpdateDto,
-  type CharacterStoryCreateDto,
-  type CharacterStoriesOrderDto,
-  type CharacterStoryUpdateDto,
-  type CharactersListParams,
-  type ScenarioCreateDto,
-  type ScenarioUpdateDto,
-  type StageGiftCreateDto,
-  type StageGiftUpdateDto,
-  type StageUpdateDto,
   addScenarioStageGift,
+  type CharacterCreateDto,
+  type CharactersListParams,
+  type CharacterStoriesOrderDto,
+  type CharacterStoryCreateDto,
+  type CharacterStoryUpdateDto,
+  type CharacterUpdateDto,
   createCharacter,
   createCharacterStory,
   createScenario,
   deleteCharacter,
   deleteCharacterStory,
+  deleteScenario,
   deleteScenarioStageGift,
   getCharacterDetails,
   getCharacters,
   reorderCharacterStories,
+  type ScenarioCreateDto,
+  type ScenarioUpdateDto,
+  type StageGiftCreateDto,
+  type StageGiftUpdateDto,
+  type StageUpdateDto,
   updateCharacter,
   updateCharacterStory,
   updateScenario,
   updateScenarioStage,
   updateScenarioStageGift,
 } from './charactersApi';
-import type { PaginatedResponse } from '../paginated-response.type.ts';
 
 const characterKeys = {
   list: (params: CharactersListParams) => ['characters', params] as const,
@@ -262,6 +264,29 @@ export function useUpdateScenario() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to update the scenario.');
+    },
+  });
+}
+
+export function useDeleteScenario() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      scenarioId,
+    }: {
+      characterId: string;
+      scenarioId: string;
+    }) => deleteScenario(characterId, scenarioId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Scenario deleted.', 'Scenario deleted.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to delete the scenario.');
     },
   });
 }

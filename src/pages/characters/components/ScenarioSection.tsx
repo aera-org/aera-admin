@@ -1,7 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { type ChangeEvent, useMemo, useRef, useState } from 'react';
+import { type ChangeEvent, useCallback, useMemo, useRef, useState } from 'react';
 
-import { useCreateScenario, useUpdateScenario } from '@/app/characters';
+import {
+  useCreateScenario,
+  useDeleteScenario,
+  useUpdateScenario,
+} from '@/app/characters';
 import {
   addScenarioStageGift,
   createScenario as createScenarioApi,
@@ -33,7 +37,7 @@ import {
   type StageDirectives,
   STAGES_IN_ORDER,
 } from '@/common/types';
-import { Drawer, FileUpload } from '@/components/molecules';
+import { ConfirmModal, Drawer, FileUpload } from '@/components/molecules';
 
 import s from '../CharacterDetailsPage.module.scss';
 import { ScenarioDetails } from './ScenarioDetails';
@@ -49,7 +53,7 @@ type ScenarioSectionProps = {
   characterName: string;
   scenarios: ICharacterDetails['scenarios'];
   selectedScenarioId: string | null;
-  onSelectScenario: (id: string) => void;
+  onSelectScenario: (id: string | null) => void;
   isLoading: boolean;
   formatDate: (value: string | null | undefined) => string;
 };
@@ -77,9 +81,13 @@ export function ScenarioSection({
   const queryClient = useQueryClient();
   const createMutation = useCreateScenario();
   const updateMutation = useUpdateScenario();
+  const deleteMutation = useDeleteScenario();
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<
+    ICharacterDetails['scenarios'][number] | null
+  >(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -119,7 +127,7 @@ export function ScenarioSection({
   const selectedScenario =
     scenarios.find((scenario) => scenario.id === selectedScenarioId) ?? null;
 
-  const getErrors = (values: typeof formValues) => {
+  const getErrors = useCallback((values: typeof formValues) => {
     const errors: Record<string, string> = {};
     if (!values.name.trim()) errors.name = 'Enter a name.';
     if (!values.emoji.trim()) errors.emoji = 'Enter an emoji.';
@@ -133,24 +141,24 @@ export function ScenarioSection({
       errors.openingMessage = 'Enter an opening message.';
     if (!values.openingImageId) errors.openingImageId = 'Upload an image.';
     return errors;
-  };
+  }, []);
 
   const validationErrors = useMemo(
     () => (showErrors ? getErrors(formValues) : {}),
-    [formValues, showErrors],
+    [formValues, getErrors, showErrors],
   );
   const editValidationErrors = useMemo(
     () => (editShowErrors ? getErrors(editValues) : {}),
-    [editShowErrors, editValues],
+    [editShowErrors, editValues, getErrors],
   );
 
   const isValid = useMemo(
     () => Object.keys(getErrors(formValues)).length === 0,
-    [formValues],
+    [formValues, getErrors],
   );
   const isEditValid = useMemo(
     () => Object.keys(getErrors(editValues)).length === 0,
-    [editValues],
+    [editValues, getErrors],
   );
 
   const openCreateModal = () => {
@@ -297,6 +305,21 @@ export function ScenarioSection({
       },
     });
     setIsEditOpen(false);
+  };
+
+  const handleDelete = async () => {
+    if (!characterId || !deleteTarget) return;
+
+    const nextScenario =
+      scenarios.find((scenario) => scenario.id !== deleteTarget.id) ?? null;
+
+    await deleteMutation.mutateAsync({
+      characterId,
+      scenarioId: deleteTarget.id,
+    });
+
+    setDeleteTarget(null);
+    onSelectScenario(nextScenario?.id ?? null);
   };
 
   const resolveGiftIdsByName = async (giftNames: string[]) => {
@@ -592,7 +615,13 @@ export function ScenarioSection({
               scenario={selectedScenario}
               formatDate={formatDate}
               onEdit={openEditModal}
+              onDelete={() => setDeleteTarget(selectedScenario)}
               canEdit={Boolean(characterId)}
+              canDelete={Boolean(characterId)}
+              isDeleting={
+                deleteMutation.isPending &&
+                deleteTarget?.id === selectedScenario.id
+              }
             />
           ) : null}
         </Stack>
@@ -1185,6 +1214,24 @@ export function ScenarioSection({
           </div>
         </Stack>
       </Drawer>
+
+      <ConfirmModal
+        open={Boolean(deleteTarget)}
+        title="Delete scenario?"
+        description={
+          deleteTarget
+            ? `Delete ${deleteTarget.name || 'Untitled'}? This cannot be undone.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        tone="danger"
+        isConfirming={deleteMutation.isPending}
+        onConfirm={handleDelete}
+        onClose={() => {
+          if (deleteMutation.isPending) return;
+          setDeleteTarget(null);
+        }}
+      />
     </div>
   );
 }

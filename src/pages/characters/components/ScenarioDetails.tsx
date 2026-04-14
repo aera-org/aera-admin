@@ -8,7 +8,7 @@ import {
   useUpdateScenarioStageGift,
 } from '@/app/characters';
 import { useGifts } from '@/app/gifts';
-import { PencilLineIcon } from '@/assets/icons';
+import { PencilLineIcon, TrashIcon } from '@/assets/icons';
 import {
   Badge,
   Button,
@@ -36,7 +36,10 @@ type ScenarioDetailsProps = {
   scenario: ICharacterDetails['scenarios'][number];
   formatDate: (value: string | null | undefined) => string;
   onEdit: () => void;
+  onDelete: () => void;
   canEdit: boolean;
+  canDelete: boolean;
+  isDeleting: boolean;
 };
 
 const EMPTY_STAGE: StageDirectives = {
@@ -113,7 +116,10 @@ export function ScenarioDetails({
   scenario,
   formatDate,
   onEdit,
+  onDelete,
   canEdit,
+  canDelete,
+  isDeleting,
 }: ScenarioDetailsProps) {
   const updateScenarioMutation = useUpdateScenario();
   const updateStageMutation = useUpdateScenarioStage();
@@ -387,6 +393,17 @@ export function ScenarioDetails({
             size="sm"
             onClick={onEdit}
             disabled={!canEdit}
+          />
+          <IconButton
+            aria-label="Delete scenario"
+            icon={<TrashIcon />}
+            tooltip="Delete scenario"
+            variant="ghost"
+            tone="danger"
+            size="sm"
+            onClick={onDelete}
+            loading={isDeleting}
+            disabled={!canDelete || isDeleting}
           />
         </div>
       </div>
