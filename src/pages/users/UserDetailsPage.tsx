@@ -69,10 +69,11 @@ export function UserDetailsPage() {
     ],
     [],
   );
+  
 
   const chatRows = useMemo(
     () =>
-      chats.map((chat) => ({
+      chats.sort((a, b) => (new Date(b.createdAt)).getTime() - (new Date(a.createdAt)).getTime()).map((chat) => ({
         chat: (
           <div className={s.chatCell}>
             <Typography variant="body">{chat.id}</Typography>
