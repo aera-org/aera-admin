@@ -23,6 +23,8 @@ import s from './PromptFormPage.module.scss';
 const TYPE_OPTIONS = [
   { label: 'Chat', value: PromptType.Chat },
   { label: 'Ping', value: PromptType.Ping },
+  { label: 'Blurred Photo', value: PromptType.BlurredPhoto },
+  { label: 'Turn Cold', value: PromptType.TurnCold },
   { label: 'Scenario Gen', value: PromptType.ScenarioGen },
   { label: 'Image', value: PromptType.Image },
   { label: 'Image Sex', value: PromptType.ImageSex },

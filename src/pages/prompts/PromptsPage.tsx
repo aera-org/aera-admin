@@ -57,6 +57,8 @@ const TYPE_FILTER_OPTIONS = [
   { label: 'All', value: 'all' },
   { label: 'Chat', value: PromptType.Chat },
   { label: 'Ping', value: PromptType.Ping },
+  { label: 'Blurred Photo', value: PromptType.BlurredPhoto },
+  { label: 'Turn Cold', value: PromptType.TurnCold },
   { label: 'Scenario Gen', value: PromptType.ScenarioGen },
   { label: 'Image', value: PromptType.Image },
   { label: 'Image Sex', value: PromptType.ImageSex },
@@ -107,6 +109,8 @@ function resolveActiveFilter(value: string | null) {
 function resolveTypeFilter(value: string | null) {
   if (
     value === PromptType.Chat ||
+    value === PromptType.BlurredPhoto ||
+    value === PromptType.TurnCold ||
     value === PromptType.Image ||
     value === PromptType.Ping ||
     value === PromptType.ImageSex ||
