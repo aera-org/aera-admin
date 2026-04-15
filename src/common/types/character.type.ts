@@ -13,6 +13,7 @@ export interface ICharacter {
   emoji: string;
   isActive: boolean;
   gender: string;
+  isCustom: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -20,6 +21,21 @@ export interface ICharacter {
 export enum CharacterType {
   Realistic = 'realistic',
   Anime = 'anime',
+}
+
+export enum CharacterHairStyle {
+  Straight = 'straight',
+  Bangs = 'bangs',
+  Curly = 'curly',
+  Bun = 'bun',
+  Short = 'short',
+  Ponytail = 'ponytail',
+}
+
+export enum CharacterEyeColor {
+  Brown = 'brown',
+  Blue = 'blue',
+  Green = 'green',
 }
 
 export enum RoleplayStage {
@@ -148,6 +164,20 @@ export enum CharacterPersonality {
   Hot = 'hot',
   Playful = 'playful',
   Devoted = 'devoted',
+
+  Caring = 'caring',
+  Flirty = 'flirty',
+  Gentle = 'gentle',
+  Confident = 'confident',
+  Mysterious = 'mysterious',
+  Cheerful = 'cheerful',
+  Smart = 'smart',
+  Supportive = 'supportive',
+  Teasing = 'teasing',
+  Romantic = 'romantic',
+  Shy = 'shy',
+  Bold = 'bold',
+  Independent = 'independent',
 }
 
 export interface ICharacterDetails extends ICharacter {
@@ -155,6 +185,8 @@ export interface ICharacterDetails extends ICharacter {
   scenarios: IScenario[];
   hairColor: CharacterHairColor;
   ethnicity: CharacterEthnicity;
+  hairStyle: CharacterHairStyle;
+  eyeColor: CharacterEyeColor;
   bodyType: CharacterBodyType;
   breastSize: CharacterBreastSize;
   stories: ICharacterStory[];
