@@ -2,11 +2,11 @@ import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import { usePrompts } from '@/app/prompts';
+import { useCharacters } from '@/app/characters';
+import { useUsers } from '@/app/users';
 import { PlusIcon } from '@/assets/icons';
 import {
   Alert,
-  Badge,
   Button,
   Container,
   EmptyState,
@@ -19,20 +19,19 @@ import {
   Table,
   Typography,
 } from '@/atoms';
-import { PROMPT_TYPE_OPTIONS } from '@/common/consts';
-import { type IPrompt, PromptType } from '@/common/types';
-import { capitalize } from '@/common/utils';
+import type { ITgUser } from '@/common/types';
+import { formatCharacterType } from '@/common/utils';
 import { AppShell } from '@/components/templates';
+import { SearchSelect } from '@/molecules';
 
-import s from './PromptsPage.module.scss';
+import s from './CustomCharactersPage.module.scss';
 
 type QueryUpdate = {
   search?: string;
+  userId?: string;
   order?: string;
   page?: number;
   pageSize?: number;
-  isActive?: string;
-  type?: string;
 };
 
 const ORDER_OPTIONS = [
@@ -42,22 +41,9 @@ const ORDER_OPTIONS = [
 
 const ORDER_VALUES = new Set(ORDER_OPTIONS.map((option) => option.value));
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
-const DEFAULT_ORDER = 'ASC';
+const DEFAULT_ORDER = 'DESC';
 const DEFAULT_PAGE_SIZE = 20;
-const DEFAULT_ACTIVE_FILTER = 'all';
-const DEFAULT_TYPE_FILTER = 'all';
 const SEARCH_DEBOUNCE_MS = 400;
-
-const ACTIVE_FILTER_OPTIONS = [
-  { label: 'Active', value: 'true' },
-  { label: 'Inactive', value: 'false' },
-  { label: 'All', value: 'all' },
-];
-
-const TYPE_FILTER_OPTIONS = [
-  { label: 'All', value: 'all' },
-  ...PROMPT_TYPE_OPTIONS
-];
 
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -94,35 +80,44 @@ function parsePageSize(value: string | null) {
   return PAGE_SIZE_OPTIONS.includes(parsed) ? parsed : DEFAULT_PAGE_SIZE;
 }
 
-function resolveActiveFilter(value: string | null) {
-  if (value === 'true' || value === 'false' || value === 'all') return value;
-  return DEFAULT_ACTIVE_FILTER;
+function formatUserName(user: ITgUser) {
+  const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+  if (fullName) return fullName;
+  const username = user.username?.trim();
+  if (username) return `@${username}`;
+  return 'Unknown user';
 }
 
-function resolveTypeFilter(value: string | null) {
-  if (Object.values(PromptType).includes(value as PromptType)) return value as PromptType;
-  return DEFAULT_TYPE_FILTER;
+function formatUserMeta(user: ITgUser) {
+  const username = user.username?.trim();
+  if (username) {
+    return `@${username} / ${user.id}`;
+  }
+  return user.id;
 }
 
-export function PromptsPage() {
+export function CustomCharactersPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSearch = searchParams.get('search') ?? '';
+  const rawUserId = searchParams.get('userId') ?? '';
   const rawOrder = searchParams.get('order');
   const rawPage = searchParams.get('page');
   const rawPageSize = searchParams.get('pageSize');
-  const rawIsActive = searchParams.get('isActive');
-  const rawType = searchParams.get('type');
 
+  const userId = rawUserId.trim();
   const [searchInput, setSearchInput] = useState(rawSearch);
+  const [userSearch, setUserSearch] = useState('');
   const debouncedSearch = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
+  const debouncedUserSearch = useDebouncedValue(
+    userSearch,
+    SEARCH_DEBOUNCE_MS,
+  );
   const normalizedSearch = debouncedSearch.trim();
 
   const order = ORDER_VALUES.has(rawOrder ?? '') ? rawOrder! : DEFAULT_ORDER;
   const page = parsePositiveNumber(rawPage, 1);
   const pageSize = parsePageSize(rawPageSize);
-  const activeFilter = resolveActiveFilter(rawIsActive);
-  const typeFilter = resolveTypeFilter(rawType);
 
   const updateSearchParams = useCallback(
     (update: QueryUpdate, replace = false) => {
@@ -134,6 +129,15 @@ export function PromptsPage() {
           next.set('search', nextSearch);
         } else {
           next.delete('search');
+        }
+      }
+
+      if (update.userId !== undefined) {
+        const nextUserId = update.userId.trim();
+        if (nextUserId) {
+          next.set('userId', nextUserId);
+        } else {
+          next.delete('userId');
         }
       }
 
@@ -161,22 +165,6 @@ export function PromptsPage() {
         }
       }
 
-      if (update.isActive !== undefined) {
-        if (update.isActive && update.isActive !== DEFAULT_ACTIVE_FILTER) {
-          next.set('isActive', update.isActive);
-        } else {
-          next.delete('isActive');
-        }
-      }
-
-      if (update.type !== undefined) {
-        if (update.type && update.type !== DEFAULT_TYPE_FILTER) {
-          next.set('type', update.type);
-        } else {
-          next.delete('type');
-        }
-      }
-
       setSearchParams(next, { replace });
     },
     [searchParams, setSearchParams],
@@ -191,23 +179,49 @@ export function PromptsPage() {
     updateSearchParams({ search: normalizedSearch, page: 1 }, true);
   }, [normalizedSearch, rawSearch, updateSearchParams]);
 
-  const queryParams = useMemo(() => {
-    const isActive =
-      activeFilter === 'all' ? undefined : activeFilter === 'true';
-    const type = typeFilter === 'all' ? undefined : (typeFilter as PromptType);
-    return {
+  const userQueryParams = useMemo(
+    () => ({
+      search: debouncedUserSearch.trim() || undefined,
+      order: 'DESC',
+      skip: 0,
+      take: 20,
+    }),
+    [debouncedUserSearch],
+  );
+
+  const { data: usersData, isLoading: isUsersLoading } =
+    useUsers(userQueryParams);
+
+  const userOptions = useMemo(
+    () =>
+      (usersData?.data ?? []).map((user) => ({
+        id: user.id,
+        label: formatUserName(user),
+        meta: formatUserMeta(user),
+      })),
+    [usersData?.data],
+  );
+
+  const selectedUserLabel = useMemo(() => {
+    const selected = userOptions.find((option) => option.id === userId);
+    return selected?.label ?? '';
+  }, [userId, userOptions]);
+
+  const queryParams = useMemo(
+    () => ({
       search: normalizedSearch || undefined,
+      userId: userId || undefined,
+      isCustom: true,
       order,
       skip: (page - 1) * pageSize,
       take: pageSize,
-      isActive,
-      type,
-    };
-  }, [activeFilter, normalizedSearch, order, page, pageSize, typeFilter]);
+    }),
+    [normalizedSearch, userId, order, page, pageSize],
+  );
 
-  const { data, error, isLoading, refetch } = usePrompts(queryParams);
+  const { data, error, isLoading, refetch } = useCharacters(queryParams);
 
-  const prompts = data?.data ?? [];
+  const characters = useMemo(() => data?.data ?? [], [data?.data]);
   const total = data?.total ?? 0;
   const effectiveTake = data?.take ?? pageSize;
   const effectiveSkip = data?.skip ?? (page - 1) * pageSize;
@@ -222,67 +236,88 @@ export function PromptsPage() {
 
   const columns = useMemo(
     () => [
-      { key: 'prompt', label: 'Prompt' },
-      { key: 'type', label: 'Type' },
-      { key: 'version', label: 'Version' },
-      { key: 'status', label: 'Status' },
-      { key: 'updated', label: <span className={s.alignRight}>Updated</span> },
+      { key: 'character', label: 'Character' },
+      { key: 'created', label: <span className={s.alignRight}>Created</span> },
+      { key: 'actions', label: '' },
     ],
     [],
   );
 
   const rows = useMemo(
     () =>
-      prompts.map((prompt) => ({
-        prompt: (
-          <div className={s.promptCell}>
-            <Typography variant="body">{prompt.name}</Typography>
-            <Typography variant="caption" tone="muted">
-              {prompt.id}
+      characters.map((character) => {
+        const emoji = character.emoji?.trim();
+        return {
+          character: (
+            <div className={s.characterCell}>
+              <Typography
+                as="span"
+                variant="control"
+                tone={emoji ? 'default' : 'muted'}
+                className={s.emoji}
+              >
+                {emoji || '-'}
+              </Typography>
+              <div className={s.characterInfo}>
+                <div className={s.characterNameRow}>
+                  <Typography variant="caption" tone="muted">
+                    {formatCharacterType(character.type)}
+                  </Typography>
+                  <Typography variant="body">{character.name}</Typography>
+                </div>
+                <Typography variant="caption" tone="muted">
+                  {character.id}
+                </Typography>
+              </div>
+            </div>
+          ),
+          created: (
+            <Typography variant="caption" tone="muted" className={s.alignRight}>
+              {formatDate(character.createdAt)}
             </Typography>
-          </div>
-        ),
-        type: (
-          <Typography variant="body" tone="muted">
-            {capitalize(prompt.type)}
-          </Typography>
-        ),
-        version: (
-          <Typography variant="body" tone="muted">
-            {prompt.version}
-          </Typography>
-        ),
-        status: prompt.isActive ? (
-          <Badge tone="success">Active</Badge>
-        ) : (
-          <Badge tone="warning" outline>
-            Inactive
-          </Badge>
-        ),
-        updated: (
-          <Typography variant="caption" tone="muted" className={s.alignRight}>
-            {formatDate(prompt.updatedAt)}
-          </Typography>
-        ),
-      })),
-    [prompts],
+          ),
+          actions: (
+            <div className={s.actionsCell}>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={!character.userId?.trim()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  const targetUserId = character.userId?.trim();
+                  if (!targetUserId) return;
+                  navigate(`/users/${targetUserId}`);
+                }}
+              >
+                User
+              </Button>
+            </div>
+          ),
+        };
+      }),
+    [characters, navigate],
   );
 
   const skeletonRows = useMemo(
     () =>
       Array.from({ length: 6 }, (_, index) => ({
-        prompt: (
-          <div className={s.promptCell} key={`prompt-skel-${index}`}>
-            <Skeleton width={160} height={12} />
-            <Skeleton width={120} height={10} />
+        character: (
+          <div className={s.characterCell} key={`custom-character-skel-${index}`}>
+            <Skeleton width={20} height={20} circle />
+            <div className={s.characterInfo}>
+              <Skeleton width={160} height={12} />
+              <Skeleton width={90} height={10} />
+            </div>
           </div>
         ),
-        type: <Skeleton width={80} height={12} />,
-        version: <Skeleton width={60} height={12} />,
-        status: <Skeleton width={80} height={20} />,
-        updated: (
+        created: (
           <div className={s.alignRight}>
             <Skeleton width={120} height={12} />
+          </div>
+        ),
+        actions: (
+          <div className={s.actionsCell}>
+            <Skeleton width={64} height={28} />
           </div>
         ),
       })),
@@ -290,7 +325,7 @@ export function PromptsPage() {
   );
 
   const showSkeleton = isLoading && !data;
-  const showEmpty = !showSkeleton && !error && prompts.length === 0;
+  const showEmpty = !showSkeleton && !error && characters.length === 0;
   const showTable = !showEmpty && !error;
   const showFooter = showTable && !showSkeleton;
 
@@ -298,22 +333,18 @@ export function PromptsPage() {
   const rangeEnd =
     total === 0 ? 0 : Math.min(effectiveSkip + effectiveTake, total);
 
-  const openEditPage = (prompt: IPrompt) => {
-    navigate(`/prompts/${prompt.id}`);
-  };
-
   return (
     <AppShell>
       <Container size="wide" className={s.page}>
         <div className={s.header}>
           <div className={s.titleBlock}>
-            <Typography variant="h2">Prompts</Typography>
+            <Typography variant="h2">Custom Characters</Typography>
           </div>
           <Button
             iconLeft={<PlusIcon />}
-            onClick={() => navigate('/prompts/new')}
+            onClick={() => navigate('/custom-characters/new')}
           >
-            Create prompt
+            Create
           </Button>
         </div>
 
@@ -322,10 +353,10 @@ export function PromptsPage() {
             <Field
               className={s.filterField}
               label="Search"
-              labelFor="prompts-search"
+              labelFor="custom-characters-search"
             >
               <Input
-                id="prompts-search"
+                id="custom-characters-search"
                 placeholder="Search by name"
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
@@ -333,33 +364,34 @@ export function PromptsPage() {
                 fullWidth
               />
             </Field>
-            <Field label="Type" labelFor="prompts-type">
-              <Select
-                id="prompts-type"
-                options={TYPE_FILTER_OPTIONS}
-                value={typeFilter}
-                size="sm"
-                variant="ghost"
-                onChange={(value) =>
-                  updateSearchParams({ type: value, page: 1 })
+            <Field
+              className={s.filterField}
+              label="User"
+              labelFor="custom-characters-user"
+            >
+              <SearchSelect
+                id="custom-characters-user"
+                value={userId}
+                valueLabel={selectedUserLabel}
+                options={userOptions}
+                search={userSearch}
+                onSearchChange={setUserSearch}
+                onSelect={(value) =>
+                  updateSearchParams({ userId: value, page: 1 })
                 }
+                placeholder={isUsersLoading ? 'Loading users...' : 'Select user'}
+                loading={isUsersLoading}
+                disabled={isUsersLoading}
+                emptyLabel="No users found."
               />
             </Field>
-            <Field label="Status" labelFor="prompts-status">
+            <Field
+              className={s.filterFieldSm}
+              label="Order"
+              labelFor="custom-characters-order"
+            >
               <Select
-                id="prompts-status"
-                options={ACTIVE_FILTER_OPTIONS}
-                value={activeFilter}
-                size="sm"
-                variant="ghost"
-                onChange={(value) =>
-                  updateSearchParams({ isActive: value, page: 1 })
-                }
-              />
-            </Field>
-            <Field label="Order" labelFor="prompts-order">
-              <Select
-                id="prompts-order"
+                id="custom-characters-order"
                 options={ORDER_OPTIONS}
                 value={order}
                 size="sm"
@@ -375,7 +407,7 @@ export function PromptsPage() {
         {error ? (
           <Stack className={s.state} gap="12px">
             <Alert
-              title="Unable to load prompts"
+              title="Unable to load custom characters"
               description={
                 error instanceof Error ? error.message : 'Please try again.'
               }
@@ -389,13 +421,8 @@ export function PromptsPage() {
 
         {showEmpty ? (
           <EmptyState
-            title="No prompts found"
-            description="Create a prompt to get started."
-            action={
-              <Button onClick={() => navigate('/prompts/new')}>
-                Create prompt
-              </Button>
-            }
+            title="No custom characters found"
+            description="Try adjusting your search, user filter, or order."
           />
         ) : null}
 
@@ -408,17 +435,18 @@ export function PromptsPage() {
                 showSkeleton
                   ? undefined
                   : (_, index) => {
-                      const prompt = prompts[index];
-                      if (!prompt) return {};
+                      const character = characters[index];
+                      if (!character) return {};
                       return {
                         className: s.clickableRow,
                         role: 'link',
                         tabIndex: 0,
-                        onClick: () => openEditPage(prompt),
+                        onClick: () =>
+                          navigate(`/custom-characters/${character.id}`),
                         onKeyDown: (event) => {
                           if (event.key === 'Enter' || event.key === ' ') {
                             event.preventDefault();
-                            openEditPage(prompt);
+                            navigate(`/custom-characters/${character.id}`);
                           }
                         },
                       };

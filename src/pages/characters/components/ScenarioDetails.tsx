@@ -40,6 +40,11 @@ type ScenarioDetailsProps = {
   canEdit: boolean;
   canDelete: boolean;
   isDeleting: boolean;
+  allowEdit?: boolean;
+  allowStageEdit?: boolean;
+  showStatus?: boolean;
+  showIsNew?: boolean;
+  showPromoImages?: boolean;
 };
 
 const EMPTY_STAGE: StageDirectives = {
@@ -120,6 +125,11 @@ export function ScenarioDetails({
   canEdit,
   canDelete,
   isDeleting,
+  allowEdit = true,
+  allowStageEdit = true,
+  showStatus = true,
+  showIsNew = true,
+  showPromoImages = true,
 }: ScenarioDetailsProps) {
   const updateScenarioMutation = useUpdateScenario();
   const updateStageMutation = useUpdateScenarioStage();
@@ -385,15 +395,17 @@ export function ScenarioDetails({
               ? `Updated ${formatDate(scenario.updatedAt)}`
               : ''}
           </Typography>
-          <IconButton
-            aria-label="Edit scenario"
-            icon={<PencilLineIcon />}
-            tooltip="Edit scenario"
-            variant="ghost"
-            size="sm"
-            onClick={onEdit}
-            disabled={!canEdit}
-          />
+          {allowEdit ? (
+            <IconButton
+              aria-label="Edit scenario"
+              icon={<PencilLineIcon />}
+              tooltip="Edit scenario"
+              variant="ghost"
+              size="sm"
+              onClick={onEdit}
+              disabled={!canEdit}
+            />
+          ) : null}
           <IconButton
             aria-label="Delete scenario"
             icon={<TrashIcon />}
@@ -451,68 +463,76 @@ export function ScenarioDetails({
             {scenario.shortDescription || '-'}
           </Typography>
         </div>
-        <FormRow columns={2}>
-          <div className={s.detailBlock}>
-            <Typography variant="caption" tone="muted">
-              Status
-            </Typography>
-            <div>
-              <Badge tone={scenario.isActive ? 'success' : 'warning'}>
-                {scenario.isActive ? 'Active' : 'Inactive'}
-              </Badge>
-            </div>
-          </div>
-          <div className={s.detailBlock}>
-            <Typography variant="caption" tone="muted">
-              New
-            </Typography>
-            <div>
-              <Badge tone={scenario.isNew ? 'accent' : 'warning'}>
-                {scenario.isNew ? 'New' : 'Not new'}
-              </Badge>
-            </div>
-          </div>
-        </FormRow>
-        <FormRow columns={2}>
-          <div className={s.detailBlock}>
-            <Typography variant="caption" tone="muted">
-              Promo image
-            </Typography>
-            {scenario.promoImg?.url ? (
-              <img
-                className={s.promoImage}
-                src={scenario.promoImg.url}
-                alt={`${scenario.name} promo`}
-                loading="lazy"
-              />
-            ) : (
-              <div className={s.promoImagePlaceholder}>
+        {showStatus || showIsNew ? (
+          <FormRow columns={2}>
+            {showStatus ? (
+              <div className={s.detailBlock}>
                 <Typography variant="caption" tone="muted">
-                  No image
+                  Status
                 </Typography>
+                <div>
+                  <Badge tone={scenario.isActive ? 'success' : 'warning'}>
+                    {scenario.isActive ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
               </div>
-            )}
-          </div>
-          <div className={s.detailBlock}>
-            <Typography variant="caption" tone="muted">
-              Promo image horizontal
-            </Typography>
-            {scenario.promoImgHorizontal?.url ? (
-              <img
-                className={s.promoImage}
-                src={scenario.promoImgHorizontal.url}
-                alt={`${scenario.name} promo horizontal`}
-                loading="lazy"
-              />
-            ) : (
-              <div className={s.promoImagePlaceholder}>
+            ) : null}
+            {showIsNew ? (
+              <div className={s.detailBlock}>
                 <Typography variant="caption" tone="muted">
-                  No image
+                  New
                 </Typography>
+                <div>
+                  <Badge tone={scenario.isNew ? 'accent' : 'warning'}>
+                    {scenario.isNew ? 'New' : 'Not new'}
+                  </Badge>
+                </div>
               </div>
-            )}
-          </div>
-        </FormRow>
+            ) : null}
+          </FormRow>
+        ) : null}
+        {showPromoImages ? (
+          <FormRow columns={2}>
+            <div className={s.detailBlock}>
+              <Typography variant="caption" tone="muted">
+                Promo image
+              </Typography>
+              {scenario.promoImg?.url ? (
+                <img
+                  className={s.promoImage}
+                  src={scenario.promoImg.url}
+                  alt={`${scenario.name} promo`}
+                  loading="lazy"
+                />
+              ) : (
+                <div className={s.promoImagePlaceholder}>
+                  <Typography variant="caption" tone="muted">
+                    No image
+                  </Typography>
+                </div>
+              )}
+            </div>
+            <div className={s.detailBlock}>
+              <Typography variant="caption" tone="muted">
+                Promo image horizontal
+              </Typography>
+              {scenario.promoImgHorizontal?.url ? (
+                <img
+                  className={s.promoImage}
+                  src={scenario.promoImgHorizontal.url}
+                  alt={`${scenario.name} promo horizontal`}
+                  loading="lazy"
+                />
+              ) : (
+                <div className={s.promoImagePlaceholder}>
+                  <Typography variant="caption" tone="muted">
+                    No image
+                  </Typography>
+                </div>
+              )}
+            </div>
+          </FormRow>
+        ) : null}
         <div className={s.detailBlock}>
           <Typography variant="caption" tone="muted">
             Personality
@@ -579,17 +599,19 @@ export function ScenarioDetails({
                 <Typography variant="h3">
                   {STAGE_LABELS[selectedStage]}
                 </Typography>
-                <span className={s.stageEdit}>
-                  <IconButton
-                    aria-label={`Edit ${STAGE_LABELS[selectedStage]} stage`}
-                    icon={<PencilLineIcon />}
-                    tooltip={`Edit ${STAGE_LABELS[selectedStage]} stage`}
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openStageModal(selectedStage)}
-                    disabled={!characterId}
-                  />
-                </span>
+                {allowStageEdit ? (
+                  <span className={s.stageEdit}>
+                    <IconButton
+                      aria-label={`Edit ${STAGE_LABELS[selectedStage]} stage`}
+                      icon={<PencilLineIcon />}
+                      tooltip={`Edit ${STAGE_LABELS[selectedStage]} stage`}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openStageModal(selectedStage)}
+                      disabled={!characterId}
+                    />
+                  </span>
+                ) : null}
               </div>
 
               <div className={s.stageSection}>

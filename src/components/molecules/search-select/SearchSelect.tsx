@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { Input, Popover, Typography } from '@/atoms';
+import { Button, Input, Popover, Typography } from '@/atoms';
 import { cn } from '@/common/utils';
 
 import s from './SearchSelect.module.scss';
 
-type SearchSelectOption = {
+export type SearchSelectOption = {
   id: string;
   label: string;
   meta?: string;
@@ -45,23 +45,14 @@ export function SearchSelect({
   clearLabel = 'Any',
 }: SearchSelectProps) {
   const [open, setOpen] = useState(false);
-  const [selectedLabel, setSelectedLabel] = useState('');
+  const [selectedLabel, setSelectedLabel] = useState<{
+    id: string;
+    label: string;
+  } | null>(null);
   const selected = useMemo(
     () => options.find((option) => option.id === value) ?? null,
     [options, value],
   );
-
-  useEffect(() => {
-    if (selected) {
-      setSelectedLabel(selected.label);
-    }
-  }, [selected]);
-
-  useEffect(() => {
-    if (!value) {
-      setSelectedLabel('');
-    }
-  }, [value]);
 
   useEffect(() => {
     if (!open) {
@@ -69,7 +60,10 @@ export function SearchSelect({
     }
   }, [open, onSearchChange]);
 
-  const resolvedLabel = selected?.label || valueLabel || selectedLabel || value;
+  const cachedLabel = selectedLabel?.id === value ? selectedLabel.label : '';
+  const resolvedLabel = value
+    ? selected?.label || valueLabel || cachedLabel || value
+    : '';
   const inputValue = open ? search : resolvedLabel;
   const canClear = Boolean(value) && !disabled && !loading;
 
@@ -81,17 +75,22 @@ export function SearchSelect({
       content={
         <div className={s.menu}>
           {canClear ? (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
+              fullWidth
               className={s.optionButton}
               onClick={() => {
-                setSelectedLabel('');
+                setSelectedLabel(null);
                 onSelect('');
                 setOpen(false);
               }}
             >
-              <span className={s.optionLabel}>{clearLabel}</span>
-            </button>
+              <span className={s.optionContent}>
+                <span className={s.optionLabel}>{clearLabel}</span>
+              </span>
+            </Button>
           ) : null}
           {loading ? (
             <Typography variant="caption" tone="muted">
@@ -104,23 +103,28 @@ export function SearchSelect({
           ) : (
             <div className={s.menuList}>
               {options.map((option) => (
-                <button
+                <Button
                   key={option.id}
                   type="button"
+                  variant="ghost"
+                  size="sm"
+                  fullWidth
                   className={cn(s.optionButton, [], {
                     [s.optionActive]: option.id === value,
                   })}
                   onClick={() => {
-                    setSelectedLabel(option.label);
+                    setSelectedLabel({ id: option.id, label: option.label });
                     onSelect(option.id);
                     setOpen(false);
                   }}
                 >
-                  <span className={s.optionLabel}>{option.label}</span>
-                  {option.meta ? (
-                    <span className={s.optionMeta}>{option.meta}</span>
-                  ) : null}
-                </button>
+                  <span className={s.optionContent}>
+                    <span className={s.optionLabel}>{option.label}</span>
+                    {option.meta ? (
+                      <span className={s.optionMeta}>{option.meta}</span>
+                    ) : null}
+                  </span>
+                </Button>
               ))}
             </div>
           )}

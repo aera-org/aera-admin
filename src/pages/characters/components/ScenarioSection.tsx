@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { type ChangeEvent, useCallback, useMemo, useRef, useState } from 'react';
 
 import {
+  useCreateCustomScenario,
   useCreateScenario,
   useDeleteScenario,
   useUpdateScenario,
@@ -18,6 +19,7 @@ import { DownloadIcon, PlusIcon, UploadIcon } from '@/assets/icons';
 import {
   Button,
   ButtonGroup,
+  Checkbox,
   EmptyState,
   Field,
   FormRow,
@@ -31,9 +33,11 @@ import {
   Typography,
 } from '@/atoms';
 import {
+  type CreateCustomScenarioDto,
   FileDir,
   type ICharacterDetails,
   type IFile,
+  ScenarioCharacterTrait,
   type StageDirectives,
   STAGES_IN_ORDER,
 } from '@/common/types';
@@ -56,7 +60,42 @@ type ScenarioSectionProps = {
   onSelectScenario: (id: string | null) => void;
   isLoading: boolean;
   formatDate: (value: string | null | undefined) => string;
+  allowEdit?: boolean;
+  allowStageEdit?: boolean;
+  showImportExport?: boolean;
+  showPromoImages?: boolean;
+  showStatus?: boolean;
+  showIsNew?: boolean;
+  useCustomCreate?: boolean;
 };
+
+const DEFAULT_CUSTOM_SCENARIO_FORM_VALUES: CreateCustomScenarioDto = {
+  characterTraits: [],
+  clothes: '',
+  lingerie: '',
+  description: '',
+};
+
+const SCENARIO_CHARACTER_TRAIT_LABELS: Record<ScenarioCharacterTrait, string> = {
+  [ScenarioCharacterTrait.Playful]: 'Playful',
+  [ScenarioCharacterTrait.Caring]: 'Caring',
+  [ScenarioCharacterTrait.Shy]: 'Shy',
+  [ScenarioCharacterTrait.Sassy]: 'Sassy',
+  [ScenarioCharacterTrait.Mysterious]: 'Mysterious',
+  [ScenarioCharacterTrait.Dominant]: 'Dominant',
+  [ScenarioCharacterTrait.Submissive]: 'Submissive',
+  [ScenarioCharacterTrait.Intellectual]: 'Intellectual',
+  [ScenarioCharacterTrait.Hot]: 'Hot',
+  [ScenarioCharacterTrait.Romantic]: 'Romantic',
+};
+
+const SCENARIO_CHARACTER_TRAIT_OPTIONS = Object.values(
+  ScenarioCharacterTrait,
+).map((value) => ({
+  value,
+  label: SCENARIO_CHARACTER_TRAIT_LABELS[value],
+}));
+const CUSTOM_SCENARIO_TRAITS_MAX = 3;
 
 function isStageDirectivesEmpty(stage: StageDirectives) {
   return (
@@ -77,11 +116,22 @@ export function ScenarioSection({
   onSelectScenario,
   isLoading,
   formatDate,
+  allowEdit = true,
+  allowStageEdit = true,
+  showImportExport = true,
+  showPromoImages = true,
+  showStatus = true,
+  showIsNew = true,
+  useCustomCreate = false,
 }: ScenarioSectionProps) {
   const queryClient = useQueryClient();
   const createMutation = useCreateScenario();
+  const customCreateMutation = useCreateCustomScenario();
   const updateMutation = useUpdateScenario();
   const deleteMutation = useDeleteScenario();
+  const isCreatePending = useCustomCreate
+    ? customCreateMutation.isPending
+    : createMutation.isPending;
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -91,6 +141,7 @@ export function ScenarioSection({
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
+  const [customShowErrors, setCustomShowErrors] = useState(false);
   const [editShowErrors, setEditShowErrors] = useState(false);
   const [formValues, setFormValues] = useState({
     name: '',
@@ -109,6 +160,8 @@ export function ScenarioSection({
     openingMessage: '',
     openingImageId: '',
   });
+  const [customFormValues, setCustomFormValues] =
+    useState<CreateCustomScenarioDto>(DEFAULT_CUSTOM_SCENARIO_FORM_VALUES);
   const [editValues, setEditValues] = useState(formValues);
   const [openingFile, setOpeningFile] = useState<IFile | null>(null);
   const [editOpeningFile, setEditOpeningFile] = useState<IFile | null>(null);
@@ -143,9 +196,29 @@ export function ScenarioSection({
     return errors;
   }, []);
 
+  const getCustomErrors = useCallback((values: CreateCustomScenarioDto) => {
+    const errors: Record<string, string> = {};
+    if (values.characterTraits.length === 0) {
+      errors.characterTraits = 'Select at least one trait.';
+    }
+    if (values.characterTraits.length > CUSTOM_SCENARIO_TRAITS_MAX) {
+      errors.characterTraits = `Select up to ${CUSTOM_SCENARIO_TRAITS_MAX} traits.`;
+    }
+    if (!values.clothes.trim()) errors.clothes = 'Enter clothes.';
+    if (!values.lingerie.trim()) errors.lingerie = 'Enter lingerie.';
+    if (!values.description.trim()) {
+      errors.description = 'Enter a description.';
+    }
+    return errors;
+  }, []);
+
   const validationErrors = useMemo(
     () => (showErrors ? getErrors(formValues) : {}),
     [formValues, getErrors, showErrors],
+  );
+  const customValidationErrors = useMemo(
+    () => (customShowErrors ? getCustomErrors(customFormValues) : {}),
+    [customFormValues, customShowErrors, getCustomErrors],
   );
   const editValidationErrors = useMemo(
     () => (editShowErrors ? getErrors(editValues) : {}),
@@ -155,6 +228,10 @@ export function ScenarioSection({
   const isValid = useMemo(
     () => Object.keys(getErrors(formValues)).length === 0,
     [formValues, getErrors],
+  );
+  const isCustomValid = useMemo(
+    () => Object.keys(getCustomErrors(customFormValues)).length === 0,
+    [customFormValues, getCustomErrors],
   );
   const isEditValid = useMemo(
     () => Object.keys(getErrors(editValues)).length === 0,
@@ -183,11 +260,13 @@ export function ScenarioSection({
     setPromoFile(null);
     setPromoHorizontalFile(null);
     setShowErrors(false);
+    setCustomFormValues(DEFAULT_CUSTOM_SCENARIO_FORM_VALUES);
+    setCustomShowErrors(false);
     setIsCreateOpen(true);
   };
 
   const closeCreateModal = () => {
-    if (createMutation.isPending) return;
+    if (isCreatePending) return;
     setIsCreateOpen(false);
   };
 
@@ -200,9 +279,11 @@ export function ScenarioSection({
       description: selectedScenario.description ?? '',
       isActive: Boolean(selectedScenario.isActive),
       shortDescription: selectedScenario.shortDescription ?? '',
-      isNew: Boolean(selectedScenario.isNew),
-      promoImgId: selectedScenario.promoImg?.id ?? '',
-      promoImgHorizontalId: selectedScenario.promoImgHorizontal?.id ?? '',
+      isNew: showIsNew ? Boolean(selectedScenario.isNew) : false,
+      promoImgId: showPromoImages ? (selectedScenario.promoImg?.id ?? '') : '',
+      promoImgHorizontalId: showPromoImages
+        ? (selectedScenario.promoImgHorizontal?.id ?? '')
+        : '',
       personality: selectedScenario.personality ?? '',
       messagingStyle: selectedScenario.messagingStyle ?? '',
       appearance: selectedScenario.appearance ?? '',
@@ -211,8 +292,10 @@ export function ScenarioSection({
       openingImageId: selectedScenario.openingImage?.id ?? '',
     });
     setEditOpeningFile(selectedScenario.openingImage ?? null);
-    setEditPromoFile(selectedScenario.promoImg ?? null);
-    setEditPromoHorizontalFile(selectedScenario.promoImgHorizontal ?? null);
+    setEditPromoFile(showPromoImages ? (selectedScenario.promoImg ?? null) : null);
+    setEditPromoHorizontalFile(
+      showPromoImages ? (selectedScenario.promoImgHorizontal ?? null) : null,
+    );
     setEditShowErrors(false);
     setIsEditOpen(true);
   };
@@ -259,15 +342,43 @@ export function ScenarioSection({
         slug: formValues.slug.trim() || undefined,
         description: formValues.description.trim(),
         shortDescription: formValues.shortDescription.trim() || undefined,
-        isNew: formValues.isNew,
-        promoImgId: formValues.promoImgId || undefined,
-        promoImgHorizontalId: formValues.promoImgHorizontalId || undefined,
+        isNew: showIsNew ? formValues.isNew : undefined,
+        promoImgId: showPromoImages
+          ? formValues.promoImgId || undefined
+          : undefined,
+        promoImgHorizontalId: showPromoImages
+          ? formValues.promoImgHorizontalId || undefined
+          : undefined,
         personality: formValues.personality.trim(),
         messagingStyle: formValues.messagingStyle.trim(),
         appearance: formValues.appearance.trim(),
         situation: formValues.situation.trim(),
         openingMessage: formValues.openingMessage.trim(),
         openingImageId: formValues.openingImageId,
+      },
+    });
+    setIsCreateOpen(false);
+    if (result?.id) {
+      onSelectScenario(result.id);
+    }
+  };
+
+  const handleCustomCreate = async () => {
+    if (!characterId) return;
+
+    const errors = getCustomErrors(customFormValues);
+    if (Object.values(errors).some(Boolean)) {
+      setCustomShowErrors(true);
+      return;
+    }
+
+    const result = await customCreateMutation.mutateAsync({
+      characterId,
+      payload: {
+        characterTraits: customFormValues.characterTraits,
+        clothes: customFormValues.clothes.trim(),
+        lingerie: customFormValues.lingerie.trim(),
+        description: customFormValues.description.trim(),
       },
     });
     setIsCreateOpen(false);
@@ -291,11 +402,15 @@ export function ScenarioSection({
         emoji: editValues.emoji.trim(),
         slug: editValues.slug.trim() || undefined,
         description: editValues.description.trim(),
-        isActive: editValues.isActive,
+        isActive: showStatus ? editValues.isActive : selectedScenario.isActive,
         shortDescription: editValues.shortDescription.trim() || undefined,
-        isNew: editValues.isNew,
-        promoImgId: editValues.promoImgId || undefined,
-        promoImgHorizontalId: editValues.promoImgHorizontalId || undefined,
+        isNew: showIsNew ? editValues.isNew : selectedScenario.isNew,
+        promoImgId: showPromoImages
+          ? editValues.promoImgId || undefined
+          : selectedScenario.promoImg?.id,
+        promoImgHorizontalId: showPromoImages
+          ? editValues.promoImgHorizontalId || undefined
+          : selectedScenario.promoImgHorizontal?.id,
         personality: editValues.personality.trim(),
         messagingStyle: editValues.messagingStyle.trim(),
         appearance: editValues.appearance.trim(),
@@ -547,48 +662,54 @@ export function ScenarioSection({
       <div className={s.sectionHeader}>
         <Typography variant="h3">Scenarios</Typography>
         <ButtonGroup>
-          <IconButton
-            aria-label="Export scenario"
-            tooltip="Export scenario"
-            icon={<DownloadIcon />}
-            variant="ghost"
-            size="sm"
-            onClick={handleExportScenario}
-            loading={isExporting}
-            disabled={!characterId || !selectedScenario || isImporting}
-          />
-          <IconButton
-            aria-label="Import scenario"
-            tooltip="Import scenario"
-            icon={<UploadIcon />}
-            variant="ghost"
-            size="sm"
-            onClick={handleImportButtonClick}
-            loading={isImporting}
-            disabled={
-              !characterId ||
-              isExporting ||
-              createMutation.isPending ||
-              updateMutation.isPending
-            }
-          />
+          {showImportExport ? (
+            <>
+              <IconButton
+                aria-label="Export scenario"
+                tooltip="Export scenario"
+                icon={<DownloadIcon />}
+                variant="ghost"
+                size="sm"
+                onClick={handleExportScenario}
+                loading={isExporting}
+                disabled={!characterId || !selectedScenario || isImporting}
+              />
+              <IconButton
+                aria-label="Import scenario"
+                tooltip="Import scenario"
+                icon={<UploadIcon />}
+                variant="ghost"
+                size="sm"
+                onClick={handleImportButtonClick}
+                loading={isImporting}
+                disabled={
+                  !characterId ||
+                  isExporting ||
+                  createMutation.isPending ||
+                  updateMutation.isPending
+                }
+              />
+            </>
+          ) : null}
           <Button
             variant="ghost"
             size="sm"
             iconLeft={<PlusIcon />}
             onClick={openCreateModal}
-            disabled={!characterId || isImporting}
+            disabled={!characterId || isImporting || isCreatePending}
           >
             New scenario
           </Button>
         </ButtonGroup>
-        <input
-          ref={importInputRef}
-          className={s.hiddenInput}
-          type="file"
-          accept="application/json,.json"
-          onChange={handleImportFileChange}
-        />
+        {showImportExport ? (
+          <input
+            ref={importInputRef}
+            className={s.hiddenInput}
+            type="file"
+            accept="application/json,.json"
+            onChange={handleImportFileChange}
+          />
+        ) : null}
       </div>
       {isLoading ? (
         <Stack gap="16px">
@@ -616,29 +737,35 @@ export function ScenarioSection({
               formatDate={formatDate}
               onEdit={openEditModal}
               onDelete={() => setDeleteTarget(selectedScenario)}
-              canEdit={Boolean(characterId)}
+              canEdit={Boolean(characterId && allowEdit)}
               canDelete={Boolean(characterId)}
               isDeleting={
                 deleteMutation.isPending &&
                 deleteTarget?.id === selectedScenario.id
               }
+              allowEdit={allowEdit}
+              allowStageEdit={allowStageEdit}
+              showStatus={showStatus}
+              showIsNew={showIsNew}
+              showPromoImages={showPromoImages}
             />
           ) : null}
         </Stack>
       )}
 
-      <Drawer
-        open={isCreateOpen}
-        title="New scenario"
-        className={s.scenarioDrawer}
-        onOpenChange={(open) => {
-          if (!open) {
-            closeCreateModal();
-          } else {
-            setIsCreateOpen(true);
-          }
-        }}
-      >
+      {!useCustomCreate ? (
+        <Drawer
+          open={isCreateOpen}
+          title="New scenario"
+          className={s.scenarioDrawer}
+          onOpenChange={(open) => {
+            if (!open) {
+              closeCreateModal();
+            } else {
+              setIsCreateOpen(true);
+            }
+          }}
+        >
         <Stack gap="16px">
           <FormRow columns={2}>
             <Field
@@ -679,7 +806,38 @@ export function ScenarioSection({
             </Field>
           </FormRow>
 
-          <FormRow columns={2}>
+          {showIsNew ? (
+            <FormRow columns={2}>
+              <Field label="Slug" labelFor="scenario-create-slug">
+                <Input
+                  id="scenario-create-slug"
+                  size="sm"
+                  value={formValues.slug}
+                  onChange={(event) =>
+                    setFormValues((prev) => ({
+                      ...prev,
+                      slug: event.target.value,
+                    }))
+                  }
+                  placeholder="Optional"
+                  fullWidth
+                />
+              </Field>
+              <Field label="New" labelFor="scenario-create-is-new">
+                <Switch
+                  id="scenario-create-is-new"
+                  checked={formValues.isNew}
+                  onChange={(event) =>
+                    setFormValues((prev) => ({
+                      ...prev,
+                      isNew: event.target.checked,
+                    }))
+                  }
+                  label={formValues.isNew ? 'New' : 'Not new'}
+                />
+              </Field>
+            </FormRow>
+          ) : (
             <Field label="Slug" labelFor="scenario-create-slug">
               <Input
                 id="scenario-create-slug"
@@ -695,20 +853,7 @@ export function ScenarioSection({
                 fullWidth
               />
             </Field>
-            <Field label="New" labelFor="scenario-create-is-new">
-              <Switch
-                id="scenario-create-is-new"
-                checked={formValues.isNew}
-                onChange={(event) =>
-                  setFormValues((prev) => ({
-                    ...prev,
-                    isNew: event.target.checked,
-                  }))
-                }
-                label={formValues.isNew ? 'New' : 'Not new'}
-              />
-            </Field>
-          </FormRow>
+          )}
 
           <Field
             label="Description"
@@ -863,38 +1008,40 @@ export function ScenarioSection({
               </Typography>
             ) : null}
           </div>
-          <FormRow columns={2}>
-            <FileUpload
-              label="Promo image"
-              folder={FileDir.Public}
-              value={promoFile}
-              onChange={(file) => {
-                setPromoFile(file);
-                setFormValues((prev) => ({
-                  ...prev,
-                  promoImgId: file?.id ?? '',
-                }));
-              }}
-              onError={(message) =>
-                notifyError(new Error(message), 'Unable to upload image.')
-              }
-            />
-            <FileUpload
-              label="Promo image horizontal"
-              folder={FileDir.Public}
-              value={promoHorizontalFile}
-              onChange={(file) => {
-                setPromoHorizontalFile(file);
-                setFormValues((prev) => ({
-                  ...prev,
-                  promoImgHorizontalId: file?.id ?? '',
-                }));
-              }}
-              onError={(message) =>
-                notifyError(new Error(message), 'Unable to upload image.')
-              }
-            />
-          </FormRow>
+          {showPromoImages ? (
+            <FormRow columns={2}>
+              <FileUpload
+                label="Promo image"
+                folder={FileDir.Public}
+                value={promoFile}
+                onChange={(file) => {
+                  setPromoFile(file);
+                  setFormValues((prev) => ({
+                    ...prev,
+                    promoImgId: file?.id ?? '',
+                  }));
+                }}
+                onError={(message) =>
+                  notifyError(new Error(message), 'Unable to upload image.')
+                }
+              />
+              <FileUpload
+                label="Promo image horizontal"
+                folder={FileDir.Public}
+                value={promoHorizontalFile}
+                onChange={(file) => {
+                  setPromoHorizontalFile(file);
+                  setFormValues((prev) => ({
+                    ...prev,
+                    promoImgHorizontalId: file?.id ?? '',
+                  }));
+                }}
+                onError={(message) =>
+                  notifyError(new Error(message), 'Unable to upload image.')
+                }
+              />
+            </FormRow>
+          ) : null}
 
           <div className={s.modalActions}>
             <Button
@@ -913,20 +1060,157 @@ export function ScenarioSection({
             </Button>
           </div>
         </Stack>
-      </Drawer>
+        </Drawer>
+      ) : null}
 
-      <Drawer
-        open={isEditOpen}
-        title="Edit scenario"
-        className={s.scenarioDrawer}
-        onOpenChange={(open) => {
-          if (!open) {
-            closeEditModal();
-          } else {
-            setIsEditOpen(true);
-          }
-        }}
-      >
+      {useCustomCreate ? (
+        <Drawer
+          open={isCreateOpen}
+          title="New scenario"
+          className={s.scenarioDrawer}
+          onOpenChange={(open) => {
+            if (!open) {
+              closeCreateModal();
+            } else {
+              setIsCreateOpen(true);
+            }
+          }}
+        >
+          <Stack gap="16px">
+            <Field
+              label="Character traits"
+              hint={`Select 1-${CUSTOM_SCENARIO_TRAITS_MAX} traits that apply to this scenario.`}
+              error={customValidationErrors.characterTraits}
+            >
+              <div className={s.checkboxGroup}>
+                {SCENARIO_CHARACTER_TRAIT_OPTIONS.map((option) => {
+                  const checkboxId = `custom-scenario-create-trait-${option.value}`;
+                  const isChecked = customFormValues.characterTraits.includes(
+                    option.value,
+                  );
+                  const isMaxSelected =
+                    customFormValues.characterTraits.length >=
+                    CUSTOM_SCENARIO_TRAITS_MAX;
+
+                  return (
+                    <Checkbox
+                      key={option.value}
+                      id={checkboxId}
+                      checked={isChecked}
+                      disabled={!isChecked && isMaxSelected}
+                      onChange={(event) =>
+                        setCustomFormValues((prev) => ({
+                          ...prev,
+                          characterTraits: event.target.checked
+                            ? Array.from(
+                                new Set([
+                                  ...prev.characterTraits,
+                                  option.value,
+                                ]),
+                              ).slice(0, CUSTOM_SCENARIO_TRAITS_MAX)
+                            : prev.characterTraits.filter(
+                                (value) => value !== option.value,
+                              ),
+                        }))
+                      }
+                      label={option.label}
+                    />
+                  );
+                })}
+              </div>
+            </Field>
+
+            <FormRow columns={2}>
+              <Field
+                label="Clothes"
+                labelFor="custom-scenario-create-clothes"
+                error={customValidationErrors.clothes}
+              >
+                <Textarea
+                  id="custom-scenario-create-clothes"
+                  value={customFormValues.clothes}
+                  onChange={(event) =>
+                    setCustomFormValues((prev) => ({
+                      ...prev,
+                      clothes: event.target.value,
+                    }))
+                  }
+                  rows={3}
+                  fullWidth
+                />
+              </Field>
+              <Field
+                label="Lingerie"
+                labelFor="custom-scenario-create-lingerie"
+                error={customValidationErrors.lingerie}
+              >
+                <Textarea
+                  id="custom-scenario-create-lingerie"
+                  value={customFormValues.lingerie}
+                  onChange={(event) =>
+                    setCustomFormValues((prev) => ({
+                      ...prev,
+                      lingerie: event.target.value,
+                    }))
+                  }
+                  rows={3}
+                  fullWidth
+                />
+              </Field>
+            </FormRow>
+
+            <Field
+              label="Description"
+              labelFor="custom-scenario-create-description"
+              error={customValidationErrors.description}
+            >
+              <Textarea
+                id="custom-scenario-create-description"
+                value={customFormValues.description}
+                onChange={(event) =>
+                  setCustomFormValues((prev) => ({
+                    ...prev,
+                    description: event.target.value,
+                  }))
+                }
+                rows={4}
+                fullWidth
+              />
+            </Field>
+
+            <div className={s.modalActions}>
+              <Button
+                variant="secondary"
+                onClick={closeCreateModal}
+                disabled={customCreateMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCustomCreate}
+                loading={customCreateMutation.isPending}
+                disabled={!isCustomValid || customCreateMutation.isPending}
+              >
+                Create
+              </Button>
+            </div>
+          </Stack>
+        </Drawer>
+      ) : null}
+
+      {allowEdit ? (
+        <Drawer
+          open={isEditOpen}
+          title="Edit scenario"
+          className={s.scenarioDrawer}
+          onOpenChange={(open) => {
+            if (!open) {
+              closeEditModal();
+            } else {
+              setIsEditOpen(true);
+            }
+          }}
+        >
         <Stack gap="16px">
           <FormRow columns={2}>
             <Field
@@ -1213,7 +1497,8 @@ export function ScenarioSection({
             </Button>
           </div>
         </Stack>
-      </Drawer>
+        </Drawer>
+      ) : null}
 
       <ConfirmModal
         open={Boolean(deleteTarget)}

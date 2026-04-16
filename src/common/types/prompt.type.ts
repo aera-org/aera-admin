@@ -8,6 +8,10 @@ export enum PromptType {
   ScenarioGen = 'scenario-gen',
   BlurredPhoto = 'blurred-photo',
   TurnCold = 'turn-cold',
+  AvatarRealistic = 'avatar-realistic',
+  AvatarAnime = 'avatar-anime',
+  OpeningImageRealistic = 'opening-image-realistic',
+  OpeningImageAnime = 'opening-image-anime',
 }
 
 export type CreatePromptDto = {

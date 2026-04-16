@@ -21,6 +21,9 @@ import {
   ChatDetailsPage,
   ChatsPage,
   ConfirmEmailPage,
+  CustomCharacterCreatePage,
+  CustomCharacterDetailsPage,
+  CustomCharactersPage,
   DatasetDetailsPage,
   DatasetsPage,
   ForgotPasswordPage,
@@ -76,6 +79,15 @@ export function AppRoutes() {
         <Route path="/ui" element={<UiKitPage />} />
         <Route path="/characters" element={<CharactersPage />} />
         <Route path="/characters/:id" element={<CharacterDetailsPage />} />
+        <Route
+          path="/custom-characters/new"
+          element={<CustomCharacterCreatePage />}
+        />
+        <Route
+          path="/custom-characters/:id"
+          element={<CustomCharacterDetailsPage />}
+        />
+        <Route path="/custom-characters" element={<CustomCharactersPage />} />
         <Route path="/character-images" element={<CharacterImagesPage />} />
         <Route
           path="/character-images/:id"

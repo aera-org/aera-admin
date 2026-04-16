@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import { useCharacters, useCharacterDetails } from '@/app/characters';
+import { useCharacterDetails, useCharacters } from '@/app/characters';
 import { useChats } from '@/app/chats';
 import { useUsers } from '@/app/users';
 import {
@@ -22,8 +22,8 @@ import type { ITgUser, RoleplayStage } from '@/common/types';
 import { STAGES_IN_ORDER } from '@/common/types';
 import { formatCharacterSelectLabel } from '@/common/utils';
 import { AppShell } from '@/components/templates';
+import { SearchSelect } from '@/molecules';
 
-import { SearchSelect } from './components/SearchSelect';
 import s from './ChatsPage.module.scss';
 
 type QueryUpdate = {
@@ -303,7 +303,7 @@ export function ChatsPage() {
 
   const { data, error, isLoading, refetch } = useChats(queryParams);
 
-  const chats = data?.data ?? [];
+  const chats = useMemo(() => data?.data ?? [], [data?.data]);
   const total = data?.total ?? 0;
   const effectiveTake = data?.take ?? pageSize;
   const effectiveSkip = data?.skip ?? (page - 1) * pageSize;

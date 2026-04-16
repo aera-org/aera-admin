@@ -2,7 +2,9 @@ import {
   CharacterBodyType,
   CharacterBreastSize,
   CharacterEthnicity,
+  CharacterEyeColor,
   CharacterHairColor,
+  CharacterHairStyle,
   CharacterPersonality,
 } from '@/common/types';
 
@@ -12,6 +14,21 @@ const hairColorLabels: Record<CharacterHairColor, string> = {
   [CharacterHairColor.Redhead]: 'Redhead',
   [CharacterHairColor.Black]: 'Black',
   [CharacterHairColor.Pink]: 'Pink',
+};
+
+const hairStyleLabels: Record<CharacterHairStyle, string> = {
+  [CharacterHairStyle.Straight]: 'Straight',
+  [CharacterHairStyle.Bangs]: 'Bangs',
+  [CharacterHairStyle.Curly]: 'Curly',
+  [CharacterHairStyle.Bun]: 'Bun',
+  [CharacterHairStyle.Short]: 'Short',
+  [CharacterHairStyle.Ponytail]: 'Ponytail',
+};
+
+const eyeColorLabels: Record<CharacterEyeColor, string> = {
+  [CharacterEyeColor.Brown]: 'Brown',
+  [CharacterEyeColor.Blue]: 'Blue',
+  [CharacterEyeColor.Green]: 'Green',
 };
 
 const ethnicityLabels: Record<CharacterEthnicity, string> = {
@@ -50,6 +67,20 @@ export const HAIR_COLOR_OPTIONS = Object.values(CharacterHairColor).map(
   }),
 );
 
+export const HAIR_STYLE_OPTIONS = Object.values(CharacterHairStyle).map(
+  (value) => ({
+    value,
+    label: hairStyleLabels[value],
+  }),
+);
+
+export const EYE_COLOR_OPTIONS = Object.values(CharacterEyeColor).map(
+  (value) => ({
+    value,
+    label: eyeColorLabels[value],
+  }),
+);
+
 export const ETHNICITY_OPTIONS = Object.values(CharacterEthnicity).map(
   (value) => ({
     value,
@@ -80,6 +111,14 @@ export const PERSONALITY_OPTIONS = Object.values(CharacterPersonality).map(
 
 export function getHairColorLabel(value: CharacterHairColor | null | undefined) {
   return value ? hairColorLabels[value] : '-';
+}
+
+export function getHairStyleLabel(value: CharacterHairStyle | null | undefined) {
+  return value ? hairStyleLabels[value] : '-';
+}
+
+export function getEyeColorLabel(value: CharacterEyeColor | null | undefined) {
+  return value ? eyeColorLabels[value] : '-';
 }
 
 export function getEthnicityLabel(

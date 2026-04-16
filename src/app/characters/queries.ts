@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { notifyError, notifySuccess } from '@/app/toast';
 import {
   CharacterType,
+  type CreateCustomScenarioDto,
   type ICharacter,
   type ICharacterDetails,
   type RoleplayStage,
@@ -21,6 +22,8 @@ import {
   type CharacterUpdateDto,
   createCharacter,
   createCharacterStory,
+  createCustomCharacter,
+  createCustomScenario,
   createScenario,
   deleteCharacter,
   deleteCharacterStory,
@@ -186,6 +189,21 @@ export function useCreateCharacter() {
   });
 }
 
+export function useCreateCustomCharacter() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createCustomCharacter,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['characters'] });
+      notifySuccess('Custom character created.', 'Custom character created.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to create the custom character.');
+    },
+  });
+}
+
 export function useCloneCharacterAsAnime() {
   const queryClient = useQueryClient();
 
@@ -239,6 +257,29 @@ export function useCreateScenario() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to create the scenario.');
+    },
+  });
+}
+
+export function useCreateCustomScenario() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      payload,
+    }: {
+      characterId: string;
+      payload: CreateCustomScenarioDto;
+    }) => createCustomScenario(characterId, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Custom scenario created.', 'Custom scenario created.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to create the custom scenario.');
     },
   });
 }

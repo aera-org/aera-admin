@@ -14,6 +14,7 @@ export interface ICharacter {
   isActive: boolean;
   gender: string;
   isCustom: boolean;
+  userId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -164,20 +165,6 @@ export enum CharacterPersonality {
   Hot = 'hot',
   Playful = 'playful',
   Devoted = 'devoted',
-
-  Caring = 'caring',
-  Flirty = 'flirty',
-  Gentle = 'gentle',
-  Confident = 'confident',
-  Mysterious = 'mysterious',
-  Cheerful = 'cheerful',
-  Smart = 'smart',
-  Supportive = 'supportive',
-  Teasing = 'teasing',
-  Romantic = 'romantic',
-  Shy = 'shy',
-  Bold = 'bold',
-  Independent = 'independent',
 }
 
 export interface ICharacterDetails extends ICharacter {
@@ -191,4 +178,38 @@ export interface ICharacterDetails extends ICharacter {
   breastSize: CharacterBreastSize;
   stories: ICharacterStory[];
   personality: CharacterPersonality[];
+  avatarPrompt?: string;
+}
+
+export interface CustomCharacterCreateDto {
+  name: string;
+  age: number; // 18-55
+  hairColor: CharacterHairColor;
+  ethnicity: CharacterEthnicity;
+  bodyType: CharacterBodyType;
+  hairStyle: CharacterHairStyle;
+  eyeColor: CharacterEyeColor;
+  breastSize: CharacterBreastSize;
+  type: CharacterType;
+  userId: string;
+}
+
+export enum ScenarioCharacterTrait {
+  Playful = 'playful',
+  Caring = 'caring',
+  Shy = 'shy',
+  Sassy = 'sassy',
+  Mysterious = 'mysterious',
+  Dominant = 'dominant',
+  Submissive = 'submissive',
+  Intellectual = 'intellectual',
+  Hot = 'hot',
+  Romantic = 'romantic',
+}
+
+export interface CreateCustomScenarioDto {
+  characterTraits: ScenarioCharacterTrait[];
+  clothes: string;
+  lingerie: string;
+  description: string;
 }

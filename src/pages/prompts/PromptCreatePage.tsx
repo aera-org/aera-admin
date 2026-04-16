@@ -15,22 +15,11 @@ import {
   Textarea,
   Typography,
 } from '@/atoms';
+import { PROMPT_TYPE_OPTIONS } from '@/common/consts';
 import { PromptType } from '@/common/types';
 import { AppShell } from '@/components/templates';
 
 import s from './PromptFormPage.module.scss';
-
-const TYPE_OPTIONS = [
-  { label: 'Chat', value: PromptType.Chat },
-  { label: 'Ping', value: PromptType.Ping },
-  { label: 'Blurred Photo', value: PromptType.BlurredPhoto },
-  { label: 'Turn Cold', value: PromptType.TurnCold },
-  { label: 'Scenario Gen', value: PromptType.ScenarioGen },
-  { label: 'Image', value: PromptType.Image },
-  { label: 'Image Sex', value: PromptType.ImageSex },
-  { label: 'Image Anime', value: PromptType.AnimeImage },
-  { label: 'Image Anime Sex', value: PromptType.AnimeImageSex },
-];
 
 export function PromptCreatePage() {
   const location = useLocation();
@@ -137,7 +126,7 @@ export function PromptCreatePage() {
               <Select
                 id="prompt-create-type"
                 size="sm"
-                options={TYPE_OPTIONS}
+                options={PROMPT_TYPE_OPTIONS}
                 value={values.type}
                 onChange={(value) =>
                   setValues((prev) => ({

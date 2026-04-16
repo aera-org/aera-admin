@@ -114,6 +114,53 @@
   flex-wrap: wrap;
 }
 
+.avatarPreviewButton {
+  max-width: 100%;
+  padding: 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  width: max-content;
+}
+
+.avatarPreviewButton:focus-visible {
+  outline: 2px solid hsl(var(--focus-ring));
+  outline-offset: 2px;
+}
+
+.avatarPreviewImage {
+  display: block;
+  width: 260px;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.avatarPreviewPlaceholder {
+  width: min(260px, 100%);
+  height: 140px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed hsl(var(--border));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: hsl(var(--bg));
+}
+
+.avatarDrawer {
+  width: min(82vw, 640px);
+}
+
+.avatarDrawerImage {
+  width: min(420px, 100%);
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--bg));
+}
+
 .statusField {
   width: max-content;
 }
@@ -124,6 +171,12 @@
 
 .scenarioDrawer {
   width: min(88vw, 760px);
+}
+
+.checkboxGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
 }
 
 .stageDrawer {

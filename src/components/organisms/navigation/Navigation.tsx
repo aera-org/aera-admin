@@ -15,6 +15,7 @@ import {
   NewspaperIcon,
   RadioIcon,
   SendIcon,
+  SparklesIcon,
   UserCogIcon,
   UserIcon,
   UsersRoundIcon,
@@ -33,6 +34,11 @@ type NavItem = {
 const navItems: NavItem[] = [
   { label: 'Analytics', to: '/', icon: <ChartIcon /> },
   { label: 'Characters', to: '/characters', icon: <UsersRoundIcon /> },
+  {
+    label: 'Custom Characters',
+    to: '/custom-characters',
+    icon: <SparklesIcon />,
+  },
   { label: 'Images', to: '/character-images', icon: <ImageIcon /> },
   { label: 'Generations', to: '/generations', icon: <NewspaperIcon /> },
   { label: 'Batch Images', to: '/batch-images', icon: <ImageIcon /> },

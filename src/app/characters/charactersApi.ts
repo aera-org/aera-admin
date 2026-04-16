@@ -7,6 +7,8 @@ import type {
   CharacterHairColor,
   CharacterPersonality,
   CharacterType,
+  CreateCustomScenarioDto,
+  CustomCharacterCreateDto,
   ICharacter,
   ICharacterDetails,
   RoleplayStage,
@@ -19,6 +21,8 @@ import type { PaginatedResponse } from '../paginated-response.type.ts';
 
 export type CharactersListParams = {
   search?: string;
+  userId?: string;
+  isCustom?: boolean;
   order?: string;
   skip?: number;
   take?: number;
@@ -26,9 +30,12 @@ export type CharactersListParams = {
 
 const fallbackError = 'Unable to load characters.';
 const createFallbackError = 'Unable to create the character.';
+const createCustomFallbackError = 'Unable to create the custom character.';
 const updateFallbackError = 'Unable to update the character.';
 const deleteFallbackError = 'Unable to delete the character.';
 const createScenarioFallbackError = 'Unable to create the scenario.';
+const createCustomScenarioFallbackError =
+  'Unable to create the custom scenario.';
 const deleteScenarioFallbackError = 'Unable to delete the scenario.';
 const createScenarioGiftFallbackError = 'Unable to add the gift.';
 const updateScenarioGiftFallbackError = 'Unable to update the gift.';
@@ -124,6 +131,10 @@ async function parseJsonIfPresent(res: Response) {
 export async function getCharacters(params: CharactersListParams) {
   const query = new URLSearchParams();
   if (params.search) query.set('search', params.search);
+  if (params.userId) query.set('userId', params.userId);
+  if (typeof params.isCustom === 'boolean') {
+    query.set('isCustom', String(params.isCustom));
+  }
   if (params.order) query.set('order', params.order);
   if (typeof params.skip === 'number') query.set('skip', String(params.skip));
   if (typeof params.take === 'number') query.set('take', String(params.take));
@@ -156,6 +167,18 @@ export async function createCharacter(payload: CharacterCreateDto) {
   return (await res.json()) as ICharacterDetails;
 }
 
+export async function createCustomCharacter(payload: CustomCharacterCreateDto) {
+  const res = await apiFetch('/admin/characters/custom', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, createCustomFallbackError);
+  }
+  return (await res.json()) as ICharacter;
+}
+
 export async function createScenario(
   characterId: string,
   payload: ScenarioCreateDto,
@@ -167,6 +190,24 @@ export async function createScenario(
   });
   if (!res.ok) {
     throw await buildApiError(res, createScenarioFallbackError);
+  }
+  return (await res.json()) as ICharacterDetails['scenarios'][number];
+}
+
+export async function createCustomScenario(
+  characterId: string,
+  payload: CreateCustomScenarioDto,
+) {
+  const res = await apiFetch(
+    `/admin/characters/${characterId}/scenarios/custom`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, createCustomScenarioFallbackError);
   }
   return (await res.json()) as ICharacterDetails['scenarios'][number];
 }

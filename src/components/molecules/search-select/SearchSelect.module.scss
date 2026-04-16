@@ -18,15 +18,11 @@
 }
 
 .optionButton {
+  justify-content: flex-start;
   text-align: left;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   padding: var(--space-2);
-  background: transparent;
-  font-family: var(--font-ui);
-  font-size: var(--text-sm);
-  color: hsl(var(--fg));
-  cursor: pointer;
 }
 
 .optionButton:hover {
@@ -36,6 +32,11 @@
 .optionActive {
   border-color: hsl(var(--border));
   background: hsl(var(--accent-muted));
+}
+
+.optionContent {
+  display: block;
+  width: 100%;
 }
 
 .optionLabel {
