@@ -19,7 +19,6 @@ import { DownloadIcon, PlusIcon, UploadIcon } from '@/assets/icons';
 import {
   Button,
   ButtonGroup,
-  Checkbox,
   EmptyState,
   Field,
   FormRow,
@@ -1079,12 +1078,10 @@ export function ScenarioSection({
           <Stack gap="16px">
             <Field
               label="Character traits"
-              hint={`Select 1-${CUSTOM_SCENARIO_TRAITS_MAX} traits that apply to this scenario.`}
               error={customValidationErrors.characterTraits}
             >
-              <div className={s.checkboxGroup}>
+              <ButtonGroup className={s.traitButtonGroup}>
                 {SCENARIO_CHARACTER_TRAIT_OPTIONS.map((option) => {
-                  const checkboxId = `custom-scenario-create-trait-${option.value}`;
                   const isChecked = customFormValues.characterTraits.includes(
                     option.value,
                   );
@@ -1093,31 +1090,33 @@ export function ScenarioSection({
                     CUSTOM_SCENARIO_TRAITS_MAX;
 
                   return (
-                    <Checkbox
+                    <Button
                       key={option.value}
-                      id={checkboxId}
-                      checked={isChecked}
+                      variant={isChecked ? 'primary' : 'secondary'}
+                      size="sm"
+                      aria-pressed={isChecked}
                       disabled={!isChecked && isMaxSelected}
-                      onChange={(event) =>
+                      onClick={() =>
                         setCustomFormValues((prev) => ({
                           ...prev,
-                          characterTraits: event.target.checked
-                            ? Array.from(
+                          characterTraits: isChecked
+                            ? prev.characterTraits.filter(
+                                (value) => value !== option.value,
+                              )
+                            : Array.from(
                                 new Set([
                                   ...prev.characterTraits,
                                   option.value,
                                 ]),
-                              ).slice(0, CUSTOM_SCENARIO_TRAITS_MAX)
-                            : prev.characterTraits.filter(
-                                (value) => value !== option.value,
-                              ),
+                              ).slice(0, CUSTOM_SCENARIO_TRAITS_MAX),
                         }))
                       }
-                      label={option.label}
-                    />
+                    >
+                      {option.label}
+                    </Button>
                   );
                 })}
-              </div>
+              </ButtonGroup>
             </Field>
 
             <FormRow columns={2}>
