@@ -49,6 +49,7 @@ import {
   buildScenarioTransferPayload,
   downloadScenarioTransferFile,
   parseScenarioTransferFile,
+  type ScenarioTransferFile,
 } from './scenarioTransfer';
 
 type ScenarioSectionProps = {
@@ -74,6 +75,18 @@ const DEFAULT_CUSTOM_SCENARIO_FORM_VALUES: CreateCustomScenarioDto = {
   lingerie: '',
   description: '',
 };
+
+async function copyScenarioTransferFile(file: ScenarioTransferFile) {
+  await copyFile({
+    id: file.id,
+    name: file.name,
+    dir: file.dir,
+    path: file.path,
+    status: file.status,
+    mime: file.mime,
+    url: file.url ?? undefined,
+  });
+}
 
 const SCENARIO_CHARACTER_TRAIT_LABELS: Record<ScenarioCharacterTrait, string> = {
   [ScenarioCharacterTrait.Playful]: 'Playful',
@@ -564,36 +577,17 @@ export function ScenarioSection({
         scenarioPayload.gifts.map((gift) => gift.giftName),
       );
 
-      await copyFile({
-        id: scenarioPayload.openingImage.id,
-        name: scenarioPayload.openingImage.name,
-        dir: scenarioPayload.openingImage.dir,
-        path: scenarioPayload.openingImage.path,
-        status: scenarioPayload.openingImage.status,
-        mime: scenarioPayload.openingImage.mime,
-        url: scenarioPayload.openingImage.url ?? undefined,
-      });
+      await copyScenarioTransferFile(scenarioPayload.openingImage);
       if (scenarioPayload.promoImg) {
-        await copyFile({
-          id: scenarioPayload.promoImg.id,
-          name: scenarioPayload.promoImg.name,
-          dir: scenarioPayload.promoImg.dir,
-          path: scenarioPayload.promoImg.path,
-          status: scenarioPayload.promoImg.status,
-          mime: scenarioPayload.promoImg.mime,
-          url: scenarioPayload.promoImg.url ?? undefined,
-        });
+        await copyScenarioTransferFile(scenarioPayload.promoImg);
       }
       if (scenarioPayload.promoImgHorizontal) {
-        await copyFile({
-          id: scenarioPayload.promoImgHorizontal.id,
-          name: scenarioPayload.promoImgHorizontal.name,
-          dir: scenarioPayload.promoImgHorizontal.dir,
-          path: scenarioPayload.promoImgHorizontal.path,
-          status: scenarioPayload.promoImgHorizontal.status,
-          mime: scenarioPayload.promoImgHorizontal.mime,
-          url: scenarioPayload.promoImgHorizontal.url ?? undefined,
-        });
+        await copyScenarioTransferFile(scenarioPayload.promoImgHorizontal);
+      }
+      for (const gift of scenarioPayload.gifts) {
+        if (gift.boughtImage) {
+          await copyScenarioTransferFile(gift.boughtImage);
+        }
       }
 
       const createdScenario = await createScenarioApi(characterId, {
@@ -640,6 +634,7 @@ export function ScenarioSection({
             giftId: resolvedGiftId,
             reason: gift.reason.trim(),
             buyText: gift.buyText,
+            boughtImgId: gift.boughtImage?.id,
           },
         );
       }

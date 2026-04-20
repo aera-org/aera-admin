@@ -5,6 +5,7 @@ export const PROMPT_TYPE_OPTIONS = [
     { label: 'Ping', value: PromptType.Ping },
     { label: 'Blurred Photo', value: PromptType.BlurredPhoto },
     { label: 'Turn Cold', value: PromptType.TurnCold },
+    { label: 'Gift Bought', value: PromptType.GiftBought },
     { label: 'Scenario Gen', value: PromptType.ScenarioGen },
     { label: 'Image', value: PromptType.Image },
     { label: 'Image Sex', value: PromptType.ImageSex },

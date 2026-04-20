@@ -8,6 +8,7 @@ import {
   useUpdateScenarioStageGift,
 } from '@/app/characters';
 import { useGifts } from '@/app/gifts';
+import { notifyError } from '@/app/toast';
 import { PencilLineIcon, TrashIcon } from '@/assets/icons';
 import {
   Badge,
@@ -22,12 +23,14 @@ import {
   Typography,
 } from '@/atoms';
 import {
+  FileDir,
   type ICharacterDetails,
+  type IFile,
   RoleplayStage,
   type StageDirectives,
   STAGES_IN_ORDER,
 } from '@/common/types';
-import { ConfirmModal, Drawer } from '@/components/molecules';
+import { ConfirmModal, Drawer, FileUpload } from '@/components/molecules';
 
 import s from '../CharacterDetailsPage.module.scss';
 
@@ -66,6 +69,37 @@ const STAGE_LABELS: Record<RoleplayStage, string> = {
   [RoleplayStage.Sex]: 'Sex',
   [RoleplayStage.Aftercare]: 'Aftercare',
 };
+
+type StageGiftFormValues = {
+  giftId: string;
+  reason: string;
+  buyText: string;
+  boughtImgId: string;
+};
+
+const EMPTY_GIFT_VALUES: StageGiftFormValues = {
+  giftId: '',
+  reason: '',
+  buyText: '',
+  boughtImgId: '',
+};
+
+function buildStageGiftCreatePayload(values: StageGiftFormValues) {
+  return {
+    giftId: values.giftId,
+    reason: values.reason.trim(),
+    buyText: values.buyText.trim(),
+    boughtImgId: values.boughtImgId || undefined,
+  };
+}
+
+function buildStageGiftUpdatePayload(values: StageGiftFormValues) {
+  return {
+    reason: values.reason.trim(),
+    buyText: values.buyText.trim(),
+    boughtImgId: values.boughtImgId || undefined,
+  };
+}
 
 function buildStagePayload(
   stage: StageDirectives,
@@ -153,13 +187,12 @@ export function ScenarioDetails({
   const [isGiftEditDrawerOpen, setIsGiftEditDrawerOpen] = useState(false);
   const [giftShowErrors, setGiftShowErrors] = useState(false);
   const [giftEditShowErrors, setGiftEditShowErrors] = useState(false);
-  const [giftValues, setGiftValues] = useState({
-    giftId: '',
-    reason: '',
-    buyText: '',
-  });
-  const [giftEditReason, setGiftEditReason] = useState('');
-  const [giftEditBuyText, setGiftEditBuyText] = useState('');
+  const [giftValues, setGiftValues] =
+    useState<StageGiftFormValues>(EMPTY_GIFT_VALUES);
+  const [giftFile, setGiftFile] = useState<IFile | null>(null);
+  const [giftEditValues, setGiftEditValues] =
+    useState<StageGiftFormValues>(EMPTY_GIFT_VALUES);
+  const [giftEditFile, setGiftEditFile] = useState<IFile | null>(null);
   const [giftToEditId, setGiftToEditId] = useState<string | null>(null);
   const [giftToDeleteId, setGiftToDeleteId] = useState<string | null>(null);
   const [liveGenerationStage, setLiveGenerationStage] =
@@ -193,16 +226,16 @@ export function ScenarioDetails({
   const giftEditValidationErrors = useMemo(() => {
     if (!giftEditShowErrors) return {};
     const errors: { reason?: string } = {};
-    if (!giftEditReason.trim()) errors.reason = 'Enter a reason.';
+    if (!giftEditValues.reason.trim()) errors.reason = 'Enter a reason.';
     return errors;
-  }, [giftEditReason, giftEditShowErrors]);
+  }, [giftEditShowErrors, giftEditValues.reason]);
   const isGiftValid = useMemo(
     () => Boolean(giftValues.giftId && giftValues.reason.trim()),
     [giftValues.giftId, giftValues.reason],
   );
   const isGiftEditValid = useMemo(
-    () => Boolean(giftEditReason.trim()),
-    [giftEditReason],
+    () => Boolean(giftEditValues.reason.trim()),
+    [giftEditValues.reason],
   );
 
   const validationErrors = useMemo(() => {
@@ -295,7 +328,8 @@ export function ScenarioDetails({
   };
 
   const openGiftAddDrawer = () => {
-    setGiftValues({ giftId: '', reason: '', buyText: '' });
+    setGiftValues(EMPTY_GIFT_VALUES);
+    setGiftFile(null);
     setGiftShowErrors(false);
     setIsGiftAddDrawerOpen(true);
   };
@@ -308,8 +342,13 @@ export function ScenarioDetails({
   const openGiftEditDrawer = () => {
     if (!stageGift) return;
     setGiftToEditId(stageGift.id);
-    setGiftEditReason(stageGift.reason ?? '');
-    setGiftEditBuyText(stageGift.buyText ?? '');
+    setGiftEditValues({
+      giftId: stageGift.gift?.id ?? stageGift.giftId ?? '',
+      reason: stageGift.reason ?? '',
+      buyText: stageGift.buyText ?? '',
+      boughtImgId: stageGift.boughtImage?.id ?? '',
+    });
+    setGiftEditFile(stageGift.boughtImage ?? null);
     setGiftEditShowErrors(false);
     setIsGiftEditDrawerOpen(true);
   };
@@ -339,11 +378,7 @@ export function ScenarioDetails({
       characterId,
       scenarioId: scenario.id,
       stage: selectedStage,
-      payload: {
-        giftId: giftValues.giftId,
-        reason: giftValues.reason.trim(),
-        buyText: giftValues.buyText.trim(),
-      },
+      payload: buildStageGiftCreatePayload(giftValues),
     });
 
     setIsGiftAddDrawerOpen(false);
@@ -360,10 +395,7 @@ export function ScenarioDetails({
       scenarioId: scenario.id,
       stage: selectedStage,
       characterGiftId: giftToEditId,
-      payload: {
-        reason: giftEditReason.trim(),
-        buyText: giftEditBuyText.trim(),
-      },
+      payload: buildStageGiftUpdatePayload(giftEditValues),
     });
 
     setIsGiftEditDrawerOpen(false);
@@ -705,6 +737,19 @@ export function ScenarioDetails({
                     )}
                   </Stack>
                 </div>
+                {stageGift?.boughtImage?.url ? (
+                  <div className={s.stageGiftImageBlock}>
+                    <Typography variant="caption" tone="muted">
+                      Bought image
+                    </Typography>
+                    <img
+                      className={s.stageGiftImage}
+                      src={stageGift.boughtImage.url}
+                      alt={`${stageGift.gift?.name || 'Gift'} bought`}
+                      loading="lazy"
+                    />
+                  </div>
+                ) : null}
               </div>
               <div className={s.stageSection}>
                 <Typography variant="caption" tone="muted">
@@ -891,7 +936,11 @@ export function ScenarioDetails({
         }}
       >
         <Stack gap="16px">
-          <Field label="Gift" labelFor="stage-gift-create" error={giftValidationErrors.giftId}>
+          <Field
+            label="Gift"
+            labelFor="stage-gift-create"
+            error={giftValidationErrors.giftId}
+          >
             <Select
               id="stage-gift-create"
               size="sm"
@@ -949,6 +998,21 @@ export function ScenarioDetails({
               fullWidth
             />
           </Field>
+          <FileUpload
+            label="Bought image"
+            folder={FileDir.Public}
+            value={giftFile}
+            onChange={(file) => {
+              setGiftFile(file);
+              setGiftValues((prev) => ({
+                ...prev,
+                boughtImgId: file?.id ?? '',
+              }));
+            }}
+            onError={(message) =>
+              notifyError(new Error(message), 'Unable to upload image.')
+            }
+          />
           <div className={s.modalActions}>
             <Button
               variant="secondary"
@@ -988,8 +1052,13 @@ export function ScenarioDetails({
           >
             <Textarea
               id="stage-gift-edit-reason"
-              value={giftEditReason}
-              onChange={(event) => setGiftEditReason(event.target.value)}
+              value={giftEditValues.reason}
+              onChange={(event) =>
+                setGiftEditValues((prev) => ({
+                  ...prev,
+                  reason: event.target.value,
+                }))
+              }
               rows={2}
               fullWidth
               invalid={Boolean(giftEditValidationErrors.reason)}
@@ -998,12 +1067,32 @@ export function ScenarioDetails({
           <Field label="Buy text" labelFor="stage-gift-edit-buy-text">
             <Textarea
               id="stage-gift-edit-buy-text"
-              value={giftEditBuyText}
-              onChange={(event) => setGiftEditBuyText(event.target.value)}
+              value={giftEditValues.buyText}
+              onChange={(event) =>
+                setGiftEditValues((prev) => ({
+                  ...prev,
+                  buyText: event.target.value,
+                }))
+              }
               rows={2}
               fullWidth
             />
           </Field>
+          <FileUpload
+            label="Bought image"
+            folder={FileDir.Public}
+            value={giftEditFile}
+            onChange={(file) => {
+              setGiftEditFile(file);
+              setGiftEditValues((prev) => ({
+                ...prev,
+                boughtImgId: file?.id ?? '',
+              }));
+            }}
+            onError={(message) =>
+              notifyError(new Error(message), 'Unable to upload image.')
+            }
+          />
           <div className={s.modalActions}>
             <Button
               variant="secondary"

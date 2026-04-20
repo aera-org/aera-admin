@@ -116,6 +116,7 @@ interface ICharacterGift {
   stage: RoleplayStage;
   reason: string;
   buyText: string;
+  boughtImage?: IFile | null;
   createdAt: string;
   updatedAt: string;
 }

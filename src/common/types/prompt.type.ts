@@ -1,6 +1,7 @@
 export enum PromptType {
   Chat = 'chat',
   Ping = 'ping',
+  GiftBought = 'gift-bought',
   Image = 'image',
   ImageSex = 'image-sex',
   AnimeImage = 'anime-image',

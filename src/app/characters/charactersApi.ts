@@ -105,10 +105,12 @@ export type StageGiftCreateDto = {
   giftId: string;
   reason: string;
   buyText: string;
+  boughtImgId?: string;
 };
 export type StageGiftUpdateDto = {
   reason: string;
   buyText: string;
+  boughtImgId?: string;
 };
 export type CharacterStoryCreateDto = {
   fileId: string;

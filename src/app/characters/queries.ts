@@ -142,6 +142,7 @@ async function cloneCharacterScenarios(
           giftId: sourceGiftId,
           reason: gift.reason.trim(),
           buyText: gift.buyText,
+          boughtImgId: gift.boughtImage?.id,
         },
       );
     }
