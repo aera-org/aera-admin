@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import {
   Checkbox,
   Field,
@@ -43,6 +45,7 @@ type PosePromptFormProps = {
   values: PosePromptFormValues;
   errors: PosePromptFormErrors;
   disabled?: boolean;
+  beforePrompt?: ReactNode;
   onChange: (
     field: keyof PosePromptFormValues | RoleplayStage,
     value: string | boolean,
@@ -53,6 +56,7 @@ export function PosePromptForm({
   values,
   errors,
   disabled = false,
+  beforePrompt,
   onChange,
 }: PosePromptFormProps) {
   return (
@@ -132,6 +136,8 @@ export function PosePromptForm({
           ))}
         </FormRow>
       </Field>
+
+      {beforePrompt}
 
       <Field label="Prompt" labelFor="pose-prompt" error={errors.prompt}>
         <Textarea

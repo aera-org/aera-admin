@@ -18,8 +18,13 @@ export type PosePromptsListParams = {
 const fallbackError = 'Unable to load poses.';
 const createFallbackError = 'Unable to create the pose.';
 const updateFallbackError = 'Unable to update the pose.';
+const updateReferenceFallbackError = 'Unable to update the pose reference.';
 const detailsFallbackError = 'Unable to load the pose.';
 const deleteFallbackError = 'Unable to delete the pose.';
+
+export type UpdatePosePromptReferenceDto = {
+  referenceImgId: string;
+};
 
 export async function getPosePrompts(params: PosePromptsListParams) {
   const query = new URLSearchParams();
@@ -63,6 +68,21 @@ export async function updatePosePrompt(id: string, payload: UpdatePosePromptDto)
   });
   if (!res.ok) {
     throw await buildApiError(res, updateFallbackError);
+  }
+  return (await res.json()) as IPosePromptDetails;
+}
+
+export async function updatePosePromptReference(
+  id: string,
+  payload: UpdatePosePromptReferenceDto,
+) {
+  const res = await apiFetch(`/admin/pose-prompts/${id}/reference`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, updateReferenceFallbackError);
   }
   return (await res.json()) as IPosePromptDetails;
 }
