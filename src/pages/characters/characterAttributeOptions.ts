@@ -37,6 +37,7 @@ const ethnicityLabels: Record<CharacterEthnicity, string> = {
   [CharacterEthnicity.Latina]: 'Latina',
   [CharacterEthnicity.Asian]: 'Asian',
   [CharacterEthnicity.Afro]: 'Afro',
+  [CharacterEthnicity.Indian]: 'Indian',
 };
 
 const bodyTypeLabels: Record<CharacterBodyType, string> = {

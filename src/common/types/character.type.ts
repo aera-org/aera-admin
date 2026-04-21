@@ -91,6 +91,7 @@ export enum CharacterEthnicity {
   Latina = 'latina',
   Asian = 'asian',
   Afro = 'afro',
+  Indian = 'indian',
 }
 
 export enum CharacterBodyType {

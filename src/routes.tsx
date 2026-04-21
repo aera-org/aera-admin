@@ -38,6 +38,8 @@ import {
   PoseCreatePage,
   PosesPage,
   PoseUpdatePage,
+  PostsPage,
+  PostsSetDetailsPage,
   ProfilePage,
   PromptCreatePage,
   PromptsPage,
@@ -118,6 +120,8 @@ export function AppRoutes() {
         <Route path="/poses" element={<PosesPage />} />
         <Route path="/poses/new" element={<PoseCreatePage />} />
         <Route path="/poses/:id" element={<PoseUpdatePage />} />
+        <Route path="/posts/sets/:id" element={<PostsSetDetailsPage />} />
+        <Route path="/posts/*" element={<PostsPage />} />
         <Route path="/prompts" element={<PromptsPage />} />
         <Route path="/prompts/new" element={<PromptCreatePage />} />
         <Route path="/prompts/:id" element={<PromptUpdatePage />} />

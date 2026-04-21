@@ -4,6 +4,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/app/auth';
 import {
   AudioLinesIcon,
+  BananaIcon,
   ChartIcon,
   CircleDotIcon,
   DollarSignIcon,
@@ -40,6 +41,7 @@ const navItems: NavItem[] = [
     icon: <SparklesIcon />,
   },
   { label: 'Images', to: '/character-images', icon: <ImageIcon /> },
+  { label: 'Posts', to: '/posts', icon: <BananaIcon /> },
   { label: 'Generations', to: '/generations', icon: <NewspaperIcon /> },
   { label: 'Batch Images', to: '/batch-images', icon: <ImageIcon /> },
   { label: 'Prompts', to: '/prompts', icon: <MessageSquareQuoteIcon /> },

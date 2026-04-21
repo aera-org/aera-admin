@@ -12,6 +12,7 @@ export * from './logs.type';
 export * from './lora.type';
 export * from './plan.type';
 export * from './pose-prompt.type';
+export * from './post.type';
 export * from './prompt.type';
 export * from './scenario-gen.type';
 export * from './tg-user.type';

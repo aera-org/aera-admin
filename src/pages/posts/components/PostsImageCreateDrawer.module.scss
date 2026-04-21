@@ -1,0 +1,65 @@
+.drawer {
+  width: min(90vw, 640px);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: 0 3px;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.hiddenInputWrapper {
+  display: none;
+}
+
+.uploadActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.uploadEmpty {
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-base);
+  padding: var(--space-3);
+}
+
+.uploadItem {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-base);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.uploadRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.uploadMeta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.uploadActionsRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.drawerActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}

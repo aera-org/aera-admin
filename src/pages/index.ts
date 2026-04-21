@@ -29,6 +29,8 @@ export { PlansPage } from './plans/PlansPage';
 export { PoseCreatePage } from './poses/PoseCreatePage';
 export { PosesPage } from './poses/PosesPage';
 export { PoseUpdatePage } from './poses/PoseUpdatePage';
+export { PostsPage } from './posts/PostsPage';
+export { PostsSetDetailsPage } from './posts/PostsSetDetailsPage';
 export { ProfilePage } from './profile/ProfilePage';
 export { PromptCreatePage } from './prompts/PromptCreatePage';
 export { PromptsPage } from './prompts/PromptsPage';
