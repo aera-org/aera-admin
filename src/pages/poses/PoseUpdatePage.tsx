@@ -5,22 +5,28 @@ import {
   useDeletePosePrompt,
   usePosePromptDetails,
   useUpdatePosePrompt,
+  useUpdatePosePromptReference,
 } from '@/app/pose-prompts';
+import { notifyError } from '@/app/toast';
 import {
   Alert,
   Button,
   Container,
   Field,
   FormRow,
+  Modal,
   Skeleton,
   Stack,
   Typography,
 } from '@/atoms';
 import {
-  type UpdatePosePromptDto,
+  FileDir,
+  type IFile,
   RoleplayStage,
+  type UpdatePosePromptDto,
 } from '@/common/types';
 import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
+import { FileUpload } from '@/components/molecules/file-upload/FileUpload';
 import { AppShell } from '@/components/templates';
 
 import s from './PoseFormPage.module.scss';
@@ -74,6 +80,35 @@ function getErrors(values: PosePromptFormValues): PosePromptFormErrors {
   return errors;
 }
 
+function PoseReferenceImages({
+  referenceImg,
+  referenceDepthImg,
+}: {
+  referenceImg?: IFile | null;
+  referenceDepthImg?: IFile | null;
+}) {
+  const images = [referenceImg, referenceDepthImg].filter(
+    (file): file is IFile => Boolean(file?.url),
+  );
+
+  if (images.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className={s.referenceImages}>
+      {images.map((file) => (
+        <img
+          key={file.id}
+          className={s.referenceImage}
+          src={file.url ?? undefined}
+          alt={file.name}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function PoseUpdatePage() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -85,6 +120,7 @@ export function PoseUpdatePage() {
     refetch: refetchDetails,
   } = usePosePromptDetails(poseId, Boolean(poseId));
   const updateMutation = useUpdatePosePrompt();
+  const updateReferenceMutation = useUpdatePosePromptReference();
   const deleteMutation = useDeletePosePrompt();
 
   const [draft, setDraft] = useState<{
@@ -93,6 +129,8 @@ export function PoseUpdatePage() {
   } | null>(null);
   const [showErrorsForId, setShowErrorsForId] = useState<string | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isReferenceOpen, setIsReferenceOpen] = useState(false);
+  const [referenceFile, setReferenceFile] = useState<IFile | null>(null);
 
   const values = useMemo(() => {
     if (!data) return getInitialValues();
@@ -138,13 +176,17 @@ export function PoseUpdatePage() {
             };
           })()
         : field === 'isAnal'
-        ? {
-            ...values,
-            isAnal: Boolean(value),
-            stages: Boolean(value)
-              ? Array.from(new Set([...values.stages, RoleplayStage.Sex]))
-              : values.stages,
-          }
+        ? (() => {
+            const checked = Boolean(value);
+
+            return {
+              ...values,
+              isAnal: checked,
+              stages: checked
+                ? Array.from(new Set([...values.stages, RoleplayStage.Sex]))
+                : values.stages,
+            };
+          })()
           : {
               ...values,
               [field]: value,
@@ -187,7 +229,32 @@ export function PoseUpdatePage() {
     navigate('/poses');
   };
 
-  const isBusy = updateMutation.isPending || deleteMutation.isPending;
+  const handleReferenceModalClose = () => {
+    if (updateReferenceMutation.isPending) return;
+    setIsReferenceOpen(false);
+    setReferenceFile(null);
+  };
+
+  const handleReferenceUpload = async (file: IFile | null) => {
+    setReferenceFile(file);
+    if (!data || !file) return;
+
+    try {
+      await updateReferenceMutation.mutateAsync({
+        id: data.id,
+        payload: { referenceImgId: file.id },
+      });
+      setIsReferenceOpen(false);
+      setReferenceFile(null);
+    } catch (_error) {
+      return;
+    }
+  };
+
+  const isBusy =
+    updateMutation.isPending ||
+    updateReferenceMutation.isPending ||
+    deleteMutation.isPending;
 
   return (
     <AppShell>
@@ -196,9 +263,21 @@ export function PoseUpdatePage() {
           <div className={s.titleBlock}>
             <Typography variant="h2">Update pose</Typography>
           </div>
-          <Button variant="secondary" onClick={() => navigate('/poses')}>
-            Back to poses
-          </Button>
+          <div className={s.headerActions}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setReferenceFile(null);
+                setIsReferenceOpen(true);
+              }}
+              disabled={!data || isBusy}
+            >
+              Update Reference
+            </Button>
+            <Button variant="secondary" onClick={() => navigate('/poses')}>
+              Back to poses
+            </Button>
+          </div>
         </div>
 
         {error ? (
@@ -241,6 +320,12 @@ export function PoseUpdatePage() {
             <PosePromptForm
               values={values}
               errors={errors}
+              beforePrompt={
+                <PoseReferenceImages
+                  referenceImg={data.referenceImg}
+                  referenceDepthImg={data.referenceDepthImg}
+                />
+              }
               onChange={handleChange}
               disabled={isBusy}
             />
@@ -280,6 +365,19 @@ export function PoseUpdatePage() {
         onConfirm={handleDelete}
         onClose={() => setIsDeleteOpen(false)}
       />
+
+      <Modal open={isReferenceOpen} onClose={handleReferenceModalClose}>
+        <FileUpload
+          label="Reference image"
+          folder={FileDir.Public}
+          value={referenceFile}
+          onChange={handleReferenceUpload}
+          onError={(message) =>
+            notifyError(new Error(message), 'Unable to upload reference.')
+          }
+          disabled={updateReferenceMutation.isPending}
+        />
+      </Modal>
     </AppShell>
   );
 }

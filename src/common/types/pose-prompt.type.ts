@@ -1,5 +1,7 @@
 import type { RoleplayStage } from '@/common/types/character.type.ts';
 
+import type { IFile } from './file.type';
+
 export interface IPosePrompt {
   id: string;
   name: string;
@@ -45,6 +47,8 @@ export interface IPosePromptDetails extends IPosePrompt {
   angle: PhotoAngle;
   pose: Pose;
   prompt: string;
+  referenceImg?: IFile | null;
+  referenceDepthImg?: IFile | null;
 }
 
 export type CreatePosePromptDto = {

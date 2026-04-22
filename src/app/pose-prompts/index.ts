@@ -5,6 +5,7 @@ export {
   getPosePromptDetails,
   getPosePrompts,
   updatePosePrompt,
+  updatePosePromptReference,
 } from './posePromptsApi';
 export {
   useCreatePosePrompt,
@@ -12,4 +13,5 @@ export {
   usePosePromptDetails,
   usePosePrompts,
   useUpdatePosePrompt,
+  useUpdatePosePromptReference,
 } from './queries';

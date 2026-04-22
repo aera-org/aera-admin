@@ -10,6 +10,8 @@ import {
   getPosePrompts,
   type PosePromptsListParams,
   updatePosePrompt,
+  updatePosePromptReference,
+  type UpdatePosePromptReferenceDto,
 } from './posePromptsApi';
 
 const posePromptKeys = {
@@ -68,6 +70,30 @@ export function useUpdatePosePrompt() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to update the pose.');
+    },
+  });
+}
+
+export function useUpdatePosePromptReference() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: UpdatePosePromptReferenceDto;
+    }) => updatePosePromptReference(id, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['pose-prompts'] });
+      queryClient.invalidateQueries({
+        queryKey: posePromptKeys.detail(variables.id),
+      });
+      notifySuccess('Reference updated.', 'Reference updated.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to update the reference.');
     },
   });
 }
