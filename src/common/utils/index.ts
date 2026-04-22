@@ -14,5 +14,6 @@ export {
 export {
   formatUserRequestForDisplay,
   getVisibleUserRequestFieldKeys,
+  requiresPosePrompt,
   USER_REQUEST_FIELD_CONFIG,
 } from './userRequest';

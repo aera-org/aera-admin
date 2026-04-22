@@ -1,5 +1,8 @@
 import { RoleplayStage, type UserRequest } from '@/common/types';
-import { getVisibleUserRequestFieldKeys } from '@/common/utils';
+import {
+  getVisibleUserRequestFieldKeys,
+  requiresPosePrompt,
+} from '@/common/utils';
 
 export type GenerationUserRequestDraft = {
   clothesChanges: string;
@@ -44,7 +47,7 @@ export function buildUserRequestDraft(
 
     return {
       ...createEmptyUserRequestDraft(),
-      [stage === RoleplayStage.Sex ? 'clothesChanges' : 'actions']: trimmed,
+      [requiresPosePrompt(stage) ? 'clothesChanges' : 'actions']: trimmed,
     };
   }
 

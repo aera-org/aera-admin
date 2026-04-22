@@ -19,6 +19,10 @@ const DEFAULT_FIELD_KEYS: UserRequestFieldKey[] = [
   'environmentChanges',
   'faceExpression',
 ];
+const POSE_PROMPT_STAGES = new Set<RoleplayStage>([
+  RoleplayStage.Prelude,
+  RoleplayStage.Sex,
+]);
 
 export const USER_REQUEST_FIELD_CONFIG: Record<
   UserRequestFieldKey,
@@ -42,10 +46,16 @@ export const USER_REQUEST_FIELD_CONFIG: Record<
   },
 };
 
+export function requiresPosePrompt(
+  stage: RoleplayStage | '' | null | undefined,
+) {
+  return stage ? POSE_PROMPT_STAGES.has(stage) : false;
+}
+
 export function getVisibleUserRequestFieldKeys(
   stage: RoleplayStage | '' | null | undefined,
 ) {
-  return stage === RoleplayStage.Sex
+  return requiresPosePrompt(stage)
     ? (['clothesChanges'] satisfies UserRequestFieldKey[])
     : DEFAULT_FIELD_KEYS;
 }

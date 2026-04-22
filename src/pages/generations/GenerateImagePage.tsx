@@ -35,6 +35,7 @@ import {
 import {
   formatCharacterSelectLabel,
   getVisibleUserRequestFieldKeys,
+  requiresPosePrompt,
   USER_REQUEST_FIELD_CONFIG,
 } from '@/common/utils';
 import { AppShell } from '@/components/templates';
@@ -106,10 +107,6 @@ function formatStage(stage: RoleplayStage) {
   return STAGE_LABELS[stage] ?? stage;
 }
 
-function isSexStage(stage: RoleplayStage | '') {
-  return stage === RoleplayStage.Sex;
-}
-
 function useDebouncedValue<T>(value: T, delay: number) {
   const [debounced, setDebounced] = useState(value);
 
@@ -161,7 +158,7 @@ function buildGenerationRequest(
     secondLoraId: values.secondLoraId || undefined,
   };
 
-  if (isSexStage(values.stage)) {
+  if (requiresPosePrompt(values.stage)) {
     payload.posePromptId = values.posePromptId;
   }
 
@@ -316,7 +313,7 @@ export function GenerateImagePage() {
     () => (characterDetails ? characterDetails.scenarios : []),
     [characterDetails],
   );
-  const isSexRequestStage = isSexStage(values.stage);
+  const usesPosePromptFlow = requiresPosePrompt(values.stage);
   const visibleUserRequestFieldKeys = useMemo(
     () => getVisibleUserRequestFieldKeys(values.stage),
     [values.stage],
@@ -347,17 +344,17 @@ export function GenerateImagePage() {
     ) {
       result.secondLoraId = 'Secondary LoRA must differ from main LoRA.';
     }
-    if (isSexRequestStage) {
+    if (usesPosePromptFlow) {
       if (!values.posePromptId) result.posePromptId = 'Select a pose prompt.';
     }
     if (
-      !isSexRequestStage &&
+      !usesPosePromptFlow &&
       !hasUserRequestContent(values.userRequest, values.stage)
     ) {
       result.userRequest = 'Enter a request.';
     }
     return result;
-  }, [isSexRequestStage, showErrors, values]);
+  }, [showErrors, usesPosePromptFlow, values]);
 
   const isValid = useMemo(
     () =>
@@ -367,11 +364,11 @@ export function GenerateImagePage() {
         values.stage &&
         (!values.secondLoraId || values.mainLoraId) &&
         (!values.secondLoraId || values.mainLoraId !== values.secondLoraId) &&
-        (isSexRequestStage
+        (usesPosePromptFlow
           ? values.posePromptId
           : hasUserRequestContent(values.userRequest, values.stage)),
       ),
-    [isSexRequestStage, values],
+    [usesPosePromptFlow, values],
   );
 
   const requestPayload = useMemo<ImgGenerationRequest>(
@@ -967,7 +964,7 @@ export function GenerateImagePage() {
             </Field>
           </FormRow>
 
-          {isSexRequestStage ? (
+          {usesPosePromptFlow ? (
             <>
               <FormRow columns={1}>
                 <Field

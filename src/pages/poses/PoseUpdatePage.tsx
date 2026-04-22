@@ -230,7 +230,6 @@ export function PoseUpdatePage() {
   };
 
   const handleReferenceModalClose = () => {
-    if (updateReferenceMutation.isPending) return;
     setIsReferenceOpen(false);
     setReferenceFile(null);
   };
@@ -239,13 +238,14 @@ export function PoseUpdatePage() {
     setReferenceFile(file);
     if (!data || !file) return;
 
+    setIsReferenceOpen(false);
+    setReferenceFile(null);
+
     try {
       await updateReferenceMutation.mutateAsync({
         id: data.id,
         payload: { referenceImgId: file.id },
       });
-      setIsReferenceOpen(false);
-      setReferenceFile(null);
     } catch (_error) {
       return;
     }
@@ -270,9 +270,12 @@ export function PoseUpdatePage() {
                 setReferenceFile(null);
                 setIsReferenceOpen(true);
               }}
+              loading={updateReferenceMutation.isPending}
               disabled={!data || isBusy}
             >
-              Update Reference
+              {updateReferenceMutation.isPending
+                ? 'Generating Depth Img'
+                : 'Update Reference'}
             </Button>
             <Button variant="secondary" onClick={() => navigate('/poses')}>
               Back to poses

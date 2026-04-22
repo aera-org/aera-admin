@@ -19,8 +19,8 @@ import {
   Stack,
   Typography,
 } from '@/atoms';
-import { ImgGenerationStatus, RoleplayStage } from '@/common/types';
-import { formatUserRequestForDisplay } from '@/common/utils';
+import { ImgGenerationStatus } from '@/common/types';
+import { formatUserRequestForDisplay, requiresPosePrompt } from '@/common/utils';
 import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
 import { AppShell } from '@/components/templates';
 
@@ -52,10 +52,6 @@ function formatStage(value: string | null | undefined) {
     .split('_')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
-}
-
-function isSexStage(stage: string | null | undefined) {
-  return stage === RoleplayStage.Sex;
 }
 
 export function GenerationDetailsPage() {
@@ -228,10 +224,10 @@ export function GenerationDetailsPage() {
                 )}
               </div>
               <Stack gap="12px">
-                {isSexStage(data.stage) ? (
+                {requiresPosePrompt(data.stage) ? (
                   <div>
                     <Typography variant="meta" tone="muted">
-                      Sex request
+                      Pose prompt request
                     </Typography>
                     <Stack gap="8px">
                       <div>
