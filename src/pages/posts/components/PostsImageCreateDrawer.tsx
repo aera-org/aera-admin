@@ -11,7 +11,7 @@ import { isApiRequestError } from '@/app/api/apiErrors';
 import { useCharacterDetails, useCharacters } from '@/app/characters';
 import { markFileUploaded, signUpload } from '@/app/files/filesApi';
 import { useCreatePostImage } from '@/app/posts';
-import { notifyError } from '@/app/toast';
+import { notifyError, notifySuccess } from '@/app/toast';
 import {
   Badge,
   Button,
@@ -175,9 +175,7 @@ export function PostsImageCreateDrawer({
     scenarioId: '',
     note: '',
   });
-  const [createFile, setCreateFile] = useState<CreateImageUploadItem | null>(
-    null,
-  );
+  const [createFiles, setCreateFiles] = useState<CreateImageUploadItem[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -202,7 +200,7 @@ export function PostsImageCreateDrawer({
     useCharacters(characterQueryParams);
   const { data: selectedCharacterDetails, isLoading: isScenariosLoading } =
     useCharacterDetails(createValues.characterId || null);
-  const createMutation = useCreatePostImage();
+  const createMutation = useCreatePostImage({ silentSuccess: true });
 
   const characterOptions = useMemo(
     () =>
@@ -222,9 +220,10 @@ export function PostsImageCreateDrawer({
     [selectedCharacterDetails?.scenarios],
   );
 
-  const isUploadingFile = createFile?.status === 'uploading';
-  const uploadedFile =
-    createFile?.status === 'uploaded' ? createFile.uploadedFile : null;
+  const isUploadingFile = createFiles.some((file) => file.status === 'uploading');
+  const uploadedFiles = createFiles
+    .filter((file) => file.status === 'uploaded' && file.uploadedFile)
+    .map((file) => file.uploadedFile as IFile);
   const isBusy = isCreating || isUploadingFile || createMutation.isPending;
 
   const resetState = useCallback(() => {
@@ -234,7 +233,7 @@ export function PostsImageCreateDrawer({
       scenarioId: initialScenarioId,
       note: '',
     });
-    setCreateFile(null);
+    setCreateFiles([]);
     setIsCreating(false);
     setShowErrors(false);
     setFileInputKey((prev) => prev + 1);
@@ -270,18 +269,18 @@ export function PostsImageCreateDrawer({
     return {
       characterId: createValues.characterId ? undefined : 'Select a character.',
       scenarioId: createValues.scenarioId ? undefined : 'Select a scenario.',
-      file: uploadedFile
+      file: uploadedFiles.length > 0
         ? undefined
         : isUploadingFile
-          ? 'Wait for the upload to finish.'
-          : 'Upload an image.',
+          ? 'Wait for uploads to finish.'
+          : 'Upload at least one image.',
     };
   }, [
     createValues.characterId,
     createValues.scenarioId,
     isUploadingFile,
     showErrors,
-    uploadedFile,
+    uploadedFiles.length,
   ]);
 
   const characterValueLabel = useMemo(
@@ -298,86 +297,88 @@ export function PostsImageCreateDrawer({
 
   const updateCreateFile = useCallback(
     (
-      updater: (
-        item: CreateImageUploadItem | null,
-      ) => CreateImageUploadItem | null,
+      id: string,
+      updater: (item: CreateImageUploadItem) => CreateImageUploadItem,
     ) => {
-      setCreateFile((prev) => updater(prev));
+      setCreateFiles((prev) =>
+        prev.map((item) => (item.id === id ? updater(item) : item)),
+      );
     },
     [],
   );
 
+  const uploadFile = useCallback(
+    async (file: File, itemId: string) => {
+      if (!isAcceptedImageFile(file)) {
+        updateCreateFile(itemId, (current) => ({
+          ...current,
+          status: 'error',
+          message: 'Only PNG, JPG, JPEG, or WEBP files are allowed.',
+        }));
+        return;
+      }
+
+      try {
+        const mime = resolveMimeType(file);
+        const { presigned, file: signedFile } = await signUpload({
+          fileName: file.name,
+          mime,
+          folder: FileDir.Public,
+        });
+
+        await uploadToPresigned(presigned, file);
+        const success = await markFileUploaded(signedFile.id);
+        if (!success) {
+          throw new Error('Unable to finalize upload.');
+        }
+
+        updateCreateFile(itemId, (current) => ({
+          ...current,
+          status: 'uploaded',
+          uploadedFile: { ...signedFile, status: FileStatus.UPLOADED },
+          message: undefined,
+        }));
+      } catch (error) {
+        updateCreateFile(itemId, (current) => ({
+          ...current,
+          status: 'error',
+          message: resolveErrorMessage(error),
+        }));
+        notifyError(error, 'Unable to upload the image.');
+      }
+    },
+    [updateCreateFile],
+  );
+
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] ?? null;
+    const files = Array.from(event.target.files ?? []);
     setFileInputKey((prev) => prev + 1);
 
-    if (!file || isBusy) {
+    if (files.length === 0 || isBusy) {
       return;
     }
 
-    const queuedItem: CreateImageUploadItem = {
+    const queuedItems = files.map((file) => ({
       id: createUploadItemId(),
       fileName: file.name,
       fileSize: file.size,
-      status: 'uploading',
+      status: 'uploading' as const,
       uploadedFile: null,
-    };
+    }));
 
-    setCreateFile(queuedItem);
+    setCreateFiles((prev) => [...prev, ...queuedItems]);
 
-    if (!isAcceptedImageFile(file)) {
-      updateCreateFile((current) =>
-        current
-          ? {
-              ...current,
-              status: 'error',
-              message: 'Only PNG, JPG, JPEG, or WEBP files are allowed.',
-            }
-          : current,
-      );
-      return;
-    }
-
-    try {
-      const mime = resolveMimeType(file);
-      const { presigned, file: signedFile } = await signUpload({
-        fileName: file.name,
-        mime,
-        folder: FileDir.Public,
-      });
-
-      await uploadToPresigned(presigned, file);
-      const success = await markFileUploaded(signedFile.id);
-      if (!success) {
-        throw new Error('Unable to finalize upload.');
-      }
-
-      updateCreateFile((current) =>
-        current
-          ? {
-              ...current,
-              status: 'uploaded',
-              uploadedFile: { ...signedFile, status: FileStatus.UPLOADED },
-              message: undefined,
-            }
-          : current,
-      );
-    } catch (error) {
-      updateCreateFile((current) =>
-        current
-          ? {
-              ...current,
-              status: 'error',
-              message: resolveErrorMessage(error),
-            }
-          : current,
-      );
-      notifyError(error, 'Unable to upload the image.');
-    }
+    await Promise.all(
+      queuedItems.map((item, index) => uploadFile(files[index], item.id)),
+    );
   };
 
   const handleSave = async () => {
-    if (!createValues.characterId || !createValues.scenarioId || !uploadedFile) {
+    if (
+      !createValues.characterId ||
+      !createValues.scenarioId ||
+      uploadedFiles.length === 0
+    ) {
       setShowErrors(true);
       return;
     }
@@ -385,11 +386,21 @@ export function PostsImageCreateDrawer({
     setIsCreating(true);
 
     try {
-      await createMutation.mutateAsync({
-        fileId: uploadedFile.id,
-        scenarioId: createValues.scenarioId,
-        note: createValues.note.trim() || undefined,
-      });
+      for (const file of uploadedFiles) {
+        await createMutation.mutateAsync({
+          fileId: file.id,
+          scenarioId: createValues.scenarioId,
+          note: createValues.note.trim() || undefined,
+        });
+      }
+      notifySuccess(
+        uploadedFiles.length > 1
+          ? `${uploadedFiles.length} post images created.`
+          : 'Post image created.',
+        uploadedFiles.length > 1
+          ? `${uploadedFiles.length} post images created.`
+          : 'Post image created.',
+      );
       onOpenChange(false);
     } catch {
       setShowErrors(true);
@@ -504,57 +515,63 @@ export function PostsImageCreateDrawer({
             </Button>
             <Typography variant="meta" tone="muted">
               {isUploadingFile
-                ? 'Uploading image...'
-                : uploadedFile
-                  ? '1 uploaded'
-                  : 'No file uploaded'}
+                ? 'Uploading images...'
+                : uploadedFiles.length > 0
+                  ? `${uploadedFiles.length} uploaded`
+                  : 'No files uploaded'}
             </Typography>
           </div>
 
-          {createFile ? (
-            <div className={s.uploadItem}>
-              <div className={s.uploadRow}>
-                <div className={s.uploadMeta}>
-                  <Typography variant="body" truncate>
-                    {createFile.fileName}
-                  </Typography>
-                  <Typography variant="caption" tone="muted">
-                    {formatFileSize(createFile.fileSize)}
-                  </Typography>
+          {createFiles.length > 0 ? (
+            <div className={s.uploadList}>
+              {createFiles.map((file) => (
+                <div key={file.id} className={s.uploadItem}>
+                  <div className={s.uploadRow}>
+                    <div className={s.uploadMeta}>
+                      <Typography variant="body" truncate>
+                        {file.fileName}
+                      </Typography>
+                      <Typography variant="caption" tone="muted">
+                        {formatFileSize(file.fileSize)}
+                      </Typography>
+                    </div>
+                    <div className={s.uploadActionsRight}>
+                      {file.status === 'uploaded' ? (
+                        <Badge tone="success">Uploaded</Badge>
+                      ) : file.status === 'uploading' ? (
+                        <Badge tone="accent">Uploading</Badge>
+                      ) : (
+                        <Badge tone="warning">Failed</Badge>
+                      )}
+                      <IconButton
+                        aria-label="Remove image file"
+                        tooltip="Remove"
+                        variant="ghost"
+                        tone="danger"
+                        size="sm"
+                        icon={<Cross1Icon />}
+                        disabled={file.status === 'uploading' || isCreating}
+                        onClick={() => {
+                          if (file.status === 'uploading' || isCreating) return;
+                          setCreateFiles((prev) =>
+                            prev.filter((item) => item.id !== file.id),
+                          );
+                        }}
+                      />
+                    </div>
+                  </div>
+                  {file.message ? (
+                    <Typography variant="caption" tone="warning">
+                      {file.message}
+                    </Typography>
+                  ) : null}
                 </div>
-                <div className={s.uploadActionsRight}>
-                  {createFile.status === 'uploaded' ? (
-                    <Badge tone="success">Uploaded</Badge>
-                  ) : createFile.status === 'uploading' ? (
-                    <Badge tone="accent">Uploading</Badge>
-                  ) : (
-                    <Badge tone="warning">Failed</Badge>
-                  )}
-                  <IconButton
-                    aria-label="Remove image file"
-                    tooltip="Remove"
-                    variant="ghost"
-                    tone="danger"
-                    size="sm"
-                    icon={<Cross1Icon />}
-                    disabled={isUploadingFile}
-                    onClick={() => {
-                      if (isUploadingFile) return;
-                      setCreateFile(null);
-                    }}
-                  />
-                </div>
-              </div>
-              {createFile.message ? (
-                <Typography variant="caption" tone="warning">
-                  {createFile.message}
-                </Typography>
-              ) : null}
+              ))}
             </div>
           ) : (
             <div className={s.uploadEmpty}>
               <Typography variant="caption" tone="muted">
-                No image uploaded yet.
+                No images uploaded yet.
               </Typography>
             </div>
           )}
@@ -564,6 +581,7 @@ export function PostsImageCreateDrawer({
             id="post-image-create-file"
             type="file"
             accept={IMAGE_ACCEPT}
+            multiple
             disabled={isBusy}
             onChange={handleFileChange}
             wrapperClassName={s.hiddenInputWrapper}

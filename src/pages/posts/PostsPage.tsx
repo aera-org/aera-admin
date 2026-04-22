@@ -15,6 +15,7 @@ import {
   useCreatePost,
   useCreatePostSet,
   useDeletePostImage,
+  useDeletePostSet,
   useDeletePostText,
   usePostImages,
   usePosts,
@@ -369,15 +370,49 @@ function PostTextCard({
   );
 }
 
-function buildSetsTableRows(items: IPostSet[]) {
+function buildSetsTableRows(
+  items: IPostSet[],
+  options: {
+    deletingId: string | undefined;
+    isDeleting: boolean;
+    onDelete: (id: string) => void;
+  },
+) {
   return items.map((item) => ({
     setId: item.id,
-    scenario: item.id,
+    scenario: (
+      <Typography variant="caption" tone="muted">
+        {item.id}
+      </Typography>
+    ),
     postsCount: item.postsCount.toLocaleString(),
+    note: (
+      <Typography className={s.refsCell} variant="caption" tone="muted">
+        {item.note?.trim() || '—'}
+      </Typography>
+    ),
     refs: (
       <Typography className={s.refsCell} variant="caption" tone="muted">
         {item.refs.length > 0 ? item.refs.join(', ') : '—'}
       </Typography>
+    ),
+    actions: (
+      <div className={s.rowActions}>
+        <IconButton
+          aria-label="Delete set"
+          tooltip="Delete set"
+          variant="ghost"
+          tone="danger"
+          size="sm"
+          icon={<TrashIcon />}
+          loading={options.isDeleting && options.deletingId === item.id}
+          disabled={options.isDeleting}
+          onClick={(event) => {
+            event.stopPropagation();
+            options.onDelete(item.id);
+          }}
+        />
+      </div>
     ),
   }));
 }
@@ -390,6 +425,7 @@ export function PostsPage() {
   const createPostMutation = useCreatePost();
   const createPostSetMutation = useCreatePostSet();
   const deletePostImageMutation = useDeletePostImage();
+  const deletePostSetMutation = useDeletePostSet();
   const deletePostTextMutation = useDeletePostText();
   const [downloadingImageId, setDownloadingImageId] = useState<string | null>(null);
   const [selectedPosts, setSelectedPosts] = useState<SetSelectionTarget>([]);
@@ -620,7 +656,9 @@ export function PostsPage() {
     () => [
       { key: 'scenario', label: 'Set ID' },
       { key: 'postsCount', label: 'Posts' },
+      { key: 'note', label: 'Note' },
       { key: 'refs', label: 'Refs' },
+      { key: 'actions', label: '' },
     ],
     [],
   );
@@ -630,7 +668,9 @@ export function PostsPage() {
       Array.from({ length: 6 }, () => ({
         scenario: <Skeleton width={180} height={12} />,
         postsCount: <Skeleton width={60} height={12} />,
+        note: <Skeleton width={180} height={12} />,
         refs: <Skeleton width={220} height={12} />,
+        actions: <Skeleton width={28} height={28} />,
       })),
     [],
   );
@@ -746,6 +786,13 @@ export function PostsPage() {
       void deletePostTextMutation.mutateAsync(id);
     },
     [deletePostTextMutation, selectedItems.text?.id],
+  );
+
+  const handleDeletePostSet = useCallback(
+    (id: string) => {
+      void deletePostSetMutation.mutateAsync(id);
+    },
+    [deletePostSetMutation],
   );
 
   const handleSelectImage = useCallback((item: IPostImg) => {
@@ -1033,7 +1080,11 @@ export function PostsPage() {
               rows={
                 showSkeleton
                   ? setSkeletonRows
-                  : buildSetsTableRows(activeItems as IPostSet[])
+                  : buildSetsTableRows(activeItems as IPostSet[], {
+                      deletingId: deletePostSetMutation.variables,
+                      isDeleting: deletePostSetMutation.isPending,
+                      onDelete: handleDeletePostSet,
+                    })
               }
               getRowProps={(row) => {
                 const setId = typeof row.setId === 'string' ? row.setId : '';

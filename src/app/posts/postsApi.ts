@@ -56,6 +56,7 @@ const createPostFallbackError = 'Unable to create the post.';
 const createSetFallbackError = 'Unable to create the post set.';
 const createSetRefFallbackError = 'Unable to add the post set ref.';
 const updateSetFallbackError = 'Unable to update the post set.';
+const deleteSetFallbackError = 'Unable to delete the post set.';
 const createImageFallbackError = 'Unable to create the post image.';
 const createTextFallbackError = 'Unable to create the post text.';
 const deleteImageFallbackError = 'Unable to delete the post image.';
@@ -188,6 +189,15 @@ export async function createPostSetRef(id: string, payload: CreatePostSetRefDto)
     throw await buildApiError(res, createSetRefFallbackError);
   }
   return (await res.json()) as IPostSetDetails;
+}
+
+export async function deletePostSet(id: string) {
+  const res = await apiFetch(`/admin/posts/sets/${id}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, deleteSetFallbackError);
+  }
 }
 
 export async function createPostImage(payload: CreatePostImageDto) {

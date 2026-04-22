@@ -242,6 +242,11 @@
   word-break: break-word;
 }
 
+.rowActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .tableWrap {
   overflow-x: auto;
 }

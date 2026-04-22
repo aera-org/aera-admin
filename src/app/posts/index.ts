@@ -14,6 +14,7 @@ export {
   useCreatePostSetRef,
   useCreatePostText,
   useDeletePostImage,
+  useDeletePostSet,
   useDeletePostText,
   usePostImages,
   usePosts,

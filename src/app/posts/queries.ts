@@ -21,6 +21,7 @@ import {
   createPostText,
   type CreatePostTextDto,
   deletePostImage,
+  deletePostSet,
   deletePostText,
   getPostImages,
   getPosts,
@@ -173,6 +174,22 @@ export function useUpdatePostSet() {
   });
 }
 
+export function useDeletePostSet() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deletePostSet(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'set-details', id] });
+      notifySuccess('Post set deleted.', 'Post set deleted.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to delete the post set.');
+    },
+  });
+}
+
 export function useCreatePost() {
   const queryClient = useQueryClient();
 
@@ -188,14 +205,20 @@ export function useCreatePost() {
   });
 }
 
-export function useCreatePostImage() {
+type CreatePostImageOptions = {
+  silentSuccess?: boolean;
+};
+
+export function useCreatePostImage(options: CreatePostImageOptions = {}) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (payload: CreatePostImageDto) => createPostImage(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
-      notifySuccess('Post image created.', 'Post image created.');
+      if (!options.silentSuccess) {
+        notifySuccess('Post image created.', 'Post image created.');
+      }
     },
     onError: (error) => {
       notifyError(error, 'Unable to create the post image.');

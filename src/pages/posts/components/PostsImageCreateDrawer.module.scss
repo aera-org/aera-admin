@@ -29,6 +29,12 @@
   padding: var(--space-3);
 }
 
+.uploadList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 .uploadItem {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-base);

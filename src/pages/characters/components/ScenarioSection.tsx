@@ -192,7 +192,7 @@ export function ScenarioSection({
   const selectedScenario =
     scenarios.find((scenario) => scenario.id === selectedScenarioId) ?? null;
 
-  const getErrors = useCallback((values: typeof formValues) => {
+  const getBaseErrors = useCallback((values: typeof formValues) => {
     const errors: Record<string, string> = {};
     if (!values.name.trim()) errors.name = 'Enter a name.';
     if (!values.emoji.trim()) errors.emoji = 'Enter an emoji.';
@@ -204,9 +204,17 @@ export function ScenarioSection({
     if (!values.situation.trim()) errors.situation = 'Enter a situation.';
     if (!values.openingMessage.trim())
       errors.openingMessage = 'Enter an opening message.';
-    if (!values.openingImageId) errors.openingImageId = 'Upload an image.';
     return errors;
   }, []);
+
+  const getCreateErrors = useCallback(
+    (values: typeof formValues) => {
+      const errors = getBaseErrors(values);
+      if (!values.openingImageId) errors.openingImageId = 'Upload an image.';
+      return errors;
+    },
+    [getBaseErrors],
+  );
 
   const getCustomErrors = useCallback((values: CreateCustomScenarioDto) => {
     const errors: Record<string, string> = {};
@@ -225,29 +233,29 @@ export function ScenarioSection({
   }, []);
 
   const validationErrors = useMemo(
-    () => (showErrors ? getErrors(formValues) : {}),
-    [formValues, getErrors, showErrors],
+    () => (showErrors ? getCreateErrors(formValues) : {}),
+    [formValues, getCreateErrors, showErrors],
   );
   const customValidationErrors = useMemo(
     () => (customShowErrors ? getCustomErrors(customFormValues) : {}),
     [customFormValues, customShowErrors, getCustomErrors],
   );
   const editValidationErrors = useMemo(
-    () => (editShowErrors ? getErrors(editValues) : {}),
-    [editShowErrors, editValues, getErrors],
+    () => (editShowErrors ? getBaseErrors(editValues) : {}),
+    [editShowErrors, editValues, getBaseErrors],
   );
 
   const isValid = useMemo(
-    () => Object.keys(getErrors(formValues)).length === 0,
-    [formValues, getErrors],
+    () => Object.keys(getCreateErrors(formValues)).length === 0,
+    [formValues, getCreateErrors],
   );
   const isCustomValid = useMemo(
     () => Object.keys(getCustomErrors(customFormValues)).length === 0,
     [customFormValues, getCustomErrors],
   );
   const isEditValid = useMemo(
-    () => Object.keys(getErrors(editValues)).length === 0,
-    [editValues, getErrors],
+    () => Object.keys(getBaseErrors(editValues)).length === 0,
+    [editValues, getBaseErrors],
   );
 
   const openCreateModal = () => {
@@ -401,7 +409,7 @@ export function ScenarioSection({
 
   const handleEdit = async () => {
     if (!characterId || !selectedScenario) return;
-    const errors = getErrors(editValues);
+    const errors = getBaseErrors(editValues);
     if (Object.values(errors).some(Boolean)) {
       setEditShowErrors(true);
       return;
@@ -428,7 +436,7 @@ export function ScenarioSection({
         appearance: editValues.appearance.trim(),
         situation: editValues.situation.trim(),
         openingMessage: editValues.openingMessage.trim(),
-        openingImageId: editValues.openingImageId,
+        openingImageId: editValues.openingImageId || undefined,
       },
     });
     setIsEditOpen(false);
