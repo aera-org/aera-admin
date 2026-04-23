@@ -23,14 +23,6 @@
   align-items: center;
   gap: var(--space-3);
   flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.headerActionButtons {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
 }
 
 .filters {
@@ -51,8 +43,13 @@
   min-width: 220px;
 }
 
+.characterField,
 .scenarioField {
-  min-width: 260px;
+  min-width: 280px;
+}
+
+.booleanField {
+  min-width: 160px;
 }
 
 .galleryWrap {
@@ -65,203 +62,6 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-4);
-}
-
-.textGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-4);
-}
-
-.card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  min-width: 0;
-  transition: border-color var(--transition), background-color var(--transition), box-shadow var(--transition);
-}
-
-.imageCard,
-.textCard {
-  cursor: pointer;
-}
-
-.imageCard:hover,
-.textCard:hover {
-  box-shadow: var(--shadow-md);
-}
-
-.imageCard:focus-visible,
-.textCard:focus-visible {
-  outline: 2px solid hsl(var(--focus-ring));
-  outline-offset: 2px;
-}
-
-.selectedCard {
-  border-color: hsl(var(--accent));
-  background: hsl(var(--accent-muted));
-}
-
-.imageCard {
-  padding: 0;
-  overflow: hidden;
-}
-
-.postCard {
-  padding: 0;
-  overflow: hidden;
-}
-
-.postCardPreview {
-  border-left: 0;
-  border-right: 0;
-  border-top: 0;
-  border-radius: 0;
-}
-
-.postCardBody {
-  padding: 0 var(--space-4) var(--space-4);
-}
-
-.imageCard:hover .previewActions,
-.textCard:hover .previewActions,
-.imageCard:focus-within .previewActions,
-.textCard:focus-within .previewActions,
-.imageCard:focus-visible .previewActions {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.textCard:focus-visible .previewActions {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.cardTitle {
-  min-width: 0;
-}
-
-.imageCardTitle {
-  font-weight: 600;
-}
-
-.imageCardBody {
-  padding: 0 var(--space-4) var(--space-4);
-}
-
-.textCard {
-  padding: 0;
-  overflow: hidden;
-}
-
-.textCardBody {
-  padding: 0 var(--space-4) var(--space-4);
-}
-
-.textContentFrame {
-  position: relative;
-  min-height: 200px;
-  padding: var(--space-4);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg-soft);
-}
-
-.textValue {
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font: inherit;
-  color: hsl(var(--fg));
-}
-
-.previewFrame {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-base);
-  background: var(--color-bg-soft);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.previewImage {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.previewActions {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--transition);
-}
-
-.imageCardPreview {
-  border-left: 0;
-  border-right: 0;
-  border-top: 0;
-  border-radius: 0;
-}
-
-.previewPlaceholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  padding: var(--space-4);
-  text-align: center;
-}
-
-.cardBody {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.bodyClamp {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
-  overflow: hidden;
-}
-
-.refsCell {
-  display: block;
-  white-space: normal;
-  word-break: break-word;
-}
-
-.rowActions {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.tableWrap {
-  overflow-x: auto;
-}
-
-.clickableRow {
-  cursor: pointer;
-}
-
-.clickableRow:hover td {
-  background: hsl(var(--accent-muted));
-}
-
-.clickableRow:focus-visible {
-  outline: 2px solid hsl(var(--focus-ring));
-  outline-offset: -2px;
 }
 
 .footer {
@@ -286,15 +86,13 @@
 }
 
 @media (max-width: 1100px) {
-  .galleryGrid,
-  .textGrid {
+  .galleryGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 720px) {
-  .galleryGrid,
-  .textGrid {
+  .galleryGrid {
     grid-template-columns: minmax(0, 1fr);
   }
 }

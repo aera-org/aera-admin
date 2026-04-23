@@ -10,8 +10,8 @@ import {
 import { isApiRequestError } from '@/app/api/apiErrors';
 import { useCharacterDetails, useCharacters } from '@/app/characters';
 import { markFileUploaded, signUpload } from '@/app/files/filesApi';
-import { useCreatePostImage } from '@/app/posts';
-import { notifyError, notifySuccess } from '@/app/toast';
+import { useCreatePost, useUpdatePost } from '@/app/posts';
+import { notifyError } from '@/app/toast';
 import {
   Badge,
   Button,
@@ -20,10 +20,11 @@ import {
   IconButton,
   Input,
   Select,
+  Switch,
   Textarea,
   Typography,
 } from '@/atoms';
-import { FileDir, FileStatus, type IFile } from '@/common/types';
+import { FileDir, FileStatus, type IFile, type IPost } from '@/common/types';
 import { formatCharacterSelectLabel } from '@/common/utils';
 import {
   Drawer,
@@ -31,16 +32,17 @@ import {
   type SearchSelectOption,
 } from '@/components/molecules';
 
-import s from './PostsImageCreateDrawer.module.scss';
+import s from './PostUpsertDrawer.module.scss';
 
-type PostsImageCreateDrawerProps = {
+type PostUpsertDrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  post?: IPost | null;
   initialCharacterId?: string;
   initialScenarioId?: string;
 };
 
-type CreateImageUploadItem = {
+type UploadItem = {
   id: string;
   fileName: string;
   fileSize: number;
@@ -49,10 +51,13 @@ type CreateImageUploadItem = {
   message?: string;
 };
 
-type CreateValues = {
+type Values = {
   characterId: string;
   scenarioId: string;
+  text: string;
   note: string;
+  isActive: boolean;
+  isTop: boolean;
 };
 
 const CHARACTER_LIST_LIMIT = 100;
@@ -163,20 +168,25 @@ function buildCharacterValueLabel(
   return options.find((option) => option.id === value)?.label;
 }
 
-export function PostsImageCreateDrawer({
+export function PostUpsertDrawer({
   open,
   onOpenChange,
+  post = null,
   initialCharacterId = '',
   initialScenarioId = '',
-}: PostsImageCreateDrawerProps) {
+}: PostUpsertDrawerProps) {
   const [characterSearch, setCharacterSearch] = useState('');
-  const [createValues, setCreateValues] = useState<CreateValues>({
+  const [values, setValues] = useState<Values>({
     characterId: '',
     scenarioId: '',
+    text: '',
     note: '',
+    isActive: true,
+    isTop: false,
   });
-  const [createFiles, setCreateFiles] = useState<CreateImageUploadItem[]>([]);
-  const [isCreating, setIsCreating] = useState(false);
+  const [uploadItem, setUploadItem] = useState<UploadItem | null>(null);
+  const [currentImage, setCurrentImage] = useState<IFile | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
 
@@ -199,8 +209,9 @@ export function PostsImageCreateDrawer({
   const { data: characterData, isLoading: isCharactersLoading } =
     useCharacters(characterQueryParams);
   const { data: selectedCharacterDetails, isLoading: isScenariosLoading } =
-    useCharacterDetails(createValues.characterId || null);
-  const createMutation = useCreatePostImage({ silentSuccess: true });
+    useCharacterDetails(values.characterId || null);
+  const createMutation = useCreatePost();
+  const updateMutation = useUpdatePost();
 
   const characterOptions = useMemo(
     () =>
@@ -220,24 +231,32 @@ export function PostsImageCreateDrawer({
     [selectedCharacterDetails?.scenarios],
   );
 
-  const isUploadingFile = createFiles.some((file) => file.status === 'uploading');
-  const uploadedFiles = createFiles
-    .filter((file) => file.status === 'uploaded' && file.uploadedFile)
-    .map((file) => file.uploadedFile as IFile);
-  const isBusy = isCreating || isUploadingFile || createMutation.isPending;
+  const isUploadingFile = uploadItem?.status === 'uploading';
+  const uploadedFile =
+    uploadItem?.status === 'uploaded' ? uploadItem.uploadedFile : null;
+  const resolvedImage = uploadedFile ?? currentImage;
+  const isBusy =
+    isSubmitting ||
+    isUploadingFile ||
+    createMutation.isPending ||
+    updateMutation.isPending;
 
   const resetState = useCallback(() => {
     setCharacterSearch('');
-    setCreateValues({
-      characterId: initialCharacterId,
-      scenarioId: initialScenarioId,
-      note: '',
+    setValues({
+      characterId: post ? initialCharacterId : initialCharacterId,
+      scenarioId: post ? post.scenario.id : initialScenarioId,
+      text: post?.text ?? '',
+      note: post?.note ?? '',
+      isActive: post?.isActive ?? true,
+      isTop: post?.isTop ?? false,
     });
-    setCreateFiles([]);
-    setIsCreating(false);
+    setCurrentImage(post?.img ?? null);
+    setUploadItem(null);
+    setIsSubmitting(false);
     setShowErrors(false);
     setFileInputKey((prev) => prev + 1);
-  }, [initialCharacterId, initialScenarioId]);
+  }, [initialCharacterId, initialScenarioId, post]);
 
   useEffect(() => {
     if (!open) return;
@@ -245,167 +264,160 @@ export function PostsImageCreateDrawer({
   }, [open, resetState]);
 
   useEffect(() => {
-    if (!createValues.scenarioId) return;
-    if (createValues.characterId && (isScenariosLoading || !selectedCharacterDetails)) {
+    if (!values.scenarioId) return;
+    if (values.characterId && (isScenariosLoading || !selectedCharacterDetails)) {
       return;
     }
     const exists = scenarioOptions.some(
-      (option) => option.value === createValues.scenarioId,
+      (option) => option.value === values.scenarioId,
     );
     if (!exists) {
-      setCreateValues((prev) => ({ ...prev, scenarioId: '' }));
+      setValues((prev) => ({ ...prev, scenarioId: '' }));
     }
   }, [
-    createValues.characterId,
-    createValues.scenarioId,
     isScenariosLoading,
     scenarioOptions,
     selectedCharacterDetails,
+    values.characterId,
+    values.scenarioId,
   ]);
 
   const errors = useMemo(() => {
     if (!showErrors) return {};
 
     return {
-      characterId: createValues.characterId ? undefined : 'Select a character.',
-      scenarioId: createValues.scenarioId ? undefined : 'Select a scenario.',
-      file: uploadedFiles.length > 0
+      characterId: values.characterId ? undefined : 'Select a character.',
+      scenarioId: values.scenarioId ? undefined : 'Select a scenario.',
+      text: values.text.trim() ? undefined : 'Enter text.',
+      image: resolvedImage
         ? undefined
         : isUploadingFile
-          ? 'Wait for uploads to finish.'
-          : 'Upload at least one image.',
+          ? 'Wait for the upload to finish.'
+          : 'Upload an image.',
     };
   }, [
-    createValues.characterId,
-    createValues.scenarioId,
     isUploadingFile,
+    resolvedImage,
     showErrors,
-    uploadedFiles.length,
+    values.characterId,
+    values.scenarioId,
+    values.text,
   ]);
 
   const characterValueLabel = useMemo(
     () =>
-      buildCharacterValueLabel(characterOptions, createValues.characterId) ??
+      buildCharacterValueLabel(characterOptions, values.characterId) ??
       (selectedCharacterDetails
         ? formatCharacterSelectLabel(
             selectedCharacterDetails.name,
             selectedCharacterDetails.type,
           )
         : undefined),
-    [characterOptions, createValues.characterId, selectedCharacterDetails],
-  );
-
-  const updateCreateFile = useCallback(
-    (
-      id: string,
-      updater: (item: CreateImageUploadItem) => CreateImageUploadItem,
-    ) => {
-      setCreateFiles((prev) =>
-        prev.map((item) => (item.id === id ? updater(item) : item)),
-      );
-    },
-    [],
-  );
-
-  const uploadFile = useCallback(
-    async (file: File, itemId: string) => {
-      if (!isAcceptedImageFile(file)) {
-        updateCreateFile(itemId, (current) => ({
-          ...current,
-          status: 'error',
-          message: 'Only PNG, JPG, JPEG, or WEBP files are allowed.',
-        }));
-        return;
-      }
-
-      try {
-        const mime = resolveMimeType(file);
-        const { presigned, file: signedFile } = await signUpload({
-          fileName: file.name,
-          mime,
-          folder: FileDir.Public,
-        });
-
-        await uploadToPresigned(presigned, file);
-        const success = await markFileUploaded(signedFile.id);
-        if (!success) {
-          throw new Error('Unable to finalize upload.');
-        }
-
-        updateCreateFile(itemId, (current) => ({
-          ...current,
-          status: 'uploaded',
-          uploadedFile: { ...signedFile, status: FileStatus.UPLOADED },
-          message: undefined,
-        }));
-      } catch (error) {
-        updateCreateFile(itemId, (current) => ({
-          ...current,
-          status: 'error',
-          message: resolveErrorMessage(error),
-        }));
-        notifyError(error, 'Unable to upload the image.');
-      }
-    },
-    [updateCreateFile],
+    [characterOptions, selectedCharacterDetails, values.characterId],
   );
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
+    const file = event.target.files?.[0] ?? null;
     setFileInputKey((prev) => prev + 1);
 
-    if (files.length === 0 || isBusy) {
+    if (!file || isBusy) {
       return;
     }
 
-    const queuedItems = files.map((file) => ({
+    const queuedItem: UploadItem = {
       id: createUploadItemId(),
       fileName: file.name,
       fileSize: file.size,
-      status: 'uploading' as const,
+      status: 'uploading',
       uploadedFile: null,
-    }));
+    };
 
-    setCreateFiles((prev) => [...prev, ...queuedItems]);
+    setUploadItem(queuedItem);
 
-    await Promise.all(
-      queuedItems.map((item, index) => uploadFile(files[index], item.id)),
-    );
+    if (!isAcceptedImageFile(file)) {
+      setUploadItem((current) =>
+        current
+          ? {
+              ...current,
+              status: 'error',
+              message: 'Only PNG, JPG, JPEG, or WEBP files are allowed.',
+            }
+          : current,
+      );
+      return;
+    }
+
+    try {
+      const mime = resolveMimeType(file);
+      const { presigned, file: signedFile } = await signUpload({
+        fileName: file.name,
+        mime,
+        folder: FileDir.Public,
+      });
+
+      await uploadToPresigned(presigned, file);
+      const success = await markFileUploaded(signedFile.id);
+      if (!success) {
+        throw new Error('Unable to finalize upload.');
+      }
+
+      setUploadItem((current) =>
+        current
+          ? {
+              ...current,
+              status: 'uploaded',
+              uploadedFile: { ...signedFile, status: FileStatus.UPLOADED },
+              message: undefined,
+            }
+          : current,
+      );
+    } catch (error) {
+      setUploadItem((current) =>
+        current
+          ? {
+              ...current,
+              status: 'error',
+              message: resolveErrorMessage(error),
+            }
+          : current,
+      );
+      notifyError(error, 'Unable to upload the image.');
+    }
   };
 
   const handleSave = async () => {
     if (
-      !createValues.characterId ||
-      !createValues.scenarioId ||
-      uploadedFiles.length === 0
+      !values.characterId ||
+      !values.scenarioId ||
+      !values.text.trim() ||
+      !resolvedImage
     ) {
       setShowErrors(true);
       return;
     }
 
-    setIsCreating(true);
+    setIsSubmitting(true);
 
     try {
-      for (const file of uploadedFiles) {
-        await createMutation.mutateAsync({
-          fileId: file.id,
-          scenarioId: createValues.scenarioId,
-          note: createValues.note.trim() || undefined,
-        });
+      const payload = {
+        scenarioId: values.scenarioId,
+        text: values.text,
+        imgId: resolvedImage.id,
+        note: values.note.trim() || undefined,
+        isActive: values.isActive,
+        isTop: values.isTop,
+      };
+
+      if (post) {
+        await updateMutation.mutateAsync({ id: post.id, payload });
+      } else {
+        await createMutation.mutateAsync(payload);
       }
-      notifySuccess(
-        uploadedFiles.length > 1
-          ? `${uploadedFiles.length} post images created.`
-          : 'Post image created.',
-        uploadedFiles.length > 1
-          ? `${uploadedFiles.length} post images created.`
-          : 'Post image created.',
-      );
       onOpenChange(false);
     } catch {
       setShowErrors(true);
     } finally {
-      setIsCreating(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -416,25 +428,25 @@ export function PostsImageCreateDrawer({
         if (!nextOpen && isBusy) return;
         onOpenChange(nextOpen);
       }}
-      title="Add image"
+      title={post ? 'Edit post' : 'Create post'}
       className={s.drawer}
     >
       <div className={s.form}>
         <FormRow columns={2}>
           <Field
             label="Character"
-            labelFor="post-image-create-character"
+            labelFor="post-upsert-character"
             error={errors.characterId}
           >
             <SearchSelect
-              id="post-image-create-character"
-              value={createValues.characterId}
+              id="post-upsert-character"
+              value={values.characterId}
               valueLabel={characterValueLabel}
               options={characterOptions}
               search={characterSearch}
               onSearchChange={setCharacterSearch}
               onSelect={(value) =>
-                setCreateValues((prev) => ({
+                setValues((prev) => ({
                   ...prev,
                   characterId: value,
                   scenarioId: '',
@@ -451,141 +463,192 @@ export function PostsImageCreateDrawer({
 
           <Field
             label="Scenario"
-            labelFor="post-image-create-scenario"
+            labelFor="post-upsert-scenario"
             error={errors.scenarioId}
           >
             <Select
-              id="post-image-create-scenario"
+              id="post-upsert-scenario"
               size="sm"
               options={scenarioOptions}
-              value={createValues.scenarioId}
+              value={values.scenarioId}
               placeholder={
-                createValues.characterId
+                values.characterId
                   ? isScenariosLoading
                     ? 'Loading scenarios...'
                     : 'Select scenario'
                   : 'Select character first'
               }
               onChange={(value) =>
-                setCreateValues((prev) => ({
+                setValues((prev) => ({
                   ...prev,
                   scenarioId: value,
                 }))
               }
               fullWidth
-              disabled={!createValues.characterId || isScenariosLoading || isBusy}
+              disabled={!values.characterId || isScenariosLoading || isBusy}
               invalid={Boolean(errors.scenarioId)}
             />
           </Field>
         </FormRow>
 
-        <Field label="Note" labelFor="post-image-create-note">
-          <Textarea
-            id="post-image-create-note"
-            size="sm"
-            value={createValues.note}
-            onChange={(event) =>
-              setCreateValues((prev) => ({
-                ...prev,
-                note: event.target.value,
-              }))
-            }
-            rows={2}
-            fullWidth
-            disabled={isBusy}
-          />
-        </Field>
+        <FormRow columns={2}>
+          <Field label="Status" labelFor="post-upsert-is-active">
+            <Switch
+              id="post-upsert-is-active"
+              checked={values.isActive}
+              disabled={isBusy}
+              onChange={(event) =>
+                setValues((prev) => ({
+                  ...prev,
+                  isActive: event.target.checked,
+                }))
+              }
+              label={values.isActive ? 'Active' : 'Inactive'}
+            />
+          </Field>
 
-        <Field label="Image file" error={errors.file}>
+          <Field label="Is Top" labelFor="post-upsert-is-top">
+            <Switch
+              id="post-upsert-is-top"
+              checked={values.isTop}
+              disabled={isBusy}
+              onChange={(event) =>
+                setValues((prev) => ({
+                  ...prev,
+                  isTop: event.target.checked,
+                }))
+              }
+              label={values.isTop ? 'Top' : 'Regular'}
+            />
+          </Field>
+        </FormRow>
+
+        <Field label="Image file" error={errors.image}>
+          {resolvedImage?.url ? (
+            <div className={s.previewFrame}>
+              <img
+                className={s.previewImage}
+                src={resolvedImage.url}
+                alt={resolvedImage.name}
+                loading="lazy"
+              />
+            </div>
+          ) : null}
+
           <div className={s.uploadActions}>
             <Button
               variant="secondary"
               onClick={() => {
                 if (isBusy) return;
-                const element = document.getElementById(
-                  'post-image-create-file',
-                );
+                const element = document.getElementById('post-upsert-file');
                 if (element instanceof HTMLInputElement) {
                   element.click();
                 }
               }}
               disabled={isBusy}
             >
-              Choose image
+              {resolvedImage ? 'Replace image' : 'Choose image'}
             </Button>
             <Typography variant="meta" tone="muted">
               {isUploadingFile
-                ? 'Uploading images...'
-                : uploadedFiles.length > 0
-                  ? `${uploadedFiles.length} uploaded`
-                  : 'No files uploaded'}
+                ? 'Uploading image...'
+                : resolvedImage
+                  ? 'Image ready'
+                  : 'No image uploaded'}
             </Typography>
           </div>
 
-          {createFiles.length > 0 ? (
-            <div className={s.uploadList}>
-              {createFiles.map((file) => (
-                <div key={file.id} className={s.uploadItem}>
-                  <div className={s.uploadRow}>
-                    <div className={s.uploadMeta}>
-                      <Typography variant="body" truncate>
-                        {file.fileName}
-                      </Typography>
-                      <Typography variant="caption" tone="muted">
-                        {formatFileSize(file.fileSize)}
-                      </Typography>
-                    </div>
-                    <div className={s.uploadActionsRight}>
-                      {file.status === 'uploaded' ? (
-                        <Badge tone="success">Uploaded</Badge>
-                      ) : file.status === 'uploading' ? (
-                        <Badge tone="accent">Uploading</Badge>
-                      ) : (
-                        <Badge tone="warning">Failed</Badge>
-                      )}
-                      <IconButton
-                        aria-label="Remove image file"
-                        tooltip="Remove"
-                        variant="ghost"
-                        tone="danger"
-                        size="sm"
-                        icon={<Cross1Icon />}
-                        disabled={file.status === 'uploading' || isCreating}
-                        onClick={() => {
-                          if (file.status === 'uploading' || isCreating) return;
-                          setCreateFiles((prev) =>
-                            prev.filter((item) => item.id !== file.id),
-                          );
-                        }}
-                      />
-                    </div>
-                  </div>
-                  {file.message ? (
-                    <Typography variant="caption" tone="warning">
-                      {file.message}
-                    </Typography>
-                  ) : null}
+          {uploadItem ? (
+            <div className={s.uploadItem}>
+              <div className={s.uploadRow}>
+                <div className={s.uploadMeta}>
+                  <Typography variant="body" truncate>
+                    {uploadItem.fileName}
+                  </Typography>
+                  <Typography variant="caption" tone="muted">
+                    {formatFileSize(uploadItem.fileSize)}
+                  </Typography>
                 </div>
-              ))}
+                <div className={s.uploadActionsRight}>
+                  {uploadItem.status === 'uploaded' ? (
+                    <Badge tone="success">Uploaded</Badge>
+                  ) : uploadItem.status === 'uploading' ? (
+                    <Badge>Uploading</Badge>
+                  ) : (
+                    <Badge tone="warning">Failed</Badge>
+                  )}
+                  <IconButton
+                    aria-label="Remove image file"
+                    tooltip="Remove"
+                    variant="ghost"
+                    tone="danger"
+                    size="sm"
+                    icon={<Cross1Icon />}
+                    disabled={isUploadingFile}
+                    onClick={() => {
+                      if (isUploadingFile) return;
+                      setUploadItem(null);
+                    }}
+                  />
+                </div>
+              </div>
+              {uploadItem.message ? (
+                <Typography variant="caption" tone="warning">
+                  {uploadItem.message}
+                </Typography>
+              ) : null}
             </div>
-          ) : (
+          ) : !resolvedImage ? (
             <div className={s.uploadEmpty}>
               <Typography variant="caption" tone="muted">
-                No images uploaded yet.
+                No image uploaded yet.
               </Typography>
             </div>
-          )}
+          ) : null}
 
           <Input
             key={fileInputKey}
-            id="post-image-create-file"
+            id="post-upsert-file"
             type="file"
             accept={IMAGE_ACCEPT}
-            multiple
             disabled={isBusy}
             onChange={handleFileChange}
             wrapperClassName={s.hiddenInputWrapper}
             className={s.hiddenInput}
+          />
+        </Field>
+
+        <Field label="Text" labelFor="post-upsert-text" error={errors.text}>
+          <Textarea
+            id="post-upsert-text"
+            size="sm"
+            value={values.text}
+            onChange={(event) =>
+              setValues((prev) => ({
+                ...prev,
+                text: event.target.value,
+              }))
+            }
+            rows={10}
+            fullWidth
+            disabled={isBusy}
+          />
+        </Field>
+
+        <Field label="Note" labelFor="post-upsert-note">
+          <Textarea
+            id="post-upsert-note"
+            size="sm"
+            value={values.note}
+            onChange={(event) =>
+              setValues((prev) => ({
+                ...prev,
+                note: event.target.value,
+              }))
+            }
+            rows={3}
+            fullWidth
+            disabled={isBusy}
           />
         </Field>
 
@@ -599,10 +662,10 @@ export function PostsImageCreateDrawer({
           </Button>
           <Button
             onClick={handleSave}
-            loading={isCreating || createMutation.isPending}
+            loading={isBusy}
             disabled={isBusy}
           >
-            Save
+            {post ? 'Save' : 'Create'}
           </Button>
         </div>
       </div>

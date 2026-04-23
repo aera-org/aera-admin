@@ -1,25 +1,6 @@
 export type {
   CreatePostDto,
-  CreatePostImageDto,
-  CreatePostSetDto,
-  CreatePostSetRefDto,
-  CreatePostTextDto,
   PostsListParams,
-  UpdatePostSetDto,
+  UpdatePostDto,
 } from './postsApi';
-export {
-  useCreatePost,
-  useCreatePostImage,
-  useCreatePostSet,
-  useCreatePostSetRef,
-  useCreatePostText,
-  useDeletePostImage,
-  useDeletePostSet,
-  useDeletePostText,
-  usePostImages,
-  usePosts,
-  usePostSetDetails,
-  usePostSets,
-  usePostTexts,
-  useUpdatePostSet,
-} from './queries';
+export { useCreatePost, usePosts, useUpdatePost } from './queries';

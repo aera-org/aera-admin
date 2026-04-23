@@ -21,11 +21,6 @@
   outline-offset: 2px;
 }
 
-.selected {
-  border-color: hsl(var(--accent));
-  background: hsl(var(--accent-muted));
-}
-
 .previewFrame {
   width: 100%;
   aspect-ratio: 1 / 1;
@@ -61,8 +56,24 @@
   padding: 0 var(--space-4) var(--space-4);
 }
 
+.meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
 .title {
   font-weight: 600;
+  min-width: 0;
+}
+
+.badges {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .textValue {
@@ -71,4 +82,9 @@
   word-break: break-word;
   font: inherit;
   color: hsl(var(--fg));
+}
+
+.note {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
