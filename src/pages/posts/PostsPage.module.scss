@@ -39,17 +39,19 @@
 }
 
 .filterField {
-  flex: 1 1 240px;
-  min-width: 220px;
+  flex: 1 1 220px;
+  min-width: 200px;
 }
 
 .characterField,
 .scenarioField {
-  min-width: 280px;
+  flex: 1 1 240px;
+  min-width: 220px;
 }
 
 .booleanField {
-  min-width: 160px;
+  flex: 0 0 140px;
+  min-width: 140px;
 }
 
 .galleryWrap {
