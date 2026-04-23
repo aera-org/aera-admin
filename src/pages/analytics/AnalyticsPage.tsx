@@ -66,7 +66,7 @@ import {
   Typography,
 } from '@/atoms';
 import { UserRole } from '@/common/types';
-import { cn, formatCharacterSelectLabel } from '@/common/utils';
+import { cn } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 
 import s from './AnalyticsPage.module.scss';
@@ -250,6 +250,15 @@ function normalizeRefList(value: string) {
     .map((item) => item.trim())
     .filter(Boolean)
     .join(',');
+}
+
+function formatAnalyticsEntityLabel(
+  name: string | null | undefined,
+  type: string | null | undefined,
+  fallback: string,
+) {
+  const normalizedName = name?.trim() || fallback;
+  return type ? `${normalizedName} (${type})` : normalizedName;
 }
 
 function formatDayLabel(value: string, variant: 'short' | 'long' = 'short') {
@@ -1406,11 +1415,22 @@ export function AnalyticsPage() {
     [],
   );
 
-  const characters = characterData?.data ?? [];
+  const characters = useMemo(() => characterData?.data ?? [], [characterData?.data]);
+  const characterTypeById = useMemo(
+    () =>
+      new Map(
+        characters.map((character) => [character.id, character.type] as const),
+      ),
+    [characters],
+  );
   const characterOptions = useMemo(() => {
     const options = characters.map((character) => ({
       value: character.id,
-      label: formatCharacterSelectLabel(character.name, character.type),
+      label: formatAnalyticsEntityLabel(
+        character.name,
+        character.type,
+        'Character',
+      ),
     }));
     if (
       deeplinkCharacterId &&
@@ -1428,7 +1448,12 @@ export function AnalyticsPage() {
     const baseLabel = 'All scenarios';
     const scenarioMap = new Map<
       string,
-      { id: string; name?: string | null; slug?: string | null }
+      {
+        id: string;
+        name?: string | null;
+        slug?: string | null;
+        characterType?: string | null;
+      }
     >();
     const source = deeplinkScenarioData ?? [];
     source.forEach((item) => {
@@ -1439,20 +1464,21 @@ export function AnalyticsPage() {
           id: scenario.id,
           name: scenario.name,
           slug: scenario.slug,
+          characterType: item.character?.id
+            ? characterTypeById.get(item.character.id)
+            : null,
         });
       }
     });
     const options = Array.from(scenarioMap.values())
       .map((scenario) => {
-        const baseLabelText =
-          scenario.name || scenario.slug || scenario.id || 'Unknown';
-        const label =
-          scenario.name && scenario.slug
-            ? `${scenario.name} · ${scenario.slug}`
-            : baseLabelText;
         return {
           value: scenario.id,
-          label,
+          label: formatAnalyticsEntityLabel(
+            scenario.name || scenario.slug || scenario.id,
+            scenario.characterType,
+            'Unknown',
+          ),
         };
       })
       .sort((a, b) => String(a.label).localeCompare(String(b.label)));
@@ -1466,7 +1492,7 @@ export function AnalyticsPage() {
       });
     }
     return [{ value: '', label: baseLabel }, ...options];
-  }, [deeplinkScenarioData, deeplinkScenarioId]);
+  }, [characterTypeById, deeplinkScenarioData, deeplinkScenarioId]);
 
   const deeplinkViewData = useMemo<DeeplinkViewItem[]>(() => {
     const entries = deeplinkData ?? [];
@@ -1720,7 +1746,13 @@ export function AnalyticsPage() {
       scenario: item.scenario ? (
         <div className={s.scenarioCell}>
           <Typography variant="body" as="span">
-            {item.scenario.name}
+            {formatAnalyticsEntityLabel(
+              item.scenario.name,
+              item.character?.id
+                ? characterTypeById.get(item.character.id)
+                : null,
+              'Unknown',
+            )}
           </Typography>
           {item.scenario.slug ? (
             <Typography variant="caption" tone="muted" as="span">
@@ -1855,6 +1887,7 @@ export function AnalyticsPage() {
       ),
     }));
   }, [
+    characterTypeById,
     sortedDeeplinkRows,
     paymentsRevenueMetric,
     dailyArpuMetric,
@@ -2729,8 +2762,16 @@ export function AnalyticsPage() {
     return sortedDeeplinkRows.map((item) => [
       item.ref ?? '',
       item.deeplink,
-      item.character?.name ?? '',
-      item.scenario?.name ?? '',
+      formatAnalyticsEntityLabel(
+        item.character?.name,
+        item.character?.id ? characterTypeById.get(item.character.id) : null,
+        '',
+      ),
+      formatAnalyticsEntityLabel(
+        item.scenario?.name,
+        item.character?.id ? characterTypeById.get(item.character.id) : null,
+        '',
+      ),
       item.scenario?.slug ?? '',
       Number.isFinite(item.visits) ? item.visits : null,
       Number.isFinite(item.unique) ? item.unique : null,
@@ -2744,7 +2785,7 @@ export function AnalyticsPage() {
       Number.isFinite(item.arpc) ? item.arpc : null,
       Number.isFinite(item.conversion) ? item.conversion : null,
     ]);
-  }, [sortedDeeplinkRows]);
+  }, [characterTypeById, sortedDeeplinkRows]);
 
   const isActiveSectionLoading = isDeeplinksSection
     ? isDeeplinksLoading
