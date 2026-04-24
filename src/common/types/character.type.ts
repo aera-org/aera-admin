@@ -175,12 +175,13 @@ export interface ICharacterDetails extends ICharacter {
   hairColor: CharacterHairColor;
   ethnicity: CharacterEthnicity;
   hairStyle: CharacterHairStyle;
-  eyeColor: CharacterEyeColor;
   bodyType: CharacterBodyType;
   breastSize: CharacterBreastSize;
   stories: ICharacterStory[];
   personality: CharacterPersonality[];
   avatarPrompt?: string;
+  age: number;
+  eyeColor: CharacterEyeColor;
 }
 
 export interface CustomCharacterCreateDto {
