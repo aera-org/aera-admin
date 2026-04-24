@@ -79,6 +79,18 @@
   gap: var(--space-1);
 }
 
+.previewDownloadAction {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+}
+
+.previewFrame:hover .previewDownloadAction,
+.previewFrame:focus-within .previewDownloadAction {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .state {
   display: flex;
   flex-direction: column;

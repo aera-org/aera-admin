@@ -10,6 +10,7 @@ import {
 } from '@/app/img-generations';
 import { useLoras } from '@/app/loras';
 import { usePosePrompts } from '@/app/pose-prompts';
+import { DownloadIcon } from '@/assets/icons';
 import {
   Alert,
   Badge,
@@ -19,6 +20,7 @@ import {
   Field,
   FormRow,
   Grid,
+  IconButton,
   RadioGroup,
   Select,
   Skeleton,
@@ -1111,12 +1113,27 @@ export function GenerateImagePage() {
 
                     <div className={s.resultPreview}>
                       {hasImage ? (
-                        <img
-                          className={s.resultImage}
-                          src={item.details?.file?.url ?? ''}
-                          alt={`Generated result ${item.index}`}
-                          loading="lazy"
-                        />
+                        <>
+                          <img
+                            className={s.resultImage}
+                            src={item.details?.file?.url ?? ''}
+                            alt={`Generated result ${item.index}`}
+                            loading="lazy"
+                          />
+                          <div className={s.resultPreviewActions}>
+                            <IconButton
+                              as="a"
+                              href={item.details?.file?.url ?? undefined}
+                              download={item.details?.file?.name}
+                              rel="noopener"
+                              aria-label="Download generation"
+                              tooltip="Download generation"
+                              variant="ghost"
+                              size="sm"
+                              icon={<DownloadIcon />}
+                            />
+                          </div>
+                        </>
                       ) : showSkeleton ? (
                         <Skeleton height="100%" />
                       ) : item.createState === 'failed' ? (

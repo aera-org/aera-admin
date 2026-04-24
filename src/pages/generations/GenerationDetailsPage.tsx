@@ -196,6 +196,7 @@ export function GenerationDetailsPage() {
                         tooltip="Download generation"
                         variant="ghost"
                         size="sm"
+                        className={s.previewDownloadAction}
                       />
                     ) : null}
                     <IconButton
