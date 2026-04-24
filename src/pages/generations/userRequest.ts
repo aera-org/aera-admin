@@ -2,6 +2,7 @@ import { RoleplayStage, type UserRequest } from '@/common/types';
 import {
   getVisibleUserRequestFieldKeys,
   requiresPosePrompt,
+  type GenerationRequestMode,
 } from '@/common/utils';
 
 export type GenerationUserRequestDraft = {
@@ -38,6 +39,7 @@ export function createEmptyUserRequestDraft(): GenerationUserRequestDraft {
 export function buildUserRequestDraft(
   value: UserRequest | string | null | undefined,
   stage: RoleplayStage | '' | null | undefined,
+  requestMode?: GenerationRequestMode | null,
 ): GenerationUserRequestDraft {
   if (!value) return createEmptyUserRequestDraft();
 
@@ -47,7 +49,8 @@ export function buildUserRequestDraft(
 
     return {
       ...createEmptyUserRequestDraft(),
-      [requiresPosePrompt(stage) ? 'clothesChanges' : 'actions']: trimmed,
+      [requiresPosePrompt(stage, requestMode) ? 'clothesChanges' : 'actions']:
+        trimmed,
     };
   }
 
@@ -62,9 +65,10 @@ export function buildUserRequestDraft(
 export function buildUserRequestPayload(
   draft: GenerationUserRequestDraft,
   stage: RoleplayStage | '' | null | undefined,
+  requestMode?: GenerationRequestMode | null,
 ): UserRequest | undefined {
   const request: UserRequest = {};
-  const visibleFieldKeys = getVisibleUserRequestFieldKeys(stage);
+  const visibleFieldKeys = getVisibleUserRequestFieldKeys(stage, requestMode);
 
   if (visibleFieldKeys.includes('clothesChanges')) {
     const clothesChanges = splitCommaSeparatedValues(draft.clothesChanges);
@@ -102,6 +106,7 @@ export function buildUserRequestPayload(
 export function hasUserRequestContent(
   draft: GenerationUserRequestDraft,
   stage: RoleplayStage | '' | null | undefined,
+  requestMode?: GenerationRequestMode | null,
 ) {
-  return Boolean(buildUserRequestPayload(draft, stage));
+  return Boolean(buildUserRequestPayload(draft, stage, requestMode));
 }

@@ -5,6 +5,7 @@ export type UserRequestFieldKey =
   | 'actions'
   | 'environmentChanges'
   | 'faceExpression';
+export type GenerationRequestMode = 'manual' | 'pose_prompt';
 
 type UserRequestInput = UserRequest | string | null | undefined;
 
@@ -19,10 +20,11 @@ const DEFAULT_FIELD_KEYS: UserRequestFieldKey[] = [
   'environmentChanges',
   'faceExpression',
 ];
-const POSE_PROMPT_STAGES = new Set<RoleplayStage>([
-  RoleplayStage.Prelude,
-  RoleplayStage.Sex,
-]);
+const DEFAULT_REQUEST_MODE: GenerationRequestMode = 'manual';
+const PRELUDE_REQUEST_MODE_OPTIONS: GenerationRequestMode[] = [
+  'manual',
+  'pose_prompt',
+];
 
 export const USER_REQUEST_FIELD_CONFIG: Record<
   UserRequestFieldKey,
@@ -46,16 +48,57 @@ export const USER_REQUEST_FIELD_CONFIG: Record<
   },
 };
 
-export function requiresPosePrompt(
+export function getAllowedGenerationRequestModes(
   stage: RoleplayStage | '' | null | undefined,
 ) {
-  return stage ? POSE_PROMPT_STAGES.has(stage) : false;
+  if (stage === RoleplayStage.Sex) {
+    return ['pose_prompt'] as const;
+  }
+
+  if (stage === RoleplayStage.Prelude) {
+    return PRELUDE_REQUEST_MODE_OPTIONS;
+  }
+
+  return [DEFAULT_REQUEST_MODE] as const;
+}
+
+export function resolveGenerationRequestMode(
+  stage: RoleplayStage | '' | null | undefined,
+  requestMode?: GenerationRequestMode | null,
+  hasPosePrompt = false,
+): GenerationRequestMode {
+  if (stage === RoleplayStage.Sex) {
+    return 'pose_prompt';
+  }
+
+  if (stage === RoleplayStage.Prelude) {
+    if (requestMode === 'pose_prompt' || requestMode === 'manual') {
+      return requestMode;
+    }
+
+    return hasPosePrompt ? 'pose_prompt' : 'manual';
+  }
+
+  return DEFAULT_REQUEST_MODE;
+}
+
+export function requiresPosePrompt(
+  stage: RoleplayStage | '' | null | undefined,
+  requestMode?: GenerationRequestMode | null,
+  hasPosePrompt = false,
+) {
+  return (
+    resolveGenerationRequestMode(stage, requestMode, hasPosePrompt) ===
+    'pose_prompt'
+  );
 }
 
 export function getVisibleUserRequestFieldKeys(
   stage: RoleplayStage | '' | null | undefined,
+  requestMode?: GenerationRequestMode | null,
+  hasPosePrompt = false,
 ) {
-  return requiresPosePrompt(stage)
+  return requiresPosePrompt(stage, requestMode, hasPosePrompt)
     ? (['clothesChanges'] satisfies UserRequestFieldKey[])
     : DEFAULT_FIELD_KEYS;
 }
@@ -63,6 +106,8 @@ export function getVisibleUserRequestFieldKeys(
 export function formatUserRequestForDisplay(
   value: UserRequestInput,
   stage: RoleplayStage | '' | null | undefined,
+  requestMode?: GenerationRequestMode | null,
+  hasPosePrompt = false,
 ) {
   if (!value) return [];
 
@@ -71,7 +116,7 @@ export function formatUserRequestForDisplay(
     return trimmed ? [{ label: 'Request', value: trimmed }] : [];
   }
 
-  return getVisibleUserRequestFieldKeys(stage)
+  return getVisibleUserRequestFieldKeys(stage, requestMode, hasPosePrompt)
     .map((fieldKey) => {
       if (fieldKey === 'faceExpression') {
         return {

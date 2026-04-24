@@ -13,7 +13,10 @@ export {
 } from './posePrompt';
 export {
   formatUserRequestForDisplay,
+  getAllowedGenerationRequestModes,
   getVisibleUserRequestFieldKeys,
+  resolveGenerationRequestMode,
   requiresPosePrompt,
+  type GenerationRequestMode,
   USER_REQUEST_FIELD_CONFIG,
 } from './userRequest';

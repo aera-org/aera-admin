@@ -20,7 +20,11 @@ import {
   Typography,
 } from '@/atoms';
 import { ImgGenerationStatus } from '@/common/types';
-import { formatUserRequestForDisplay, requiresPosePrompt } from '@/common/utils';
+import {
+  formatUserRequestForDisplay,
+  resolveGenerationRequestMode,
+  requiresPosePrompt,
+} from '@/common/utils';
 import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
 import { AppShell } from '@/components/templates';
 
@@ -73,8 +77,15 @@ export function GenerationDetailsPage() {
   const isFailed = data?.status === ImgGenerationStatus.Failed;
   const showLatency =
     data?.status === ImgGenerationStatus.Ready && data?.latency;
+  const requestMode = data
+    ? resolveGenerationRequestMode(
+        data.stage,
+        undefined,
+        Boolean(data.posePrompt?.id ?? data.posePromptId),
+      )
+    : undefined;
   const userRequestEntries = data
-    ? formatUserRequestForDisplay(data.userRequest, data.stage)
+    ? formatUserRequestForDisplay(data.userRequest, data.stage, requestMode)
     : [];
 
   const handleRegenerate = async () => {
@@ -98,6 +109,7 @@ export function GenerationDetailsPage() {
       userRequest: data.userRequest,
       posePromptId: data.posePrompt?.id ?? data.posePromptId,
       posePromptName: data.posePrompt?.name,
+      requestMode,
     };
 
     navigate('/generations/new', { state: { prefill } });
@@ -224,7 +236,7 @@ export function GenerationDetailsPage() {
                 )}
               </div>
               <Stack gap="12px">
-                {requiresPosePrompt(data.stage) ? (
+                {requiresPosePrompt(data.stage, requestMode) ? (
                   <div>
                     <Typography variant="meta" tone="muted">
                       Pose prompt request

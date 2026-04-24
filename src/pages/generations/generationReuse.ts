@@ -1,4 +1,5 @@
 import type { RoleplayStage, UserRequest } from '@/common/types';
+import type { GenerationRequestMode } from '@/common/utils';
 
 export type GenerateImagePrefillState = {
   characterId: string;
@@ -13,4 +14,5 @@ export type GenerateImagePrefillState = {
   userRequest?: UserRequest | string;
   posePromptId?: string;
   posePromptName?: string;
+  requestMode?: GenerationRequestMode;
 };

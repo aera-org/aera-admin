@@ -19,6 +19,7 @@ import {
   Field,
   FormRow,
   Grid,
+  RadioGroup,
   Select,
   Skeleton,
   Stack,
@@ -34,8 +35,11 @@ import {
 } from '@/common/types';
 import {
   formatCharacterSelectLabel,
+  getAllowedGenerationRequestModes,
   getVisibleUserRequestFieldKeys,
+  resolveGenerationRequestMode,
   requiresPosePrompt,
+  type GenerationRequestMode,
   USER_REQUEST_FIELD_CONFIG,
 } from '@/common/utils';
 import { AppShell } from '@/components/templates';
@@ -80,6 +84,7 @@ type GenerationFormValues = {
   characterId: string;
   scenarioId: string;
   stage: RoleplayStage | '';
+  requestMode: GenerationRequestMode;
   mainLoraId: string;
   secondLoraId: string;
   userRequest: GenerationUserRequestDraft;
@@ -136,13 +141,21 @@ function mergeSelectedOption(
 function buildInitialValues(
   prefill: GenerateImagePrefillState | null,
 ): GenerationFormValues {
+  const stage = (prefill?.stage ?? '') as RoleplayStage | '';
+  const requestMode = resolveGenerationRequestMode(
+    stage,
+    prefill?.requestMode,
+    Boolean(prefill?.posePromptId),
+  );
+
   return {
     characterId: prefill?.characterId ?? '',
     scenarioId: prefill?.scenarioId ?? '',
-    stage: (prefill?.stage ?? '') as RoleplayStage | '',
+    stage,
+    requestMode,
     mainLoraId: prefill?.mainLoraId ?? '',
     secondLoraId: prefill?.secondLoraId ?? '',
-    userRequest: buildUserRequestDraft(prefill?.userRequest, prefill?.stage),
+    userRequest: buildUserRequestDraft(prefill?.userRequest, stage, requestMode),
     posePromptId: prefill?.posePromptId ?? '',
   };
 }
@@ -158,11 +171,15 @@ function buildGenerationRequest(
     secondLoraId: values.secondLoraId || undefined,
   };
 
-  if (requiresPosePrompt(values.stage)) {
+  if (requiresPosePrompt(values.stage, values.requestMode)) {
     payload.posePromptId = values.posePromptId;
   }
 
-  payload.userRequest = buildUserRequestPayload(values.userRequest, values.stage);
+  payload.userRequest = buildUserRequestPayload(
+    values.userRequest,
+    values.stage,
+    values.requestMode,
+  );
 
   return payload;
 }
@@ -313,10 +330,17 @@ export function GenerateImagePage() {
     () => (characterDetails ? characterDetails.scenarios : []),
     [characterDetails],
   );
-  const usesPosePromptFlow = requiresPosePrompt(values.stage);
-  const visibleUserRequestFieldKeys = useMemo(
-    () => getVisibleUserRequestFieldKeys(values.stage),
+  const requestModeOptions = useMemo(
+    () => getAllowedGenerationRequestModes(values.stage),
     [values.stage],
+  );
+  const usesPosePromptFlow = requiresPosePrompt(
+    values.stage,
+    values.requestMode,
+  );
+  const visibleUserRequestFieldKeys = useMemo(
+    () => getVisibleUserRequestFieldKeys(values.stage, values.requestMode),
+    [values.requestMode, values.stage],
   );
   const userRequestErrorFieldKey = visibleUserRequestFieldKeys[0];
 
@@ -349,7 +373,7 @@ export function GenerateImagePage() {
     }
     if (
       !usesPosePromptFlow &&
-      !hasUserRequestContent(values.userRequest, values.stage)
+      !hasUserRequestContent(values.userRequest, values.stage, values.requestMode)
     ) {
       result.userRequest = 'Enter a request.';
     }
@@ -366,7 +390,11 @@ export function GenerateImagePage() {
         (!values.secondLoraId || values.mainLoraId !== values.secondLoraId) &&
         (usesPosePromptFlow
           ? values.posePromptId
-          : hasUserRequestContent(values.userRequest, values.stage)),
+          : hasUserRequestContent(
+              values.userRequest,
+              values.stage,
+              values.requestMode,
+            )),
       ),
     [usesPosePromptFlow, values],
   );
@@ -887,6 +915,10 @@ export function GenerateImagePage() {
                   setValues((prev) => ({
                     ...prev,
                     stage: value as RoleplayStage,
+                    requestMode: resolveGenerationRequestMode(
+                      value as RoleplayStage,
+                      prev.requestMode,
+                    ),
                   }))
                 }
                 fullWidth
@@ -963,6 +995,31 @@ export function GenerateImagePage() {
               />
             </Field>
           </FormRow>
+
+          {requestModeOptions.length > 1 ? (
+            <FormRow columns={1}>
+              <Field label="Prelude mode">
+                <RadioGroup
+                  name="generation-request-mode"
+                  value={values.requestMode}
+                  options={[
+                    { label: 'Manual request', value: 'manual' },
+                    { label: 'Pose prompt', value: 'pose_prompt' },
+                  ]}
+                  onChange={(value) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      requestMode: resolveGenerationRequestMode(
+                        prev.stage,
+                        value as GenerationRequestMode,
+                      ),
+                    }))
+                  }
+                  disabled={isSubmitting}
+                />
+              </Field>
+            </FormRow>
+          ) : null}
 
           {usesPosePromptFlow ? (
             <>
