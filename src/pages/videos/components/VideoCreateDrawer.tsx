@@ -41,6 +41,11 @@ type CreateVideoValues = {
   lowLoraId: string;
 };
 
+type LoraOption = {
+  id: string;
+  fileName: string;
+};
+
 const QUALITY_OPTIONS = [
   { label: 'Low (24)', value: VideoQuality.Low },
   { label: 'Medium (30)', value: VideoQuality.Medium },
@@ -108,6 +113,15 @@ function isVideoAspectRatio(value: string): value is VideoAspectRatio {
   return VIDEO_ASPECT_RATIO_VALUES.has(value as VideoAspectRatio);
 }
 
+function mergeSelectedLoraOption(
+  options: LoraOption[],
+  selected: LoraOption | null,
+) {
+  if (!selected) return options;
+  if (options.some((option) => option.id === selected.id)) return options;
+  return [selected, ...options];
+}
+
 export function VideoCreateDrawer({
   onClose,
   onSuccess,
@@ -117,6 +131,10 @@ export function VideoCreateDrawer({
   const [startFrame, setStartFrame] = useState<IFile | null>(null);
   const [highLoraSearch, setHighLoraSearch] = useState('');
   const [lowLoraSearch, setLowLoraSearch] = useState('');
+  const [selectedHighLoraOption, setSelectedHighLoraOption] =
+    useState<LoraOption | null>(null);
+  const [selectedLowLoraOption, setSelectedLowLoraOption] =
+    useState<LoraOption | null>(null);
 
   const createMutation = useCreateVideoGeneration();
   const debouncedHighLoraSearch = useDebouncedValue(
@@ -206,13 +224,43 @@ export function VideoCreateDrawer({
   );
 
   const highLoraOptions = useMemo(
-    () => highLoraData?.data ?? [],
-    [highLoraData?.data],
+    () => mergeSelectedLoraOption(highLoraData?.data ?? [], selectedHighLoraOption),
+    [highLoraData?.data, selectedHighLoraOption],
   );
   const lowLoraOptions = useMemo(
-    () => lowLoraData?.data ?? [],
-    [lowLoraData?.data],
+    () => mergeSelectedLoraOption(lowLoraData?.data ?? [], selectedLowLoraOption),
+    [lowLoraData?.data, selectedLowLoraOption],
   );
+
+  useEffect(() => {
+    if (!values.highLoraId) {
+      setSelectedHighLoraOption(null);
+      return;
+    }
+
+    const selectedOption =
+      (highLoraData?.data ?? []).find((lora) => lora.id === values.highLoraId) ??
+      selectedHighLoraOption;
+
+    if (selectedOption && selectedOption.id !== selectedHighLoraOption?.id) {
+      setSelectedHighLoraOption(selectedOption);
+    }
+  }, [highLoraData?.data, selectedHighLoraOption, values.highLoraId]);
+
+  useEffect(() => {
+    if (!values.lowLoraId) {
+      setSelectedLowLoraOption(null);
+      return;
+    }
+
+    const selectedOption =
+      (lowLoraData?.data ?? []).find((lora) => lora.id === values.lowLoraId) ??
+      selectedLowLoraOption;
+
+    if (selectedOption && selectedOption.id !== selectedLowLoraOption?.id) {
+      setSelectedLowLoraOption(selectedOption);
+    }
+  }, [lowLoraData?.data, selectedLowLoraOption, values.lowLoraId]);
 
   const handleClose = () => {
     if (createMutation.isPending) return;
@@ -417,9 +465,12 @@ export function VideoCreateDrawer({
               }))}
               search={highLoraSearch}
               onSearchChange={setHighLoraSearch}
-              onSelect={(value) =>
-                setValues((prev) => ({ ...prev, highLoraId: value }))
-              }
+              onSelect={(value) => {
+                const selectedOption =
+                  highLoraOptions.find((lora) => lora.id === value) ?? null;
+                setSelectedHighLoraOption(selectedOption);
+                setValues((prev) => ({ ...prev, highLoraId: value }));
+              }}
               placeholder={
                 isHighLoraLoading ? 'Loading LoRAs...' : 'Select LoRA'
               }
@@ -437,9 +488,12 @@ export function VideoCreateDrawer({
               }))}
               search={lowLoraSearch}
               onSearchChange={setLowLoraSearch}
-              onSelect={(value) =>
-                setValues((prev) => ({ ...prev, lowLoraId: value }))
-              }
+              onSelect={(value) => {
+                const selectedOption =
+                  lowLoraOptions.find((lora) => lora.id === value) ?? null;
+                setSelectedLowLoraOption(selectedOption);
+                setValues((prev) => ({ ...prev, lowLoraId: value }));
+              }}
               placeholder={
                 isLowLoraLoading ? 'Loading LoRAs...' : 'Select LoRA'
               }

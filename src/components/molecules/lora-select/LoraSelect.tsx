@@ -34,6 +34,10 @@ export function LoraSelect({
   loading = false,
 }: LoraSelectProps) {
   const [open, setOpen] = useState(false);
+  const [selectedLabel, setSelectedLabel] = useState<{
+    id: string;
+    fileName: string;
+  } | null>(null);
   const selected = useMemo(
     () => options.find((option) => option.id === value) ?? null,
     [options, value],
@@ -45,7 +49,9 @@ export function LoraSelect({
     }
   }, [open, onSearchChange]);
 
-  const inputValue = open ? search : selected?.fileName || '';
+  const cachedLabel =
+    selectedLabel?.id === value ? selectedLabel.fileName : '';
+  const inputValue = open ? search : selected?.fileName || cachedLabel || '';
 
   return (
     <Popover
@@ -72,6 +78,10 @@ export function LoraSelect({
                     [s.optionActive]: option.id === value,
                   })}
                   onClick={() => {
+                    setSelectedLabel({
+                      id: option.id,
+                      fileName: option.fileName,
+                    });
                     onSelect(option.id);
                     setOpen(false);
                   }}
