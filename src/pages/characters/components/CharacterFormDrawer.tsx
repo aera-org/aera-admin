@@ -19,7 +19,9 @@ import {
   CharacterBodyType,
   CharacterBreastSize,
   CharacterEthnicity,
+  CharacterEyeColor,
   CharacterHairColor,
+  CharacterHairStyle,
   CharacterPersonality,
   FileDir,
   type IFile,
@@ -29,8 +31,10 @@ import { Drawer, FileUpload } from '@/components/molecules';
 import {
   BODY_TYPE_OPTIONS,
   BREAST_SIZE_OPTIONS,
+  EYE_COLOR_OPTIONS,
   ETHNICITY_OPTIONS,
   HAIR_COLOR_OPTIONS,
+  HAIR_STYLE_OPTIONS,
   PERSONALITY_OPTIONS,
 } from '../characterAttributeOptions';
 import { LoraSelect } from './LoraSelect';
@@ -40,7 +44,10 @@ export type CharacterFormValues = {
   name: string;
   emoji: string;
   gender: string;
+  age: string;
   hairColor: CharacterHairColor;
+  hairStyle: CharacterHairStyle;
+  eyeColor: CharacterEyeColor;
   ethnicity: CharacterEthnicity;
   bodyType: CharacterBodyType;
   breastSize: CharacterBreastSize;
@@ -62,7 +69,10 @@ export const DEFAULT_CHARACTER_FORM_VALUES: CharacterFormValues = {
   name: '',
   emoji: '',
   gender: 'female',
+  age: '',
   hairColor: CharacterHairColor.Blond,
+  hairStyle: CharacterHairStyle.Straight,
+  eyeColor: CharacterEyeColor.Brown,
   ethnicity: CharacterEthnicity.Caucasian,
   bodyType: CharacterBodyType.Average,
   breastSize: CharacterBreastSize.Medium,
@@ -230,7 +240,10 @@ export function CharacterFormDrawer({
       values.name !== initialValues.name ||
       values.emoji !== initialValues.emoji ||
       values.gender !== initialValues.gender ||
+      values.age !== initialValues.age ||
       values.hairColor !== initialValues.hairColor ||
+      values.hairStyle !== initialValues.hairStyle ||
+      values.eyeColor !== initialValues.eyeColor ||
       values.ethnicity !== initialValues.ethnicity ||
       values.bodyType !== initialValues.bodyType ||
       values.breastSize !== initialValues.breastSize ||
@@ -359,6 +372,26 @@ export function CharacterFormDrawer({
                   fullWidth
                 />
               </Field>
+              <Field label="Age" labelFor="character-form-age">
+                <Input
+                  id="character-form-age"
+                  size="sm"
+                  type="number"
+                  min={18}
+                  value={values.age}
+                  onChange={(event) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      age: event.target.value,
+                    }))
+                  }
+                  placeholder="18"
+                  fullWidth
+                />
+              </Field>
+            </FormRow>
+
+            <FormRow columns={2}>
               {showStatus ? (
                 <Field label="Status" labelFor="character-form-status">
                   <Switch
@@ -439,6 +472,41 @@ export function CharacterFormDrawer({
                     }))
                   }
                   placeholder="Select hair color"
+                  fullWidth
+                />
+              </Field>
+              <Field label="Hair style" labelFor="character-form-hair-style">
+                <Select
+                  id="character-form-hair-style"
+                  size="sm"
+                  options={HAIR_STYLE_OPTIONS}
+                  value={values.hairStyle}
+                  onChange={(value) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      hairStyle: value as CharacterHairStyle,
+                    }))
+                  }
+                  placeholder="Select hair style"
+                  fullWidth
+                />
+              </Field>
+            </FormRow>
+
+            <FormRow columns={2}>
+              <Field label="Eye color" labelFor="character-form-eye-color">
+                <Select
+                  id="character-form-eye-color"
+                  size="sm"
+                  options={EYE_COLOR_OPTIONS}
+                  value={values.eyeColor}
+                  onChange={(value) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      eyeColor: value as CharacterEyeColor,
+                    }))
+                  }
+                  placeholder="Select eye color"
                   fullWidth
                 />
               </Field>

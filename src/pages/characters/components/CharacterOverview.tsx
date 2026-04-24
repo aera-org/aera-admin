@@ -7,7 +7,9 @@ import {
   getBodyTypeLabel,
   getBreastSizeLabel,
   getEthnicityLabel,
+  getEyeColorLabel,
   getHairColorLabel,
+  getHairStyleLabel,
 } from '../characterAttributeOptions';
 import s from '../CharacterDetailsPage.module.scss';
 
@@ -149,9 +151,27 @@ export function CharacterOverview({
       </FormRow>
 
       <FormRow columns={3}>
+        <Field label="Age" labelFor="character-age">
+          <Typography id="character-age" variant="body">
+            {data?.age ?? '-'}
+          </Typography>
+        </Field>
         <Field label="Hair color" labelFor="character-hair-color">
           <Typography id="character-hair-color" variant="body">
             {getHairColorLabel(data?.hairColor)}
+          </Typography>
+        </Field>
+        <Field label="Hair style" labelFor="character-hair-style">
+          <Typography id="character-hair-style" variant="body">
+            {getHairStyleLabel(data?.hairStyle)}
+          </Typography>
+        </Field>
+      </FormRow>
+
+      <FormRow columns={3}>
+        <Field label="Eye color" labelFor="character-eye-color">
+          <Typography id="character-eye-color" variant="body">
+            {getEyeColorLabel(data?.eyeColor)}
           </Typography>
         </Field>
         <Field label="Ethnicity" labelFor="character-ethnicity">

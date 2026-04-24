@@ -67,7 +67,10 @@ export type CharacterCreateDto = {
   emoji: string;
   loraId?: string;
   gender: string;
+  age?: number;
   hairColor: CharacterHairColor;
+  hairStyle: CharacterHairStyle;
+  eyeColor: CharacterEyeColor;
   ethnicity: CharacterEthnicity;
   bodyType: CharacterBodyType;
   breastSize: CharacterBreastSize;
