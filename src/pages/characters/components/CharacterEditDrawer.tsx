@@ -8,6 +8,7 @@ import {
   CharacterEyeColor,
   CharacterHairColor,
   CharacterHairStyle,
+  CharacterType,
   type ICharacterDetails,
 } from '@/common/types';
 
@@ -36,6 +37,7 @@ export function CharacterEditDrawer({
       return {
         name: '',
         emoji: '',
+        type: CharacterType.Realistic,
         gender: 'female',
         age: '',
         hairColor: CharacterHairColor.Blond,
@@ -57,6 +59,7 @@ export function CharacterEditDrawer({
     return {
       name: character.name ?? '',
       emoji: character.emoji ?? '',
+      type: character.type,
       gender: character.gender ?? '',
       age: character.age ? String(character.age) : '',
       hairColor: character.hairColor,

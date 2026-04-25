@@ -23,9 +23,11 @@ import {
   CharacterHairColor,
   CharacterHairStyle,
   CharacterPersonality,
+  CharacterType,
   FileDir,
   type IFile,
 } from '@/common/types';
+import { characterTypeOptions } from '@/common/utils';
 import { Drawer, FileUpload } from '@/components/molecules';
 
 import {
@@ -43,6 +45,7 @@ import s from './CharacterFormDrawer.module.scss';
 export type CharacterFormValues = {
   name: string;
   emoji: string;
+  type: CharacterType;
   gender: string;
   age: string;
   hairColor: CharacterHairColor;
@@ -68,6 +71,7 @@ export type CharacterLoraOption = {
 export const DEFAULT_CHARACTER_FORM_VALUES: CharacterFormValues = {
   name: '',
   emoji: '',
+  type: CharacterType.Realistic,
   gender: 'female',
   age: '',
   hairColor: CharacterHairColor.Blond,
@@ -98,6 +102,7 @@ type CharacterFormDrawerProps = {
   isSubmitting?: boolean;
   requireDirty?: boolean;
   showStatus?: boolean;
+  showType?: boolean;
   showPersonality?: boolean;
 };
 
@@ -131,6 +136,7 @@ export function CharacterFormDrawer({
   isSubmitting = false,
   requireDirty = false,
   showStatus = false,
+  showType = false,
   showPersonality = false,
 }: CharacterFormDrawerProps) {
   const [values, setValues] = useState(initialValues);
@@ -239,6 +245,7 @@ export function CharacterFormDrawer({
     () =>
       values.name !== initialValues.name ||
       values.emoji !== initialValues.emoji ||
+      values.type !== initialValues.type ||
       values.gender !== initialValues.gender ||
       values.age !== initialValues.age ||
       values.hairColor !== initialValues.hairColor ||
@@ -300,6 +307,36 @@ export function CharacterFormDrawer({
     });
   };
 
+  const visibilityField = showStatus ? (
+    <Field label="Status" labelFor="character-form-status">
+      <Switch
+        id="character-form-status"
+        checked={values.isActive}
+        onChange={(event) =>
+          setValues((prev) => ({
+            ...prev,
+            isActive: event.target.checked,
+          }))
+        }
+        label={values.isActive ? 'Active' : 'Inactive'}
+      />
+    </Field>
+  ) : (
+    <Field label="Featured" labelFor="character-form-featured">
+      <Switch
+        id="character-form-featured"
+        checked={values.isFeatured}
+        onChange={(event) =>
+          setValues((prev) => ({
+            ...prev,
+            isFeatured: event.target.checked,
+          }))
+        }
+        label={values.isFeatured ? 'Featured' : 'Not featured'}
+      />
+    </Field>
+  );
+
   return (
     <Drawer
       open={open}
@@ -357,6 +394,23 @@ export function CharacterFormDrawer({
             </FormRow>
 
             <FormRow columns={2}>
+              {showType ? (
+                <Field label="Type" labelFor="character-form-type">
+                  <Select
+                    id="character-form-type"
+                    size="sm"
+                    options={characterTypeOptions}
+                    value={values.type}
+                    onChange={(value) =>
+                      setValues((prev) => ({
+                        ...prev,
+                        type: value as CharacterType,
+                      }))
+                    }
+                    fullWidth
+                  />
+                </Field>
+              ) : null}
               <Field label="Gender" labelFor="character-form-gender">
                 <Select
                   id="character-form-gender"
@@ -372,55 +426,48 @@ export function CharacterFormDrawer({
                   fullWidth
                 />
               </Field>
-              <Field label="Age" labelFor="character-form-age">
-                <Input
-                  id="character-form-age"
-                  size="sm"
-                  type="number"
-                  min={18}
-                  value={values.age}
-                  onChange={(event) =>
-                    setValues((prev) => ({
-                      ...prev,
-                      age: event.target.value,
-                    }))
-                  }
-                  placeholder="18"
-                  fullWidth
-                />
-              </Field>
-            </FormRow>
-
-            <FormRow columns={2}>
-              {showStatus ? (
-                <Field label="Status" labelFor="character-form-status">
-                  <Switch
-                    id="character-form-status"
-                    checked={values.isActive}
+              {showType ? null : (
+                <Field label="Age" labelFor="character-form-age">
+                  <Input
+                    id="character-form-age"
+                    size="sm"
+                    type="number"
+                    min={18}
+                    value={values.age}
                     onChange={(event) =>
                       setValues((prev) => ({
                         ...prev,
-                        isActive: event.target.checked,
+                        age: event.target.value,
                       }))
                     }
-                    label={values.isActive ? 'Active' : 'Inactive'}
-                  />
-                </Field>
-              ) : (
-                <Field label="Featured" labelFor="character-form-featured">
-                  <Switch
-                    id="character-form-featured"
-                    checked={values.isFeatured}
-                    onChange={(event) =>
-                      setValues((prev) => ({
-                        ...prev,
-                        isFeatured: event.target.checked,
-                      }))
-                    }
-                    label={values.isFeatured ? 'Featured' : 'Not featured'}
+                    placeholder="18"
+                    fullWidth
                   />
                 </Field>
               )}
+            </FormRow>
+
+            <FormRow columns={2}>
+              {showType ? (
+                <Field label="Age" labelFor="character-form-age">
+                  <Input
+                    id="character-form-age"
+                    size="sm"
+                    type="number"
+                    min={18}
+                    value={values.age}
+                    onChange={(event) =>
+                      setValues((prev) => ({
+                        ...prev,
+                        age: event.target.value,
+                      }))
+                    }
+                    placeholder="18"
+                    fullWidth
+                  />
+                </Field>
+              ) : null}
+              {visibilityField}
             </FormRow>
 
             {showStatus ? (

@@ -27,10 +27,12 @@ export function CharacterCreateDrawer({
       initialValues={DEFAULT_CHARACTER_FORM_VALUES}
       onOpenChange={onOpenChange}
       isSubmitting={createMutation.isPending}
+      showType
       onSubmit={async (values) => {
         const result = await createMutation.mutateAsync({
           name: values.name,
           emoji: values.emoji,
+          type: values.type,
           gender: values.gender,
           age: values.age ? Number(values.age) : undefined,
           hairColor: values.hairColor,
