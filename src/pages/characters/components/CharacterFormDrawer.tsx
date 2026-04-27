@@ -33,14 +33,14 @@ import { Drawer, FileUpload } from '@/components/molecules';
 import {
   BODY_TYPE_OPTIONS,
   BREAST_SIZE_OPTIONS,
-  EYE_COLOR_OPTIONS,
   ETHNICITY_OPTIONS,
+  EYE_COLOR_OPTIONS,
   HAIR_COLOR_OPTIONS,
   HAIR_STYLE_OPTIONS,
   PERSONALITY_OPTIONS,
 } from '../characterAttributeOptions';
-import { LoraSelect } from './LoraSelect';
 import s from './CharacterFormDrawer.module.scss';
+import { LoraSelect } from './LoraSelect';
 
 export type CharacterFormValues = {
   name: string;

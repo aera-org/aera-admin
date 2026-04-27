@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import {
+  regenerateDatasetItem,
   useCreateDatasetItem,
   useDatasetDetails,
   useDeleteDataset,
@@ -12,7 +13,7 @@ import {
   useUpdateDataset,
 } from '@/app/datasets';
 import { getFileSignedUrl } from '@/app/files/filesApi';
-import { notifyError } from '@/app/toast';
+import { notifyError, notifySuccess } from '@/app/toast';
 import { DownloadIcon, PencilLineIcon, TrashIcon } from '@/assets/icons';
 import {
   Alert,
@@ -114,6 +115,7 @@ export function DatasetDetailsPage() {
   const [editShowErrors, setEditShowErrors] = useState(false);
   const [editName, setEditName] = useState('');
   const [isConfigDownloading, setIsConfigDownloading] = useState(false);
+  const [isRetryingFailed, setIsRetryingFailed] = useState(false);
   const [regeneratingItemId, setRegeneratingItemId] = useState<string | null>(
     null,
   );
@@ -130,6 +132,9 @@ export function DatasetDetailsPage() {
     data?.items.sort((a, b) => {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }) ?? [];
+  const failedItems = items.filter(
+    (item) => item.status === DatasetItemStatus.Failed,
+  );
   const refImgs = data?.refImgs ?? [];
   const itemsLabel = data
     ? `Generated items (${items.length})`
@@ -249,6 +254,45 @@ export function DatasetDetailsPage() {
       });
     } finally {
       setRegeneratingItemId((prev) => (prev === item.id ? null : prev));
+    }
+  };
+
+  const handleRetryFailedItems = async () => {
+    if (!datasetId || failedItems.length === 0 || isRetryingFailed) return;
+
+    setIsRetryingFailed(true);
+    try {
+      const results = await Promise.allSettled(
+        failedItems.map((item) => regenerateDatasetItem(datasetId, item.id)),
+      );
+      const failedCount = results.filter(
+        (result) => result.status === 'rejected',
+      ).length;
+      const retriedCount = results.length - failedCount;
+
+      if (failedCount === 0) {
+        notifySuccess(
+          `Retrying ${retriedCount} failed item${retriedCount === 1 ? '' : 's'}.`,
+          'Retrying failed items.',
+        );
+      } else if (retriedCount > 0) {
+        notifyError(
+          `Retried ${retriedCount} item${retriedCount === 1 ? '' : 's'}; ${failedCount} failed.`,
+          'Unable to retry all failed items.',
+        );
+      } else {
+        const firstError = results.find(
+          (result) => result.status === 'rejected',
+        );
+        notifyError(
+          firstError?.status === 'rejected' ? firstError.reason : undefined,
+          'Unable to retry failed items.',
+        );
+      }
+
+      refetch();
+    } finally {
+      setIsRetryingFailed(false);
     }
   };
 
@@ -478,6 +522,22 @@ export function DatasetDetailsPage() {
 
             <div className={s.itemsHeader}>
               <Typography variant="h3">{itemsLabel}</Typography>
+              {failedItems.length > 0 ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  iconLeft={<ReloadIcon />}
+                  onClick={handleRetryFailedItems}
+                  loading={isRetryingFailed}
+                  disabled={
+                    isRetryingFailed ||
+                    regenerateItemMutation.isPending ||
+                    deleteItemMutation.isPending
+                  }
+                >
+                  Retry failed
+                </Button>
+              ) : null}
             </div>
 
             {items.length === 0 ? (
@@ -548,6 +608,7 @@ export function DatasetDetailsPage() {
                             regeneratingItemId === item.id
                           }
                           disabled={
+                            isRetryingFailed ||
                             regenerateItemMutation.isPending ||
                             deleteItemMutation.isPending
                           }
@@ -564,6 +625,7 @@ export function DatasetDetailsPage() {
                           tone="danger"
                           icon={<TrashIcon />}
                           disabled={
+                            isRetryingFailed ||
                             deleteItemMutation.isPending ||
                             regenerateItemMutation.isPending
                           }
@@ -649,7 +711,7 @@ export function DatasetDetailsPage() {
                   regenerateItemMutation.isPending &&
                   regeneratingItemId === activeItem.id
                 }
-                disabled={regenerateItemMutation.isPending}
+                disabled={isRetryingFailed || regenerateItemMutation.isPending}
               >
                 Regenerate item
               </Button>

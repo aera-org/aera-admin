@@ -4,6 +4,7 @@ export {
   createDatasetFromImages,
   getDatasetDetails,
   getDatasets,
+  regenerateDatasetItem,
 } from './datasetsApi';
 export {
   useCreateDataset,
