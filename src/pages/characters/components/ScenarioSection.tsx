@@ -593,8 +593,8 @@ export function ScenarioSection({
         await copyScenarioTransferFile(scenarioPayload.promoImgHorizontal);
       }
       for (const gift of scenarioPayload.gifts) {
-        if (gift.boughtImage) {
-          await copyScenarioTransferFile(gift.boughtImage);
+        if (gift.boughtImg) {
+          await copyScenarioTransferFile(gift.boughtImg);
         }
       }
 
@@ -642,7 +642,7 @@ export function ScenarioSection({
             giftId: resolvedGiftId,
             reason: gift.reason.trim(),
             buyText: gift.buyText,
-            boughtImgId: gift.boughtImage?.id,
+            boughtImgId: gift.boughtImg?.id,
           },
         );
       }

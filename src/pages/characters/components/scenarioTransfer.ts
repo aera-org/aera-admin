@@ -30,7 +30,7 @@ export type ScenarioTransferGift = {
   giftName: string;
   reason: string;
   buyText: string;
-  boughtImage?: ScenarioTransferFile;
+  boughtImg?: ScenarioTransferFile;
 };
 
 type ScenarioTransferScenario = {
@@ -210,8 +210,8 @@ function parseTransferGift(value: unknown, path: string): ScenarioTransferGift {
     giftName: ensureNonEmptyString(obj.giftName, `${path}.giftName`),
     reason,
     buyText: typeof obj.buyText === 'string' ? obj.buyText : '',
-    boughtImage: obj.boughtImage
-      ? parseTransferFile(obj.boughtImage, `${path}.boughtImage`)
+    boughtImg: obj.boughtImg
+      ? parseTransferFile(obj.boughtImg, `${path}.boughtImg`)
       : undefined,
   };
 }
@@ -240,15 +240,15 @@ export function buildScenarioTransferPayload({
       giftName,
       reason: gift.reason ?? '',
       buyText: gift.buyText ?? '',
-      boughtImage: hasTransferFileShape(gift.boughtImage)
+      boughtImg: hasTransferFileShape(gift.boughtImg)
         ? {
-            id: gift.boughtImage.id,
-            name: gift.boughtImage.name,
-            dir: gift.boughtImage.dir,
-            path: gift.boughtImage.path,
-            status: gift.boughtImage.status,
-            mime: gift.boughtImage.mime,
-            url: gift.boughtImage.url ?? undefined,
+            id: gift.boughtImg.id,
+            name: gift.boughtImg.name,
+            dir: gift.boughtImg.dir,
+            path: gift.boughtImg.path,
+            status: gift.boughtImg.status,
+            mime: gift.boughtImg.mime,
+            url: gift.boughtImg.url ?? undefined,
           }
         : undefined,
     };

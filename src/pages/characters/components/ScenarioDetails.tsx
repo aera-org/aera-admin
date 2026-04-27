@@ -346,9 +346,9 @@ export function ScenarioDetails({
       giftId: stageGift.gift?.id ?? stageGift.giftId ?? '',
       reason: stageGift.reason ?? '',
       buyText: stageGift.buyText ?? '',
-      boughtImgId: stageGift.boughtImage?.id ?? '',
+      boughtImgId: stageGift.boughtImg?.id ?? '',
     });
-    setGiftEditFile(stageGift.boughtImage ?? null);
+    setGiftEditFile(stageGift.boughtImg ?? null);
     setGiftEditShowErrors(false);
     setIsGiftEditDrawerOpen(true);
   };
@@ -737,14 +737,14 @@ export function ScenarioDetails({
                     )}
                   </Stack>
                 </div>
-                {stageGift?.boughtImage?.url ? (
+                {stageGift?.boughtImg?.url ? (
                   <div className={s.stageGiftImageBlock}>
                     <Typography variant="caption" tone="muted">
                       Bought image
                     </Typography>
                     <img
                       className={s.stageGiftImage}
-                      src={stageGift.boughtImage.url}
+                      src={stageGift.boughtImg.url}
                       alt={`${stageGift.gift?.name || 'Gift'} bought`}
                       loading="lazy"
                     />
