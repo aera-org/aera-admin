@@ -24,6 +24,7 @@ const detailsFallbackError = 'Unable to load the generation.';
 const createFallbackError = 'Unable to generate the image.';
 const deleteFallbackError = 'Unable to delete the generation.';
 const regenerateFallbackError = 'Unable to regenerate the generation.';
+const saveFallbackError = 'Unable to save the generation.';
 
 async function parseJsonIfPresent(res: Response) {
   if (res.status === 204) return null;
@@ -87,6 +88,16 @@ export async function regenerateImgGeneration(id: string) {
   });
   if (!res.ok) {
     throw await buildApiError(res, regenerateFallbackError);
+  }
+  return await parseJsonIfPresent(res);
+}
+
+export async function saveImgGeneration(id: string) {
+  const res = await apiFetch(`/admin/test-img-generations/${id}/save`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, saveFallbackError);
   }
   return await parseJsonIfPresent(res);
 }

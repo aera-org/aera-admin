@@ -37,15 +37,16 @@ import {
 } from '@/common/types';
 import {
   formatCharacterSelectLabel,
+  type GenerationRequestMode,
   getAllowedGenerationRequestModes,
   getVisibleUserRequestFieldKeys,
-  resolveGenerationRequestMode,
   requiresPosePrompt,
-  type GenerationRequestMode,
+  resolveGenerationRequestMode,
   USER_REQUEST_FIELD_CONFIG,
 } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 
+import { SaveGenerationButton } from './components/SaveGenerationButton';
 import { SearchSelect } from './components/SearchSelect';
 import s from './GenerateImagePage.module.scss';
 import type { GenerateImagePrefillState } from './generationReuse';
@@ -1121,6 +1122,10 @@ export function GenerateImagePage() {
                             loading="lazy"
                           />
                           <div className={s.resultPreviewActions}>
+                            <SaveGenerationButton
+                              id={item.details?.id ?? item.generationId}
+                              isSaved={item.details?.isSaved}
+                            />
                             <IconButton
                               as="a"
                               href={item.details?.file?.url ?? undefined}

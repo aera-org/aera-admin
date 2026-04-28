@@ -15,6 +15,7 @@ export { default as NewspaperIcon } from './newspaper.svg?react';
 export { default as PencilLineIcon } from './pencil-line.svg?react';
 export { default as PlusIcon } from './plus.svg?react';
 export { default as RadioIcon } from './radio.svg?react';
+export { default as SaveIcon } from './save.svg?react';
 export { default as SendIcon } from './send.svg?react';
 export { default as SparklesIcon } from './sparkles.svg?react';
 export { default as TrashIcon } from './trash.svg?react';

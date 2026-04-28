@@ -85,6 +85,7 @@
   top: var(--space-3);
   right: var(--space-3);
   display: flex;
+  gap: var(--space-1);
   opacity: 0;
   pointer-events: none;
   transition: opacity 160ms ease;

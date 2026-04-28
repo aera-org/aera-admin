@@ -1,8 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { notifyError, notifySuccess } from '@/app/toast';
-import { ImgGenerationStatus } from '@/common/types';
+import {
+  type IImgGeneration,
+  type IImgGenerationDetails,
+  ImgGenerationStatus,
+} from '@/common/types';
 
+import type { PaginatedResponse } from '../paginated-response.type';
 import {
   createImgGeneration,
   deleteImgGeneration,
@@ -10,6 +15,7 @@ import {
   getImgGenerations,
   type ImgGenerationsListParams,
   regenerateImgGeneration,
+  saveImgGeneration,
 } from './imgGenerationsApi';
 
 const imgGenerationKeys = {
@@ -92,6 +98,38 @@ export function useRegenerateImgGeneration() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to regenerate the generation.');
+    },
+  });
+}
+
+export function useSaveImgGeneration() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: saveImgGeneration,
+    onSuccess: (_, id) => {
+      queryClient.setQueryData<IImgGenerationDetails | undefined>(
+        imgGenerationKeys.details(id),
+        (current) => (current ? { ...current, isSaved: true } : current),
+      );
+      queryClient.setQueriesData<PaginatedResponse<IImgGeneration>>(
+        { queryKey: ['img-generations'] },
+        (current) =>
+          current
+            ? {
+                ...current,
+                data: current.data.map((generation) =>
+                  generation.id === id
+                    ? { ...generation, isSaved: true }
+                    : generation,
+                ),
+              }
+            : current,
+      );
+      notifySuccess('Generation saved.', 'Generation saved.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to save the generation.');
     },
   });
 }

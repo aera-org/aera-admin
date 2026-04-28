@@ -35,6 +35,7 @@ export interface ImgGenerationRequest {
 
 export interface IImgGeneration {
   id: string;
+  isSaved: boolean;
   character: ICharacter;
   mainLora: ILora;
   secondLora?: ILora;

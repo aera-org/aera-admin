@@ -30,6 +30,7 @@ import {
 import { formatCharacterSelectLabel } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 
+import { SaveGenerationButton } from './components/SaveGenerationButton';
 import s from './GenerationsPage.module.scss';
 
 type QueryUpdate = {
@@ -555,6 +556,10 @@ export function GenerationsPage() {
                                 loading="lazy"
                               />
                               <div className={s.previewActions}>
+                                <SaveGenerationButton
+                                  id={generation.id}
+                                  isSaved={generation.isSaved}
+                                />
                                 <IconButton
                                   as="a"
                                   href={generation.file?.url ?? undefined}

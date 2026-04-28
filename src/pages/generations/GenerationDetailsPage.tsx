@@ -22,12 +22,13 @@ import {
 import { ImgGenerationStatus } from '@/common/types';
 import {
   formatUserRequestForDisplay,
-  resolveGenerationRequestMode,
   requiresPosePrompt,
+  resolveGenerationRequestMode,
 } from '@/common/utils';
 import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
 import { AppShell } from '@/components/templates';
 
+import { SaveGenerationButton } from './components/SaveGenerationButton';
 import s from './GenerationDetailsPage.module.scss';
 import type { GenerateImagePrefillState } from './generationReuse';
 
@@ -186,18 +187,28 @@ export function GenerationDetailsPage() {
                 {data ? (
                   <div className={s.previewActions}>
                     {hasImage ? (
-                      <IconButton
-                        as="a"
-                        href={data.file?.url ?? undefined}
-                        download={data.file?.name}
-                        rel="noopener"
-                        aria-label="Download generation"
-                        icon={<DownloadIcon />}
-                        tooltip="Download generation"
-                        variant="ghost"
-                        size="sm"
-                        className={s.previewDownloadAction}
-                      />
+                      <>
+                        <SaveGenerationButton
+                          id={data.id}
+                          isSaved={data.isSaved}
+                          disabled={
+                            regenerateMutation.isPending ||
+                            deleteMutation.isPending
+                          }
+                        />
+                        <IconButton
+                          as="a"
+                          href={data.file?.url ?? undefined}
+                          download={data.file?.name}
+                          rel="noopener"
+                          aria-label="Download generation"
+                          icon={<DownloadIcon />}
+                          tooltip="Download generation"
+                          variant="ghost"
+                          size="sm"
+                          className={s.previewDownloadAction}
+                        />
+                      </>
                     ) : null}
                     <IconButton
                       aria-label="Regenerate generation"

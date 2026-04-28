@@ -1,10 +1,3 @@
-export {
-  useCreateImgGeneration,
-  useDeleteImgGeneration,
-  useImgGenerationDetails,
-  useImgGenerations,
-  useRegenerateImgGeneration,
-} from './queries';
 export type { ImgGenerationsListParams } from './imgGenerationsApi';
 export {
   createImgGeneration,
@@ -12,4 +5,13 @@ export {
   getImgGenerationDetails,
   getImgGenerations,
   regenerateImgGeneration,
+  saveImgGeneration,
 } from './imgGenerationsApi';
+export {
+  useCreateImgGeneration,
+  useDeleteImgGeneration,
+  useImgGenerationDetails,
+  useImgGenerations,
+  useRegenerateImgGeneration,
+  useSaveImgGeneration,
+} from './queries';
