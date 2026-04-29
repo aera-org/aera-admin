@@ -66,6 +66,7 @@ type ScenarioSectionProps = {
   showPromoImages?: boolean;
   showStatus?: boolean;
   showIsNew?: boolean;
+  showIsPromoted?: boolean;
   useCustomCreate?: boolean;
 };
 
@@ -134,6 +135,7 @@ export function ScenarioSection({
   showPromoImages = true,
   showStatus = true,
   showIsNew = true,
+  showIsPromoted = true,
   useCustomCreate = false,
 }: ScenarioSectionProps) {
   const queryClient = useQueryClient();
@@ -163,6 +165,7 @@ export function ScenarioSection({
     isActive: true,
     shortDescription: '',
     isNew: false,
+    isPromoted: false,
     promoImgId: '',
     promoImgHorizontalId: '',
     personality: '',
@@ -267,6 +270,7 @@ export function ScenarioSection({
       isActive: true,
       shortDescription: '',
       isNew: false,
+      isPromoted: false,
       promoImgId: '',
       promoImgHorizontalId: '',
       personality: '',
@@ -300,6 +304,7 @@ export function ScenarioSection({
       isActive: Boolean(selectedScenario.isActive),
       shortDescription: selectedScenario.shortDescription ?? '',
       isNew: showIsNew ? Boolean(selectedScenario.isNew) : false,
+      isPromoted: showIsPromoted ? Boolean(selectedScenario.isPromoted) : false,
       promoImgId: showPromoImages ? (selectedScenario.promoImg?.id ?? '') : '',
       promoImgHorizontalId: showPromoImages
         ? (selectedScenario.promoImgHorizontal?.id ?? '')
@@ -425,6 +430,9 @@ export function ScenarioSection({
         isActive: showStatus ? editValues.isActive : selectedScenario.isActive,
         shortDescription: editValues.shortDescription.trim() || undefined,
         isNew: showIsNew ? editValues.isNew : selectedScenario.isNew,
+        isPromoted: showIsPromoted
+          ? editValues.isPromoted
+          : selectedScenario.isPromoted,
         promoImgId: showPromoImages
           ? editValues.promoImgId || undefined
           : selectedScenario.promoImg?.id,
@@ -749,6 +757,7 @@ export function ScenarioSection({
               allowStageEdit={allowStageEdit}
               showStatus={showStatus}
               showIsNew={showIsNew}
+              showIsPromoted={showIsPromoted}
               showPromoImages={showPromoImages}
             />
           ) : null}
@@ -1295,6 +1304,22 @@ export function ScenarioSection({
               />
             </Field>
           </FormRow>
+
+          {showIsPromoted ? (
+            <Field label="Promoted" labelFor="scenario-edit-is-promoted">
+              <Switch
+                id="scenario-edit-is-promoted"
+                checked={editValues.isPromoted}
+                onChange={(event) =>
+                  setEditValues((prev) => ({
+                    ...prev,
+                    isPromoted: event.target.checked,
+                  }))
+                }
+                label={editValues.isPromoted ? 'Promoted' : 'Not promoted'}
+              />
+            </Field>
+          ) : null}
 
           <Field
             label="Description"

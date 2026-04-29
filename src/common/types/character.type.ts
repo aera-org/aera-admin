@@ -146,6 +146,7 @@ export interface IScenario {
   stages: StageDirectivesMap;
   gifts: ICharacterGift[];
   liveGenerations: ScenarioLiveGenerations;
+  isPromoted: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -95,6 +95,7 @@ export type ScenarioCreateDto = {
   isActive?: boolean;
   shortDescription?: string;
   isNew?: boolean;
+  isPromoted?: boolean;
   promoImgId?: string;
   promoImgHorizontalId?: string;
   personality: string;
