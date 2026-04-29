@@ -138,6 +138,7 @@ function buildScenarioPayload(
     shortDescription: scenario.shortDescription?.trim() || undefined,
     isNew: scenario.isNew,
     isPromoted: scenario.isPromoted,
+    promoText: scenario.promoText?.trim() ?? '',
     promoImgId: scenario.promoImg?.id,
     promoImgHorizontalId: scenario.promoImgHorizontal?.id,
     personality: scenario.personality.trim(),
@@ -537,6 +538,16 @@ export function ScenarioDetails({
               </div>
             ) : null}
           </FormRow>
+        ) : null}
+        {showIsPromoted ? (
+          <div className={s.detailBlock}>
+            <Typography variant="caption" tone="muted">
+              Promo text
+            </Typography>
+            <Typography variant="body" className={s.multiline}>
+              {scenario.promoText || '-'}
+            </Typography>
+          </div>
         ) : null}
         {showPromoImages ? (
           <FormRow columns={2}>

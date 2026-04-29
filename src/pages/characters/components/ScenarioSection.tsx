@@ -166,6 +166,7 @@ export function ScenarioSection({
     shortDescription: '',
     isNew: false,
     isPromoted: false,
+    promoText: '',
     promoImgId: '',
     promoImgHorizontalId: '',
     personality: '',
@@ -271,6 +272,7 @@ export function ScenarioSection({
       shortDescription: '',
       isNew: false,
       isPromoted: false,
+      promoText: '',
       promoImgId: '',
       promoImgHorizontalId: '',
       personality: '',
@@ -305,6 +307,7 @@ export function ScenarioSection({
       shortDescription: selectedScenario.shortDescription ?? '',
       isNew: showIsNew ? Boolean(selectedScenario.isNew) : false,
       isPromoted: showIsPromoted ? Boolean(selectedScenario.isPromoted) : false,
+      promoText: showIsPromoted ? (selectedScenario.promoText ?? '') : '',
       promoImgId: showPromoImages ? (selectedScenario.promoImg?.id ?? '') : '',
       promoImgHorizontalId: showPromoImages
         ? (selectedScenario.promoImgHorizontal?.id ?? '')
@@ -433,6 +436,9 @@ export function ScenarioSection({
         isPromoted: showIsPromoted
           ? editValues.isPromoted
           : selectedScenario.isPromoted,
+        promoText: showIsPromoted
+          ? editValues.promoText.trim()
+          : selectedScenario.promoText,
         promoImgId: showPromoImages
           ? editValues.promoImgId || undefined
           : selectedScenario.promoImg?.id,
@@ -1306,19 +1312,35 @@ export function ScenarioSection({
           </FormRow>
 
           {showIsPromoted ? (
-            <Field label="Promoted" labelFor="scenario-edit-is-promoted">
-              <Switch
-                id="scenario-edit-is-promoted"
-                checked={editValues.isPromoted}
-                onChange={(event) =>
-                  setEditValues((prev) => ({
-                    ...prev,
-                    isPromoted: event.target.checked,
-                  }))
-                }
-                label={editValues.isPromoted ? 'Promoted' : 'Not promoted'}
-              />
-            </Field>
+            <>
+              <Field label="Promoted" labelFor="scenario-edit-is-promoted">
+                <Switch
+                  id="scenario-edit-is-promoted"
+                  checked={editValues.isPromoted}
+                  onChange={(event) =>
+                    setEditValues((prev) => ({
+                      ...prev,
+                      isPromoted: event.target.checked,
+                    }))
+                  }
+                  label={editValues.isPromoted ? 'Promoted' : 'Not promoted'}
+                />
+              </Field>
+              <Field label="Promo text" labelFor="scenario-edit-promo-text">
+                <Textarea
+                  id="scenario-edit-promo-text"
+                  value={editValues.promoText}
+                  onChange={(event) =>
+                    setEditValues((prev) => ({
+                      ...prev,
+                      promoText: event.target.value,
+                    }))
+                  }
+                  rows={2}
+                  fullWidth
+                />
+              </Field>
+            </>
           ) : null}
 
           <Field

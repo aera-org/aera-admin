@@ -98,6 +98,7 @@ function buildScenarioClonePayload(
     shortDescription: scenario.shortDescription?.trim() || undefined,
     isNew: scenario.isNew,
     isPromoted: scenario.isPromoted,
+    promoText: scenario.promoText.trim(),
     personality: scenario.personality.trim(),
     messagingStyle: scenario.messagingStyle.trim(),
     appearance: scenario.appearance.trim(),

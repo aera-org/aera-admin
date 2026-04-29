@@ -147,6 +147,7 @@ export interface IScenario {
   gifts: ICharacterGift[];
   liveGenerations: ScenarioLiveGenerations;
   isPromoted: boolean;
+  promoText: string;
   createdAt: string;
   updatedAt: string;
 }
