@@ -4,7 +4,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useCharacterDetails, useCharacters } from '@/app/characters';
 import { useImgGenerations } from '@/app/img-generations';
-import { DownloadIcon } from '@/assets/icons';
 import {
   Alert,
   Badge,
@@ -13,7 +12,6 @@ import {
   Container,
   EmptyState,
   Field,
-  IconButton,
   Input,
   Pagination,
   Select,
@@ -28,6 +26,7 @@ import {
   STAGES_IN_ORDER,
 } from '@/common/types';
 import { formatCharacterSelectLabel } from '@/common/utils';
+import { DownloadFileButton } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 
 import { SaveGenerationButton } from './components/SaveGenerationButton';
@@ -560,18 +559,13 @@ export function GenerationsPage() {
                                   id={generation.id}
                                   isSaved={generation.isSaved}
                                 />
-                                <IconButton
-                                  as="a"
-                                  href={generation.file?.url ?? undefined}
-                                  download={generation.file?.name}
-                                  rel="noopener"
+                                <DownloadFileButton
+                                  file={generation.file}
                                   aria-label="Download generation"
                                   tooltip="Download generation"
                                   variant="ghost"
                                   size="sm"
-                                  icon={<DownloadIcon />}
-                                  // @ts-expect-error Radix anchor event types are incorrect
-                                  onClick={(event) => event.stopPropagation()}
+                                  stopPropagation
                                 />
                               </div>
                             </>

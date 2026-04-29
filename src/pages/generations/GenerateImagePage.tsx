@@ -10,7 +10,6 @@ import {
 } from '@/app/img-generations';
 import { useLoras } from '@/app/loras';
 import { usePosePrompts } from '@/app/pose-prompts';
-import { DownloadIcon } from '@/assets/icons';
 import {
   Alert,
   Badge,
@@ -20,7 +19,6 @@ import {
   Field,
   FormRow,
   Grid,
-  IconButton,
   RadioGroup,
   Select,
   Skeleton,
@@ -44,6 +42,7 @@ import {
   resolveGenerationRequestMode,
   USER_REQUEST_FIELD_CONFIG,
 } from '@/common/utils';
+import { DownloadFileButton } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 
 import { SaveGenerationButton } from './components/SaveGenerationButton';
@@ -1126,16 +1125,12 @@ export function GenerateImagePage() {
                               id={item.details?.id ?? item.generationId}
                               isSaved={item.details?.isSaved}
                             />
-                            <IconButton
-                              as="a"
-                              href={item.details?.file?.url ?? undefined}
-                              download={item.details?.file?.name}
-                              rel="noopener"
+                            <DownloadFileButton
+                              file={item.details?.file}
                               aria-label="Download generation"
                               tooltip="Download generation"
                               variant="ghost"
                               size="sm"
-                              icon={<DownloadIcon />}
                             />
                           </div>
                         </>

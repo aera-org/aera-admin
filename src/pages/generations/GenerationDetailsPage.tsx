@@ -7,7 +7,6 @@ import {
   useImgGenerationDetails,
   useRegenerateImgGeneration,
 } from '@/app/img-generations';
-import { DownloadIcon } from '@/assets/icons';
 import {
   Alert,
   Badge,
@@ -25,6 +24,7 @@ import {
   requiresPosePrompt,
   resolveGenerationRequestMode,
 } from '@/common/utils';
+import { DownloadFileButton } from '@/components/molecules';
 import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
 import { AppShell } from '@/components/templates';
 
@@ -196,13 +196,9 @@ export function GenerationDetailsPage() {
                             deleteMutation.isPending
                           }
                         />
-                        <IconButton
-                          as="a"
-                          href={data.file?.url ?? undefined}
-                          download={data.file?.name}
-                          rel="noopener"
+                        <DownloadFileButton
+                          file={data.file}
                           aria-label="Download generation"
-                          icon={<DownloadIcon />}
                           tooltip="Download generation"
                           variant="ghost"
                           size="sm"
