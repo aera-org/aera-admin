@@ -267,6 +267,7 @@ export function CustomCharacterDetailsPage() {
           showStatus={false}
           showIsNew={false}
           showIsPromoted={false}
+          showIsTop={false}
           useCustomCreate
         />
 

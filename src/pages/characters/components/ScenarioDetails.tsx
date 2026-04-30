@@ -48,6 +48,7 @@ type ScenarioDetailsProps = {
   showStatus?: boolean;
   showIsNew?: boolean;
   showIsPromoted?: boolean;
+  showIsTop?: boolean;
   showPromoImages?: boolean;
 };
 
@@ -139,6 +140,7 @@ function buildScenarioPayload(
     isNew: scenario.isNew,
     isPromoted: scenario.isPromoted,
     promoText: scenario.promoText?.trim() ?? '',
+    isTop: scenario.isTop,
     promoImgId: scenario.promoImg?.id,
     promoImgHorizontalId: scenario.promoImgHorizontal?.id,
     personality: scenario.personality.trim(),
@@ -167,6 +169,7 @@ export function ScenarioDetails({
   showStatus = true,
   showIsNew = true,
   showIsPromoted = true,
+  showIsTop = true,
   showPromoImages = true,
 }: ScenarioDetailsProps) {
   const updateScenarioMutation = useUpdateScenario();
@@ -499,7 +502,7 @@ export function ScenarioDetails({
             {scenario.shortDescription || '-'}
           </Typography>
         </div>
-        {showStatus || showIsNew || showIsPromoted ? (
+        {showStatus || showIsNew || showIsPromoted || showIsTop ? (
           <FormRow columns={3}>
             {showStatus ? (
               <div className={s.detailBlock}>
@@ -533,6 +536,18 @@ export function ScenarioDetails({
                 <div>
                   <Badge tone={scenario.isPromoted ? 'accent' : 'warning'}>
                     {scenario.isPromoted ? 'Promoted' : 'Not promoted'}
+                  </Badge>
+                </div>
+              </div>
+            ) : null}
+            {showIsTop ? (
+              <div className={s.detailBlock}>
+                <Typography variant="caption" tone="muted">
+                  Top
+                </Typography>
+                <div>
+                  <Badge tone={scenario.isTop ? 'accent' : 'warning'}>
+                    {scenario.isTop ? 'Top' : 'Not top'}
                   </Badge>
                 </div>
               </div>

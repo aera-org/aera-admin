@@ -3,4 +3,9 @@ export type {
   PostsListParams,
   UpdatePostDto,
 } from './postsApi';
-export { useCreatePost, usePosts, useUpdatePost } from './queries';
+export {
+  useCreatePost,
+  useDeletePost,
+  usePosts,
+  useUpdatePost,
+} from './queries';

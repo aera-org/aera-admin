@@ -148,6 +148,7 @@ export interface IScenario {
   liveGenerations: ScenarioLiveGenerations;
   isPromoted: boolean;
   promoText: string;
+  isTop: boolean;
   createdAt: string;
   updatedAt: string;
 }

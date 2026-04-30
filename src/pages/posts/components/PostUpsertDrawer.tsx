@@ -10,7 +10,11 @@ import {
 import { isApiRequestError } from '@/app/api/apiErrors';
 import { useCharacterDetails, useCharacters } from '@/app/characters';
 import { markFileUploaded, signUpload } from '@/app/files/filesApi';
-import { useCreatePost, useUpdatePost } from '@/app/posts';
+import {
+  type CreatePostDto,
+  useCreatePost,
+  useUpdatePost,
+} from '@/app/posts';
 import { notifyError } from '@/app/toast';
 import {
   Badge,
@@ -24,7 +28,13 @@ import {
   Textarea,
   Typography,
 } from '@/atoms';
-import { FileDir, FileStatus, type IFile, type IPost } from '@/common/types';
+import {
+  FileDir,
+  FileStatus,
+  type IFile,
+  type IPost,
+  PostType,
+} from '@/common/types';
 import { formatCharacterSelectLabel } from '@/common/utils';
 import {
   Drawer,
@@ -54,27 +64,56 @@ type UploadItem = {
 type Values = {
   characterId: string;
   scenarioId: string;
+  type: PostType;
   text: string;
-  note: string;
   isActive: boolean;
-  isTop: boolean;
 };
 
 const CHARACTER_LIST_LIMIT = 100;
 const SEARCH_DEBOUNCE_MS = 300;
-const IMAGE_ACCEPT = 'image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp';
-const ACCEPTED_MIME_TYPES = new Set([
-  'image/png',
-  'image/jpeg',
-  'image/jpg',
-  'image/webp',
-]);
+const MEDIA_CONFIG = {
+  [PostType.Img]: {
+    label: 'Image file',
+    actionLabel: 'Choose image',
+    replaceLabel: 'Replace image',
+    uploadingLabel: 'Uploading image...',
+    readyLabel: 'Image ready',
+    emptyLabel: 'No image uploaded',
+    missingError: 'Upload an image.',
+    invalidError: 'Only PNG, JPG, JPEG, or WEBP files are allowed.',
+    uploadErrorTitle: 'Unable to upload the image.',
+    accept: 'image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp',
+    extensions: ['png', 'jpg', 'jpeg', 'webp'],
+    mimeTypes: ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'],
+  },
+  [PostType.Video]: {
+    label: 'Video file',
+    actionLabel: 'Choose video',
+    replaceLabel: 'Replace video',
+    uploadingLabel: 'Uploading video...',
+    readyLabel: 'Video ready',
+    emptyLabel: 'No video uploaded',
+    missingError: 'Upload a video.',
+    invalidError: 'Only MP4, WEBM, or MOV files are allowed.',
+    uploadErrorTitle: 'Unable to upload the video.',
+    accept: 'video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov',
+    extensions: ['mp4', 'webm', 'mov'],
+    mimeTypes: ['video/mp4', 'video/webm', 'video/quicktime'],
+  },
+} as const;
 const EXTENSION_TO_MIME = {
   png: 'image/png',
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
   webp: 'image/webp',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  mov: 'video/quicktime',
 } as const;
+const POST_TYPE_OPTIONS = [
+  { label: 'Image', value: PostType.Img },
+  { label: 'Video', value: PostType.Video },
+];
 
 function useDebouncedValue<T>(value: T, delay: number) {
   const [debounced, setDebounced] = useState(value);
@@ -93,12 +132,16 @@ function getFileExtension(name: string) {
   return parts[parts.length - 1].toLowerCase();
 }
 
-function isAcceptedImageFile(file: File) {
-  if (ACCEPTED_MIME_TYPES.has(file.type)) {
+function isAcceptedMediaFile(file: File, type: PostType) {
+  const config = MEDIA_CONFIG[type];
+  if (file.type && config.mimeTypes.some((mime) => mime === file.type)) {
     return true;
   }
+
   const extension = getFileExtension(file.name);
-  return extension in EXTENSION_TO_MIME;
+  return config.extensions.some(
+    (allowedExtension) => allowedExtension === extension,
+  );
 }
 
 function resolveMimeType(file: File) {
@@ -179,13 +222,12 @@ export function PostUpsertDrawer({
   const [values, setValues] = useState<Values>({
     characterId: '',
     scenarioId: '',
+    type: PostType.Img,
     text: '',
-    note: '',
     isActive: true,
-    isTop: false,
   });
   const [uploadItem, setUploadItem] = useState<UploadItem | null>(null);
-  const [currentImage, setCurrentImage] = useState<IFile | null>(null);
+  const [currentMedia, setCurrentMedia] = useState<IFile | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -234,7 +276,8 @@ export function PostUpsertDrawer({
   const isUploadingFile = uploadItem?.status === 'uploading';
   const uploadedFile =
     uploadItem?.status === 'uploaded' ? uploadItem.uploadedFile : null;
-  const resolvedImage = uploadedFile ?? currentImage;
+  const mediaConfig = MEDIA_CONFIG[values.type];
+  const resolvedMedia = uploadedFile ?? currentMedia;
   const isBusy =
     isSubmitting ||
     isUploadingFile ||
@@ -242,16 +285,19 @@ export function PostUpsertDrawer({
     updateMutation.isPending;
 
   const resetState = useCallback(() => {
+    const postType = post?.type ?? PostType.Img;
+
     setCharacterSearch('');
     setValues({
-      characterId: post ? initialCharacterId : initialCharacterId,
+      characterId: initialCharacterId,
       scenarioId: post ? post.scenario.id : initialScenarioId,
+      type: postType,
       text: post?.text ?? '',
-      note: post?.note ?? '',
       isActive: post?.isActive ?? true,
-      isTop: post?.isTop ?? false,
     });
-    setCurrentImage(post?.img ?? null);
+    setCurrentMedia(
+      postType === PostType.Video ? (post?.video ?? null) : (post?.img ?? null),
+    );
     setUploadItem(null);
     setIsSubmitting(false);
     setShowErrors(false);
@@ -289,15 +335,16 @@ export function PostUpsertDrawer({
       characterId: values.characterId ? undefined : 'Select a character.',
       scenarioId: values.scenarioId ? undefined : 'Select a scenario.',
       text: values.text.trim() ? undefined : 'Enter text.',
-      image: resolvedImage
+      media: resolvedMedia
         ? undefined
         : isUploadingFile
           ? 'Wait for the upload to finish.'
-          : 'Upload an image.',
+          : mediaConfig.missingError,
     };
   }, [
     isUploadingFile,
-    resolvedImage,
+    mediaConfig.missingError,
+    resolvedMedia,
     showErrors,
     values.characterId,
     values.scenarioId,
@@ -334,13 +381,13 @@ export function PostUpsertDrawer({
 
     setUploadItem(queuedItem);
 
-    if (!isAcceptedImageFile(file)) {
+    if (!isAcceptedMediaFile(file, values.type)) {
       setUploadItem((current) =>
         current
           ? {
               ...current,
               status: 'error',
-              message: 'Only PNG, JPG, JPEG, or WEBP files are allowed.',
+              message: mediaConfig.invalidError,
             }
           : current,
       );
@@ -381,7 +428,7 @@ export function PostUpsertDrawer({
             }
           : current,
       );
-      notifyError(error, 'Unable to upload the image.');
+      notifyError(error, mediaConfig.uploadErrorTitle);
     }
   };
 
@@ -390,7 +437,7 @@ export function PostUpsertDrawer({
       !values.characterId ||
       !values.scenarioId ||
       !values.text.trim() ||
-      !resolvedImage
+      !resolvedMedia
     ) {
       setShowErrors(true);
       return;
@@ -399,14 +446,23 @@ export function PostUpsertDrawer({
     setIsSubmitting(true);
 
     try {
-      const payload = {
+      const basePayload = {
         scenarioId: values.scenarioId,
-        text: values.text,
-        imgId: resolvedImage.id,
-        note: values.note.trim() || undefined,
+        text: values.text.trim(),
         isActive: values.isActive,
-        isTop: values.isTop,
       };
+      const payload: CreatePostDto =
+        values.type === PostType.Video
+          ? {
+              ...basePayload,
+              type: PostType.Video,
+              videoId: resolvedMedia.id,
+            }
+          : {
+              ...basePayload,
+              type: PostType.Img,
+              imgId: resolvedMedia.id,
+            };
 
       if (post) {
         await updateMutation.mutateAsync({ id: post.id, payload });
@@ -492,6 +548,28 @@ export function PostUpsertDrawer({
         </FormRow>
 
         <FormRow columns={2}>
+          <Field label="Type" labelFor="post-upsert-type">
+            <Select
+              id="post-upsert-type"
+              size="sm"
+              options={POST_TYPE_OPTIONS}
+              value={values.type}
+              onChange={(value) => {
+                const nextType = value as PostType;
+                if (nextType === values.type) return;
+                setValues((prev) => ({
+                  ...prev,
+                  type: nextType,
+                }));
+                setCurrentMedia(null);
+                setUploadItem(null);
+                setFileInputKey((prev) => prev + 1);
+              }}
+              fullWidth
+              disabled={isBusy}
+            />
+          </Field>
+
           <Field label="Status" labelFor="post-upsert-is-active">
             <Switch
               id="post-upsert-is-active"
@@ -506,32 +584,26 @@ export function PostUpsertDrawer({
               label={values.isActive ? 'Active' : 'Inactive'}
             />
           </Field>
-
-          <Field label="Is Top" labelFor="post-upsert-is-top">
-            <Switch
-              id="post-upsert-is-top"
-              checked={values.isTop}
-              disabled={isBusy}
-              onChange={(event) =>
-                setValues((prev) => ({
-                  ...prev,
-                  isTop: event.target.checked,
-                }))
-              }
-              label={values.isTop ? 'Top' : 'Regular'}
-            />
-          </Field>
         </FormRow>
 
-        <Field label="Image file" error={errors.image}>
-          {resolvedImage?.url ? (
+        <Field label={mediaConfig.label} error={errors.media}>
+          {resolvedMedia?.url ? (
             <div className={s.previewFrame}>
-              <img
-                className={s.previewImage}
-                src={resolvedImage.url}
-                alt={resolvedImage.name}
-                loading="lazy"
-              />
+              {values.type === PostType.Video ? (
+                <video
+                  className={s.previewMedia}
+                  src={resolvedMedia.url}
+                  controls
+                  preload="metadata"
+                />
+              ) : (
+                <img
+                  className={s.previewMedia}
+                  src={resolvedMedia.url}
+                  alt={resolvedMedia.name}
+                  loading="lazy"
+                />
+              )}
             </div>
           ) : null}
 
@@ -547,14 +619,14 @@ export function PostUpsertDrawer({
               }}
               disabled={isBusy}
             >
-              {resolvedImage ? 'Replace image' : 'Choose image'}
+              {resolvedMedia ? mediaConfig.replaceLabel : mediaConfig.actionLabel}
             </Button>
             <Typography variant="meta" tone="muted">
               {isUploadingFile
-                ? 'Uploading image...'
-                : resolvedImage
-                  ? 'Image ready'
-                  : 'No image uploaded'}
+                ? mediaConfig.uploadingLabel
+                : resolvedMedia
+                  ? mediaConfig.readyLabel
+                  : mediaConfig.emptyLabel}
             </Typography>
           </div>
 
@@ -578,7 +650,9 @@ export function PostUpsertDrawer({
                     <Badge tone="warning">Failed</Badge>
                   )}
                   <IconButton
-                    aria-label="Remove image file"
+                    aria-label={`Remove ${
+                      values.type === PostType.Video ? 'video' : 'image'
+                    } file`}
                     tooltip="Remove"
                     variant="ghost"
                     tone="danger"
@@ -598,10 +672,10 @@ export function PostUpsertDrawer({
                 </Typography>
               ) : null}
             </div>
-          ) : !resolvedImage ? (
+          ) : !resolvedMedia ? (
             <div className={s.uploadEmpty}>
               <Typography variant="caption" tone="muted">
-                No image uploaded yet.
+                {mediaConfig.emptyLabel}.
               </Typography>
             </div>
           ) : null}
@@ -610,7 +684,7 @@ export function PostUpsertDrawer({
             key={fileInputKey}
             id="post-upsert-file"
             type="file"
-            accept={IMAGE_ACCEPT}
+            accept={mediaConfig.accept}
             disabled={isBusy}
             onChange={handleFileChange}
             wrapperClassName={s.hiddenInputWrapper}
@@ -630,23 +704,6 @@ export function PostUpsertDrawer({
               }))
             }
             rows={10}
-            fullWidth
-            disabled={isBusy}
-          />
-        </Field>
-
-        <Field label="Note" labelFor="post-upsert-note">
-          <Textarea
-            id="post-upsert-note"
-            size="sm"
-            value={values.note}
-            onChange={(event) =>
-              setValues((prev) => ({
-                ...prev,
-                note: event.target.value,
-              }))
-            }
-            rows={3}
             fullWidth
             disabled={isBusy}
           />

@@ -1,22 +1,34 @@
-import { Badge, Card, Skeleton, Typography } from '@/atoms';
-import type { IPost } from '@/common/types';
+import { TrashIcon } from '@/assets/icons';
+import { Badge, Card, IconButton, Skeleton, Typography } from '@/atoms';
+import { type IPost, PostType } from '@/common/types';
 
 import s from './PostItemCard.module.scss';
 
 type PostItemCardProps = {
   item: IPost;
   onSelect?: (item: IPost) => void;
+  onDelete?: (item: IPost) => void;
+  isDeleting?: boolean;
 };
 
-export function PostItemCard({ item, onSelect }: PostItemCardProps) {
+export function PostItemCard({
+  item,
+  onSelect,
+  onDelete,
+  isDeleting = false,
+}: PostItemCardProps) {
   const scenarioName = item.scenario.name || 'Untitled';
-  const imageUrl = item.img.url;
+  const imageUrl = item.img?.url ?? '';
+  const videoUrl = item.video?.url ?? '';
   const textValue = item.text || '—';
-  const note = item.note?.trim() || '';
   const isSelectable = Boolean(onSelect);
   const handleSelect = () => {
     if (!onSelect) return;
     onSelect(item);
+  };
+  const handleDelete = () => {
+    if (!onDelete) return;
+    onDelete(item);
   };
 
   return (
@@ -37,10 +49,39 @@ export function PostItemCard({ item, onSelect }: PostItemCardProps) {
           : undefined
       }
     >
+      {onDelete ? (
+        <div className={s.cardActions}>
+          <IconButton
+            aria-label="Delete post"
+            icon={<TrashIcon />}
+            tooltip="Delete post"
+            variant="secondary"
+            tone="danger"
+            size="sm"
+            loading={isDeleting}
+            disabled={isDeleting}
+            onClick={(event) => {
+              event.stopPropagation();
+              handleDelete();
+            }}
+            onKeyDown={(event) => {
+              event.stopPropagation();
+            }}
+          />
+        </div>
+      ) : null}
       <div className={s.previewFrame}>
-        {imageUrl ? (
+        {item.type === PostType.Video && videoUrl ? (
+          <video
+            className={s.previewMedia}
+            src={videoUrl}
+            muted
+            playsInline
+            preload="metadata"
+          />
+        ) : imageUrl ? (
           <img
-            className={s.previewImage}
+            className={s.previewMedia}
             src={imageUrl}
             alt={scenarioName}
             loading="lazy"
@@ -62,15 +103,10 @@ export function PostItemCard({ item, onSelect }: PostItemCardProps) {
             <Badge tone={item.isActive ? 'success' : 'warning'}>
               {item.isActive ? 'Active' : 'Inactive'}
             </Badge>
-            {item.isTop ? <Badge>Top</Badge> : null}
+            <Badge>{item.type === PostType.Video ? 'Video' : 'Image'}</Badge>
           </div>
         </div>
         <pre className={s.textValue}>{textValue}</pre>
-        {note ? (
-          <Typography className={s.note} variant="caption" tone="muted">
-            {note}
-          </Typography>
-        ) : null}
       </div>
     </Card>
   );

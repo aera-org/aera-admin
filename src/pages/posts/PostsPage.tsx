@@ -5,7 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import { useCharacters } from '@/app/characters';
 import { getCharacterDetails } from '@/app/characters/charactersApi';
-import { usePosts } from '@/app/posts';
+import { useDeletePost, usePosts } from '@/app/posts';
 import {
   Alert,
   Button,
@@ -20,6 +20,7 @@ import {
 } from '@/atoms';
 import type { ICharacterDetails, IPost } from '@/common/types';
 import { formatCharacterSelectLabel } from '@/common/utils';
+import { ConfirmModal } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 
 import { PostItemCard, PostItemCardSkeleton } from './components/PostItemCard';
@@ -33,7 +34,6 @@ type QueryUpdate = {
   page?: number;
   pageSize?: number;
   isActive?: string;
-  isTop?: string;
 };
 
 type ScenarioOption = {
@@ -106,11 +106,11 @@ export function PostsPage() {
   const rawPage = searchParams.get('page');
   const rawPageSize = searchParams.get('pageSize');
   const rawIsActive = searchParams.get('isActive');
-  const rawIsTop = searchParams.get('isTop');
 
   const [searchInput, setSearchInput] = useState(rawSearch);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<IPost | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<IPost | null>(null);
 
   const debouncedSearch = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
   const normalizedSearch = debouncedSearch.trim();
@@ -120,7 +120,6 @@ export function PostsPage() {
   const page = parsePositiveNumber(rawPage, 1);
   const pageSize = parsePageSize(rawPageSize);
   const activeFilter = resolveBooleanFilter(rawIsActive);
-  const topFilter = resolveBooleanFilter(rawIsTop);
 
   const updateSearchParams = useCallback(
     (update: QueryUpdate, replace = false) => {
@@ -174,14 +173,6 @@ export function PostsPage() {
           next.set('isActive', update.isActive);
         } else {
           next.delete('isActive');
-        }
-      }
-
-      if (update.isTop !== undefined) {
-        if (update.isTop && update.isTop !== DEFAULT_BOOLEAN_FILTER) {
-          next.set('isTop', update.isTop);
-        } else {
-          next.delete('isTop');
         }
       }
 
@@ -317,19 +308,18 @@ export function PostsPage() {
   const queryParams = useMemo(() => {
     const isActive =
       activeFilter === 'all' ? undefined : activeFilter === 'true';
-    const isTop = topFilter === 'all' ? undefined : topFilter === 'true';
 
     return {
       search: normalizedSearch || undefined,
       scenarioId: scenarioFilter || undefined,
       isActive,
-      isTop,
       skip: (page - 1) * pageSize,
       take: pageSize,
     };
-  }, [activeFilter, normalizedSearch, page, pageSize, scenarioFilter, topFilter]);
+  }, [activeFilter, normalizedSearch, page, pageSize, scenarioFilter]);
 
   const { data, error, isLoading, refetch } = usePosts(queryParams);
+  const deleteMutation = useDeletePost();
 
   const posts = data?.data ?? [];
   const total = data?.total ?? 0;
@@ -373,6 +363,12 @@ export function PostsPage() {
   const handleEdit = (post: IPost) => {
     setEditingPost(post);
     setIsDrawerOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await deleteMutation.mutateAsync(deleteTarget.id);
+    setDeleteTarget(null);
   };
 
   const handleDrawerOpenChange = (open: boolean) => {
@@ -448,25 +444,20 @@ export function PostsPage() {
               />
             </Field>
 
-            <Field className={s.booleanField} label="Active" labelFor="posts-active">
+            <Field
+              className={s.booleanField}
+              label="Active"
+              labelFor="posts-active"
+            >
               <Select
                 id="posts-active"
                 options={BOOLEAN_FILTER_OPTIONS}
                 value={activeFilter}
                 size="sm"
                 variant="ghost"
-                onChange={(value) => updateSearchParams({ isActive: value, page: 1 })}
-              />
-            </Field>
-
-            <Field className={s.booleanField} label="Top" labelFor="posts-top">
-              <Select
-                id="posts-top"
-                options={BOOLEAN_FILTER_OPTIONS}
-                value={topFilter}
-                size="sm"
-                variant="ghost"
-                onChange={(value) => updateSearchParams({ isTop: value, page: 1 })}
+                onChange={(value) =>
+                  updateSearchParams({ isActive: value, page: 1 })
+                }
               />
             </Field>
           </div>
@@ -499,7 +490,15 @@ export function PostsPage() {
               {showSkeleton
                 ? postSkeletonCards
                 : posts.map((post) => (
-                    <PostItemCard key={post.id} item={post} onSelect={handleEdit} />
+                    <PostItemCard
+                      key={post.id}
+                      item={post}
+                      onSelect={handleEdit}
+                      onDelete={setDeleteTarget}
+                      isDeleting={
+                        deleteMutation.isPending && deleteTarget?.id === post.id
+                      }
+                    />
                   ))}
             </div>
           </div>
@@ -551,6 +550,21 @@ export function PostsPage() {
             : effectiveCharacterId || drawerScenarioLookup?.characterId
         }
         initialScenarioId={editingPost ? editingPost.scenario.id : scenarioFilter}
+      />
+
+      <ConfirmModal
+        open={Boolean(deleteTarget)}
+        title="Delete post"
+        description="Delete this post? This cannot be undone."
+        confirmLabel="Delete"
+        tone="danger"
+        isConfirming={deleteMutation.isPending}
+        onConfirm={handleDelete}
+        onClose={() => {
+          if (!deleteMutation.isPending) {
+            setDeleteTarget(null);
+          }
+        }}
       />
     </AppShell>
   );

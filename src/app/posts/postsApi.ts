@@ -1,6 +1,6 @@
 import { apiFetch } from '@/app/api';
 import { buildApiError } from '@/app/api/apiErrors';
-import type { IPost } from '@/common/types';
+import { type IPost, PostType } from '@/common/types';
 
 import type { PaginatedResponse } from '../paginated-response.type';
 
@@ -8,25 +8,32 @@ export type PostsListParams = {
   search?: string;
   scenarioId?: string;
   isActive?: boolean;
-  isTop?: boolean;
   skip?: number;
   take?: number;
 };
 
-export type CreatePostDto = {
+type PostBaseDto = {
   scenarioId: string;
   text: string;
-  imgId: string;
-  note?: string;
   isActive: boolean;
-  isTop: boolean;
 };
+
+export type CreatePostDto =
+  | (PostBaseDto & {
+      type: PostType.Img;
+      imgId: string;
+    })
+  | (PostBaseDto & {
+      type: PostType.Video;
+      videoId: string;
+    });
 
 export type UpdatePostDto = CreatePostDto;
 
 const listFallbackError = 'Unable to load posts.';
 const createFallbackError = 'Unable to create the post.';
 const updateFallbackError = 'Unable to update the post.';
+const deleteFallbackError = 'Unable to delete the post.';
 
 function buildListQuery(params: PostsListParams) {
   const query = new URLSearchParams();
@@ -35,9 +42,6 @@ function buildListQuery(params: PostsListParams) {
   if (params.scenarioId) query.set('scenarioId', params.scenarioId);
   if (typeof params.isActive === 'boolean') {
     query.set('isActive', String(params.isActive));
-  }
-  if (typeof params.isTop === 'boolean') {
-    query.set('isTop', String(params.isTop));
   }
   if (typeof params.skip === 'number') query.set('skip', String(params.skip));
   if (typeof params.take === 'number') query.set('take', String(params.take));
@@ -111,4 +115,13 @@ export async function updatePost(id: string, payload: UpdatePostDto) {
     throw await buildApiError(res, updateFallbackError);
   }
   return (await res.json()) as IPost;
+}
+
+export async function deletePost(id: string) {
+  const res = await apiFetch(`/admin/posts/${id}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, deleteFallbackError);
+  }
 }

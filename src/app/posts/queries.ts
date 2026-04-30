@@ -7,6 +7,7 @@ import type { PaginatedResponse } from '../paginated-response.type';
 import {
   createPost,
   type CreatePostDto,
+  deletePost,
   getPosts,
   type PostsListParams,
   updatePost,
@@ -74,6 +75,21 @@ export function useUpdatePost() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to update the post.');
+    },
+  });
+}
+
+export function useDeletePost() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deletePost(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      notifySuccess('Post deleted.', 'Post deleted.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to delete the post.');
     },
   });
 }

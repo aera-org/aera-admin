@@ -67,6 +67,7 @@ type ScenarioSectionProps = {
   showStatus?: boolean;
   showIsNew?: boolean;
   showIsPromoted?: boolean;
+  showIsTop?: boolean;
   useCustomCreate?: boolean;
 };
 
@@ -136,6 +137,7 @@ export function ScenarioSection({
   showStatus = true,
   showIsNew = true,
   showIsPromoted = true,
+  showIsTop = true,
   useCustomCreate = false,
 }: ScenarioSectionProps) {
   const queryClient = useQueryClient();
@@ -167,6 +169,7 @@ export function ScenarioSection({
     isNew: false,
     isPromoted: false,
     promoText: '',
+    isTop: false,
     promoImgId: '',
     promoImgHorizontalId: '',
     personality: '',
@@ -273,6 +276,7 @@ export function ScenarioSection({
       isNew: false,
       isPromoted: false,
       promoText: '',
+      isTop: false,
       promoImgId: '',
       promoImgHorizontalId: '',
       personality: '',
@@ -308,6 +312,7 @@ export function ScenarioSection({
       isNew: showIsNew ? Boolean(selectedScenario.isNew) : false,
       isPromoted: showIsPromoted ? Boolean(selectedScenario.isPromoted) : false,
       promoText: showIsPromoted ? (selectedScenario.promoText ?? '') : '',
+      isTop: showIsTop ? Boolean(selectedScenario.isTop) : false,
       promoImgId: showPromoImages ? (selectedScenario.promoImg?.id ?? '') : '',
       promoImgHorizontalId: showPromoImages
         ? (selectedScenario.promoImgHorizontal?.id ?? '')
@@ -439,6 +444,7 @@ export function ScenarioSection({
         promoText: showIsPromoted
           ? editValues.promoText.trim()
           : selectedScenario.promoText,
+        isTop: showIsTop ? editValues.isTop : selectedScenario.isTop,
         promoImgId: showPromoImages
           ? editValues.promoImgId || undefined
           : selectedScenario.promoImg?.id,
@@ -764,6 +770,7 @@ export function ScenarioSection({
               showStatus={showStatus}
               showIsNew={showIsNew}
               showIsPromoted={showIsPromoted}
+              showIsTop={showIsTop}
               showPromoImages={showPromoImages}
             />
           ) : null}
@@ -1341,6 +1348,22 @@ export function ScenarioSection({
                 />
               </Field>
             </>
+          ) : null}
+
+          {showIsTop ? (
+            <Field label="Top" labelFor="scenario-edit-is-top">
+              <Switch
+                id="scenario-edit-is-top"
+                checked={editValues.isTop}
+                onChange={(event) =>
+                  setEditValues((prev) => ({
+                    ...prev,
+                    isTop: event.target.checked,
+                  }))
+                }
+                label={editValues.isTop ? 'Top' : 'Not top'}
+              />
+            </Field>
           ) : null}
 
           <Field
