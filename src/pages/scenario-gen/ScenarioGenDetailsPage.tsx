@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useCharacterDetails } from '@/app/characters';
 import {
   useDeleteScenarioGen,
+  useReplaceScenarioGen,
   useSaveScenarioGen,
   useScenarioGenDetails,
 } from '@/app/scenario-gen';
@@ -16,6 +17,7 @@ import {
   FormRow,
   Input,
   Modal,
+  Select,
   Skeleton,
   Stack,
   Tabs,
@@ -83,6 +85,7 @@ export function ScenarioGenDetailsPage() {
   );
   const { data: characterData } = useCharacterDetails(data?.characterId ?? null);
   const saveMutation = useSaveScenarioGen();
+  const replaceMutation = useReplaceScenarioGen();
   const deleteMutation = useDeleteScenarioGen();
 
   const [selectedStage, setSelectedStage] = useState<RoleplayStage>(
@@ -92,6 +95,9 @@ export function ScenarioGenDetailsPage() {
   const [isSaveOpen, setIsSaveOpen] = useState(false);
   const [slug, setSlug] = useState('');
   const [showSlugError, setShowSlugError] = useState(false);
+  const [isReplaceOpen, setIsReplaceOpen] = useState(false);
+  const [selectedScenarioId, setSelectedScenarioId] = useState('');
+  const [showScenarioError, setShowScenarioError] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const scenario = data ?? null;
 
@@ -107,8 +113,20 @@ export function ScenarioGenDetailsPage() {
       })),
     [],
   );
+  const scenarioOptions = useMemo(
+    () =>
+      (characterData?.scenarios ?? []).map((item) => ({
+        value: item.id,
+        label: item.slug ? `${item.name} (${item.slug})` : item.name,
+      })),
+    [characterData?.scenarios],
+  );
 
   const slugError = showSlugError && !slug.trim() ? 'Enter a slug.' : undefined;
+  const scenarioError =
+    showScenarioError && !selectedScenarioId
+      ? 'Choose a scenario to replace.'
+      : undefined;
 
   const handleSave = async () => {
     if (!data) return;
@@ -125,6 +143,21 @@ export function ScenarioGenDetailsPage() {
     setIsSaveOpen(false);
   };
 
+  const handleReplace = async () => {
+    if (!data) return;
+    if (!selectedScenarioId) {
+      setShowScenarioError(true);
+      return;
+    }
+
+    await replaceMutation.mutateAsync({
+      id: data.id,
+      characterId: data.characterId,
+      payload: { scenarioId: selectedScenarioId },
+    });
+    setIsReplaceOpen(false);
+  };
+
   const handleDelete = async () => {
     if (!data) return;
     await deleteMutation.mutateAsync(data.id);
@@ -132,6 +165,8 @@ export function ScenarioGenDetailsPage() {
   };
 
   const isReady = Boolean(scenario);
+  const canReplace =
+    isReady && Boolean(scenario?.characterId) && scenarioOptions.length > 0;
 
   return (
     <AppShell>
@@ -192,6 +227,17 @@ export function ScenarioGenDetailsPage() {
               disabled={!isReady || deleteMutation.isPending}
             >
               Delete
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSelectedScenarioId('');
+                setShowScenarioError(false);
+                setIsReplaceOpen(true);
+              }}
+              disabled={!canReplace || replaceMutation.isPending}
+            >
+              Replace
             </Button>
             <Button
               onClick={() => {
@@ -427,6 +473,60 @@ export function ScenarioGenDetailsPage() {
                 value={slug}
                 onChange={(event) => setSlug(event.target.value)}
                 invalid={Boolean(slugError)}
+                fullWidth
+              />
+            </Field>
+          </Stack>
+        </Modal>
+
+        <Modal
+          open={isReplaceOpen}
+          title="Replace scenario"
+          onClose={() => {
+            if (!replaceMutation.isPending) {
+              setIsReplaceOpen(false);
+            }
+          }}
+          actions={
+            <div className={s.modalActions}>
+              <Button
+                variant="secondary"
+                onClick={() => setIsReplaceOpen(false)}
+                disabled={replaceMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleReplace}
+                loading={replaceMutation.isPending}
+                disabled={replaceMutation.isPending}
+              >
+                Replace
+              </Button>
+            </div>
+          }
+        >
+          <Stack gap="16px">
+            <Typography variant="body" tone="muted">
+              Choose an existing scenario for this character. Its generated
+              content will be replaced.
+            </Typography>
+            <Field
+              label="Scenario"
+              labelFor="scenario-gen-replace-scenario"
+              error={scenarioError}
+            >
+              <Select
+                id="scenario-gen-replace-scenario"
+                size="sm"
+                options={scenarioOptions}
+                value={selectedScenarioId}
+                onChange={(value) => {
+                  setSelectedScenarioId(value);
+                  setShowScenarioError(false);
+                }}
+                placeholder="Select scenario"
+                invalid={Boolean(scenarioError)}
                 fullWidth
               />
             </Field>

@@ -1,6 +1,7 @@
 export {
   useCreateScenarioGen,
   useDeleteScenarioGen,
+  useReplaceScenarioGen,
   useSaveScenarioGen,
   useScenarioGenDetails,
   useScenarioGens,

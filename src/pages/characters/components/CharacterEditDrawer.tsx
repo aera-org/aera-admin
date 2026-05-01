@@ -17,8 +17,6 @@ import {
   type CharacterFormValues,
 } from './CharacterFormDrawer';
 
-const isPersonalityEnabled = import.meta.env.VITE_PERSONALITY_ON === 'true';
-
 type CharacterEditDrawerProps = {
   character: ICharacterDetails | null;
   open: boolean;
@@ -100,7 +98,6 @@ export function CharacterEditDrawer({
       isSubmitting={updateMutation.isPending}
       requireDirty
       showStatus
-      showPersonality={isPersonalityEnabled}
       onSubmit={async (values) => {
         await updateMutation.mutateAsync({
           id: character.id,

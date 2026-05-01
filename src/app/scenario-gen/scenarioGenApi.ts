@@ -4,6 +4,7 @@ import type {
   IScenarioGen,
   IScenarioGenDetails,
   ScenarioGenCreateDto,
+  ScenarioGenReplaceDto,
   ScenarioGenSaveDto,
 } from '@/common/types';
 
@@ -22,6 +23,7 @@ const listFallbackError = 'Unable to load generated scenarios.';
 const detailFallbackError = 'Unable to load generated scenario details.';
 const createFallbackError = 'Unable to generate the scenario.';
 const saveFallbackError = 'Unable to save the scenario.';
+const replaceFallbackError = 'Unable to replace the scenario.';
 const deleteFallbackError = 'Unable to delete the generated scenario.';
 
 function normalizeListResponse(
@@ -97,6 +99,22 @@ export async function saveScenarioGen(id: string, payload: ScenarioGenSaveDto) {
   });
   if (!res.ok) {
     throw await buildApiError(res, saveFallbackError);
+  }
+
+  return await parseJsonIfPresent(res);
+}
+
+export async function replaceScenarioGen(
+  id: string,
+  payload: ScenarioGenReplaceDto,
+) {
+  const res = await apiFetch(`/admin/scenario-gen/${id}/replace`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, replaceFallbackError);
   }
 
   return await parseJsonIfPresent(res);

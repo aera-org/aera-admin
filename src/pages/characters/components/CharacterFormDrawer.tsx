@@ -103,7 +103,6 @@ type CharacterFormDrawerProps = {
   requireDirty?: boolean;
   showStatus?: boolean;
   showType?: boolean;
-  showPersonality?: boolean;
 };
 
 function useDebouncedValue<T>(value: T, delay: number) {
@@ -137,7 +136,6 @@ export function CharacterFormDrawer({
   requireDirty = false,
   showStatus = false,
   showType = false,
-  showPersonality = false,
 }: CharacterFormDrawerProps) {
   const [values, setValues] = useState(initialValues);
   const [avatarFile, setAvatarFile] = useState<IFile | null>(initialAvatarFile);
@@ -621,8 +619,6 @@ export function CharacterFormDrawer({
                 />
               </Field>
             </FormRow>
-
-            {showPersonality ? (
               <Field
                 label="Personality"
                 hint="Select the traits that apply to this character."
@@ -655,7 +651,6 @@ export function CharacterFormDrawer({
                   })}
                 </div>
               </Field>
-            ) : null}
           </Stack>
         </div>
 

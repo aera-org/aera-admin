@@ -168,8 +168,16 @@ export interface ICharacterStory {
 
 export enum CharacterPersonality {
   Hot = 'hot',
+  Submissive = 'submissive',
+  Dominant = 'dominant',
+  Shy = 'shy',
+  Caring = 'caring',
+  Devoted = 'devoted', // x
   Playful = 'playful',
-  Devoted = 'devoted',
+  Sassy = 'sassy',
+  Mysterious = 'mysterious',
+  Romantic = 'romantic',
+  Intellectual = 'intellectual',
 }
 
 export interface ICharacterDetails extends ICharacter {

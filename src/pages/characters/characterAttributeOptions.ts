@@ -57,8 +57,16 @@ const breastSizeLabels: Record<CharacterBreastSize, string> = {
 
 const personalityLabels: Record<CharacterPersonality, string> = {
   [CharacterPersonality.Hot]: 'Hot',
-  [CharacterPersonality.Playful]: 'Playful',
+  [CharacterPersonality.Submissive]: 'Submissive',
+  [CharacterPersonality.Dominant]: 'Dominant',
+  [CharacterPersonality.Shy]: 'Shy',
+  [CharacterPersonality.Caring]: 'Caring',
   [CharacterPersonality.Devoted]: 'Devoted',
+  [CharacterPersonality.Playful]: 'Playful',
+  [CharacterPersonality.Sassy]: 'Sassy',
+  [CharacterPersonality.Mysterious]: 'Mysterious',
+  [CharacterPersonality.Romantic]: 'Romantic',
+  [CharacterPersonality.Intellectual]: 'Intellectual',
 };
 
 export const HAIR_COLOR_OPTIONS = Object.values(CharacterHairColor).map(
@@ -103,7 +111,9 @@ export const BREAST_SIZE_OPTIONS = Object.values(CharacterBreastSize).map(
   }),
 );
 
-export const PERSONALITY_OPTIONS = Object.values(CharacterPersonality).map(
+const isX = import.meta.env.VITE_PERSONALITY_ON === 'true';
+
+export const PERSONALITY_OPTIONS = Object.values(CharacterPersonality).filter(o => isX ? true : o !== CharacterPersonality.Devoted).map(
   (value) => ({
     value,
     label: personalityLabels[value],

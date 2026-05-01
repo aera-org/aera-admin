@@ -33,3 +33,7 @@ export interface ScenarioGenCreateDto {
 export interface ScenarioGenSaveDto {
   slug: string;
 }
+
+export interface ScenarioGenReplaceDto {
+  scenarioId: string;
+}

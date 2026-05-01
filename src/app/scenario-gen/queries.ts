@@ -4,6 +4,7 @@ import { notifyError, notifySuccess } from '@/app/toast';
 import type {
   IScenarioGenDetails,
   ScenarioGenCreateDto,
+  ScenarioGenReplaceDto,
   ScenarioGenSaveDto,
 } from '@/common/types';
 
@@ -12,6 +13,7 @@ import {
   deleteScenarioGen,
   getScenarioGenDetails,
   getScenarioGens,
+  replaceScenarioGen,
   saveScenarioGen,
   type ScenarioGenListParams,
 } from './scenarioGenApi';
@@ -72,6 +74,34 @@ export function useSaveScenarioGen() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to save the scenario.');
+    },
+  });
+}
+
+export function useReplaceScenarioGen() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      characterId: string;
+      payload: ScenarioGenReplaceDto;
+    }) => replaceScenarioGen(id, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['scenario-gen'] });
+      queryClient.invalidateQueries({
+        queryKey: scenarioGenKeys.detail(variables.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['character', variables.characterId],
+      });
+      notifySuccess('Scenario replaced.', 'Scenario replaced.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to replace the scenario.');
     },
   });
 }

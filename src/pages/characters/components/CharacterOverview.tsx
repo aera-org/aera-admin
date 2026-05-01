@@ -13,7 +13,6 @@ import {
 } from '../characterAttributeOptions';
 import s from '../CharacterDetailsPage.module.scss';
 
-const isPersonalityEnabled = import.meta.env.VITE_PERSONALITY_ON === 'true';
 
 type CharacterOverviewProps = {
   data: ICharacterDetails | undefined;
@@ -192,13 +191,11 @@ export function CharacterOverview({
             {getBreastSizeLabel(data?.breastSize)}
           </Typography>
         </Field>
-        {isPersonalityEnabled ? (
           <Field label="Personality" labelFor="character-personality">
             <Typography id="character-personality" variant="body">
               {formatCharacterPersonalities(data?.personality)}
             </Typography>
           </Field>
-        ) : null}
       </FormRow>
     </div>
   );
