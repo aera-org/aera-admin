@@ -15,6 +15,7 @@ export {
   useCharacterDetails,
   useCharacters,
   useCloneCharacterAsAnime,
+  useCopyScenarioToCharacter,
   useCreateCharacter,
   useCreateCharacterStory,
   useCreateCustomCharacter,

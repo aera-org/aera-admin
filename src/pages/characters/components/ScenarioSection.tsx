@@ -2,6 +2,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { type ChangeEvent, useCallback, useMemo, useRef, useState } from 'react';
 
 import {
+  useCharacters,
+  useCopyScenarioToCharacter,
   useCreateCustomScenario,
   useCreateScenario,
   useDeleteScenario,
@@ -24,6 +26,7 @@ import {
   FormRow,
   IconButton,
   Input,
+  Modal,
   Skeleton,
   Stack,
   Switch,
@@ -40,7 +43,9 @@ import {
   type StageDirectives,
   STAGES_IN_ORDER,
 } from '@/common/types';
+import { formatCharacterSelectLabel } from '@/common/utils';
 import { ConfirmModal, Drawer, FileUpload } from '@/components/molecules';
+import { SearchSelect } from '@/components/molecules/search-select/SearchSelect';
 
 import s from '../CharacterDetailsPage.module.scss';
 import { ScenarioDetails } from './ScenarioDetails';
@@ -142,6 +147,7 @@ export function ScenarioSection({
 }: ScenarioSectionProps) {
   const queryClient = useQueryClient();
   const createMutation = useCreateScenario();
+  const copyMutation = useCopyScenarioToCharacter();
   const customCreateMutation = useCreateCustomScenario();
   const updateMutation = useUpdateScenario();
   const deleteMutation = useDeleteScenario();
@@ -154,6 +160,15 @@ export function ScenarioSection({
   const [deleteTarget, setDeleteTarget] = useState<
     ICharacterDetails['scenarios'][number] | null
   >(null);
+  const [copyTarget, setCopyTarget] = useState<
+    ICharacterDetails['scenarios'][number] | null
+  >(null);
+  const [copyValues, setCopyValues] = useState({
+    targetCharacterId: '',
+    slug: '',
+  });
+  const [copyCharacterSearch, setCopyCharacterSearch] = useState('');
+  const [copyShowErrors, setCopyShowErrors] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -198,6 +213,27 @@ export function ScenarioSection({
   }));
   const selectedScenario =
     scenarios.find((scenario) => scenario.id === selectedScenarioId) ?? null;
+  const { data: copyCharacterData, isLoading: isCopyCharactersLoading } =
+    useCharacters(
+      {
+        search: copyCharacterSearch.trim() || undefined,
+        order: 'ASC',
+        skip: 0,
+        take: 20,
+      },
+      { enabled: Boolean(copyTarget) },
+    );
+  const copyCharacterOptions = useMemo(
+    () =>
+      (copyCharacterData?.data ?? [])
+        .filter((character) => character.id !== characterId)
+        .map((character) => ({
+          id: character.id,
+          label: formatCharacterSelectLabel(character.name, character.type),
+          meta: character.id,
+        })),
+    [characterId, copyCharacterData?.data],
+  );
 
   const getBaseErrors = useCallback((values: typeof formValues) => {
     const errors: Record<string, string> = {};
@@ -251,6 +287,24 @@ export function ScenarioSection({
     () => (editShowErrors ? getBaseErrors(editValues) : {}),
     [editShowErrors, editValues, getBaseErrors],
   );
+  const copyValidationErrors = useMemo(() => {
+    if (!copyShowErrors) return {};
+    const errors: { targetCharacterId?: string; slug?: string } = {};
+    if (!copyValues.targetCharacterId) {
+      errors.targetCharacterId = 'Select a character.';
+    } else if (copyValues.targetCharacterId === characterId) {
+      errors.targetCharacterId = 'Select another character.';
+    }
+    if (!copyValues.slug.trim()) {
+      errors.slug = 'Enter a slug.';
+    }
+    return errors;
+  }, [
+    characterId,
+    copyShowErrors,
+    copyValues.slug,
+    copyValues.targetCharacterId,
+  ]);
 
   const isValid = useMemo(
     () => Object.keys(getCreateErrors(formValues)).length === 0,
@@ -263,6 +317,15 @@ export function ScenarioSection({
   const isEditValid = useMemo(
     () => Object.keys(getBaseErrors(editValues)).length === 0,
     [editValues, getBaseErrors],
+  );
+  const isCopyValid = useMemo(
+    () =>
+      Boolean(
+        copyValues.targetCharacterId &&
+          copyValues.targetCharacterId !== characterId &&
+          copyValues.slug.trim(),
+      ),
+    [characterId, copyValues.slug, copyValues.targetCharacterId],
   );
 
   const openCreateModal = () => {
@@ -336,6 +399,23 @@ export function ScenarioSection({
   const closeEditModal = () => {
     if (updateMutation.isPending) return;
     setIsEditOpen(false);
+  };
+
+  const openCopyModal = (
+    scenario: ICharacterDetails['scenarios'][number],
+  ) => {
+    setCopyTarget(scenario);
+    setCopyValues({
+      targetCharacterId: '',
+      slug: '',
+    });
+    setCopyCharacterSearch('');
+    setCopyShowErrors(false);
+  };
+
+  const closeCopyModal = () => {
+    if (copyMutation.isPending) return;
+    setCopyTarget(null);
   };
 
   const handleCreate = async () => {
@@ -475,6 +555,22 @@ export function ScenarioSection({
 
     setDeleteTarget(null);
     onSelectScenario(nextScenario?.id ?? null);
+  };
+
+  const handleCopyScenario = async () => {
+    if (!characterId || !copyTarget) return;
+    if (!isCopyValid) {
+      setCopyShowErrors(true);
+      return;
+    }
+
+    await copyMutation.mutateAsync({
+      sourceCharacterId: characterId,
+      targetCharacterId: copyValues.targetCharacterId,
+      scenario: copyTarget,
+      slug: copyValues.slug.trim(),
+    });
+    setCopyTarget(null);
   };
 
   const resolveGiftIdsByName = async (giftNames: string[]) => {
@@ -758,8 +854,12 @@ export function ScenarioSection({
               scenario={selectedScenario}
               formatDate={formatDate}
               onEdit={openEditModal}
+              onCopy={() => openCopyModal(selectedScenario)}
               onDelete={() => setDeleteTarget(selectedScenario)}
               canEdit={Boolean(characterId && allowEdit)}
+              canCopy={Boolean(
+                characterId && selectedScenario && !copyMutation.isPending,
+              )}
               canDelete={Boolean(characterId)}
               isDeleting={
                 deleteMutation.isPending &&
@@ -776,6 +876,81 @@ export function ScenarioSection({
           ) : null}
         </Stack>
       )}
+
+      <Modal
+        open={Boolean(copyTarget)}
+        title="Copy scenario"
+        onClose={closeCopyModal}
+        actions={
+          <div className={s.modalActions}>
+            <Button
+              variant="secondary"
+              onClick={closeCopyModal}
+              disabled={copyMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCopyScenario}
+              loading={copyMutation.isPending}
+              disabled={copyMutation.isPending}
+            >
+              Copy
+            </Button>
+          </div>
+        }
+      >
+        <Stack gap="16px">
+          <Typography variant="body" tone="muted">
+            Create this scenario for another character without images. Content,
+            stages, and gifts will be copied.
+          </Typography>
+          <Field
+            label="Character"
+            labelFor="scenario-copy-character"
+            error={copyValidationErrors.targetCharacterId}
+          >
+            <SearchSelect
+              id="scenario-copy-character"
+              value={copyValues.targetCharacterId}
+              options={copyCharacterOptions}
+              search={copyCharacterSearch}
+              onSearchChange={setCopyCharacterSearch}
+              onSelect={(value) => {
+                setCopyValues((prev) => ({
+                  ...prev,
+                  targetCharacterId: value,
+                }));
+                setCopyShowErrors(false);
+              }}
+              placeholder="Select character"
+              loading={isCopyCharactersLoading}
+              invalid={Boolean(copyValidationErrors.targetCharacterId)}
+              clearLabel="Clear"
+            />
+          </Field>
+          <Field
+            label="Slug"
+            labelFor="scenario-copy-slug"
+            error={copyValidationErrors.slug}
+          >
+            <Input
+              id="scenario-copy-slug"
+              size="sm"
+              value={copyValues.slug}
+              onChange={(event) => {
+                setCopyValues((prev) => ({
+                  ...prev,
+                  slug: event.target.value,
+                }));
+                setCopyShowErrors(false);
+              }}
+              invalid={Boolean(copyValidationErrors.slug)}
+              fullWidth
+            />
+          </Field>
+        </Stack>
+      </Modal>
 
       {!useCustomCreate ? (
         <Drawer

@@ -39,6 +39,7 @@ import {
 function getInitialValues(): PosePromptFormValues {
   return {
     idx: '',
+    note: '',
     isAnal: false,
     stages: [],
     pose: '',
@@ -137,6 +138,7 @@ export function PoseUpdatePage() {
     if (draft?.id === data.id) return draft.values;
     return {
       idx: String(data.idx),
+      note: data.note ?? '',
       isAnal: data.isAnal,
       stages: data.stages ?? [],
       pose: data.pose,
@@ -211,6 +213,7 @@ export function PoseUpdatePage() {
       id: data.id,
       payload: {
         idx: parseIdx(values.idx) as UpdatePosePromptDto['idx'],
+        note: values.note.trim() || undefined,
         isAnal: values.isAnal,
         stages: values.stages,
         pose: values.pose as UpdatePosePromptDto['pose'],

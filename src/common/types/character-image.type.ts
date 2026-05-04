@@ -18,6 +18,11 @@ export type CreateCharacterImageDto = {
   blurredFileId?: string;
 };
 
+export type UpdateCharacterImageDto = {
+  isPromotional?: boolean;
+  isAnal?: boolean;
+};
+
 export interface ICharacterImage {
   id: string;
   description: string;

@@ -1,13 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { notifyError, notifySuccess } from '@/app/toast';
-import type { CreateCharacterImageDto } from '@/common/types';
+import type {
+  CreateCharacterImageDto,
+  UpdateCharacterImageDto,
+} from '@/common/types';
 
 import {
   createCharacterImage,
   deleteCharacterImage,
   getCharacterImageDetails,
   getCharacterImages,
+  updateCharacterImage,
   type CharacterImagesListParams,
 } from './characterImagesApi';
 
@@ -45,6 +49,33 @@ export function useCreateCharacterImage() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to create the image.');
+    },
+  });
+}
+
+export function useUpdateCharacterImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: UpdateCharacterImageDto;
+    }) => updateCharacterImage(id, payload),
+    onSuccess: (data, variables) => {
+      if (data) {
+        queryClient.setQueryData(characterImageKeys.detail(variables.id), data);
+      }
+      queryClient.invalidateQueries({ queryKey: ['character-images'] });
+      queryClient.invalidateQueries({
+        queryKey: characterImageKeys.detail(variables.id),
+      });
+      notifySuccess('Image updated.', 'Image updated.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to update the image.');
     },
   });
 }

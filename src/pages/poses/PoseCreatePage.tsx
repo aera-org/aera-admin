@@ -20,6 +20,7 @@ import {
 function getInitialValues(): PosePromptFormValues {
   return {
     idx: '',
+    note: '',
     isAnal: false,
     stages: [],
     pose: '',
@@ -123,6 +124,7 @@ export function PoseCreatePage() {
 
     await createMutation.mutateAsync({
       idx: parseIdx(values.idx) as CreatePosePromptDto['idx'],
+      note: values.note.trim() || undefined,
       isAnal: values.isAnal,
       stages: values.stages,
       pose: values.pose as CreatePosePromptDto['pose'],

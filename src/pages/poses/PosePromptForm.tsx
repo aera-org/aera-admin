@@ -30,6 +30,7 @@ const STAGE_LABELS: Record<RoleplayStage, string> = {
 
 export type PosePromptFormValues = {
   idx: string;
+  note: string;
   isAnal: boolean;
   stages: RoleplayStage[];
   pose: Pose | '';
@@ -138,6 +139,19 @@ export function PosePromptForm({
       </Field>
 
       {beforePrompt}
+
+      <Field label="Note" labelFor="pose-note" error={errors.note}>
+        <Textarea
+          id="pose-note"
+          size="sm"
+          value={values.note}
+          onChange={(event) => onChange('note', event.target.value)}
+          rows={3}
+          disabled={disabled}
+          placeholder="Optional"
+          fullWidth
+        />
+      </Field>
 
       <Field label="Prompt" labelFor="pose-prompt" error={errors.prompt}>
         <Textarea

@@ -11,6 +11,7 @@ const POSES_TRANSFER_VERSION = 3;
 
 export type PoseTransferItem = {
   idx: number;
+  note?: string;
   isAnal: boolean;
   stages: RoleplayStage[];
   angle: PhotoAngle;
@@ -49,6 +50,11 @@ function ensureNonEmptyString(value: unknown, path: string) {
     throw new Error(`Invalid import file: "${path}" must not be empty.`);
   }
   return parsed;
+}
+
+function ensureOptionalString(value: unknown, path: string) {
+  if (value === undefined || value === null) return undefined;
+  return ensureString(value, path).trim() || undefined;
 }
 
 function ensureNonNegativeInteger(value: unknown, path: string) {
@@ -110,6 +116,7 @@ function parseTransferPose(value: unknown, path: string): PoseTransferItem {
 
   const parsed = {
     idx: ensureNonNegativeInteger(obj.idx, `${path}.idx`),
+    note: ensureOptionalString(obj.note, `${path}.note`),
     isAnal: ensureBoolean(obj.isAnal, `${path}.isAnal`),
     stages: parseStages(obj.stages, `${path}.stages`),
     angle: ensureEnumValue(
@@ -182,6 +189,7 @@ export function buildPosesTransferPayload(poses: IPosePromptDetails[]) {
 
     return {
       idx: pose.idx,
+      note: pose.note?.trim() || undefined,
       isAnal: pose.isAnal,
       stages,
       angle: pose.angle,

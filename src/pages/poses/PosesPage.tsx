@@ -308,6 +308,7 @@ export function PosesPage() {
       for (const pose of imported.poses) {
         const payload: CreatePosePromptDto = {
           idx: pose.idx,
+          note: pose.note,
           isAnal: pose.isAnal,
           stages: pose.stages,
           pose: pose.pose,

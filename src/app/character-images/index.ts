@@ -3,6 +3,7 @@ export {
   deleteCharacterImage,
   getCharacterImageDetails,
   getCharacterImages,
+  updateCharacterImage,
 } from './characterImagesApi';
 export type { CharacterImagesListParams } from './characterImagesApi';
 export {
@@ -10,4 +11,5 @@ export {
   useCharacterImages,
   useCreateCharacterImage,
   useDeleteCharacterImage,
+  useUpdateCharacterImage,
 } from './queries';

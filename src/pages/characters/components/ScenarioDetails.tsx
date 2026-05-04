@@ -9,7 +9,7 @@ import {
 } from '@/app/characters';
 import { useGifts } from '@/app/gifts';
 import { notifyError } from '@/app/toast';
-import { PencilLineIcon, TrashIcon } from '@/assets/icons';
+import { CopyIcon, PencilLineIcon, TrashIcon } from '@/assets/icons';
 import {
   Badge,
   Button,
@@ -39,8 +39,10 @@ type ScenarioDetailsProps = {
   scenario: ICharacterDetails['scenarios'][number];
   formatDate: (value: string | null | undefined) => string;
   onEdit: () => void;
+  onCopy: () => void;
   onDelete: () => void;
   canEdit: boolean;
+  canCopy: boolean;
   canDelete: boolean;
   isDeleting: boolean;
   allowEdit?: boolean;
@@ -160,8 +162,10 @@ export function ScenarioDetails({
   scenario,
   formatDate,
   onEdit,
+  onCopy,
   onDelete,
   canEdit,
+  canCopy,
   canDelete,
   isDeleting,
   allowEdit = true,
@@ -434,6 +438,15 @@ export function ScenarioDetails({
               ? `Updated ${formatDate(scenario.updatedAt)}`
               : ''}
           </Typography>
+          <IconButton
+            aria-label="Copy scenario"
+            icon={<CopyIcon />}
+            tooltip="Copy scenario"
+            variant="ghost"
+            size="sm"
+            onClick={onCopy}
+            disabled={!canCopy}
+          />
           {allowEdit ? (
             <IconButton
               aria-label="Edit scenario"

@@ -108,6 +108,35 @@ function buildScenarioClonePayload(
   };
 }
 
+function buildScenarioCopyPayload(
+  scenario: ICharacterDetails['scenarios'][number],
+  slug: string,
+): ScenarioCreateDto {
+  return {
+    name: scenario.name.trim(),
+    emoji: scenario.emoji.trim(),
+    slug: slug.trim(),
+    description: scenario.description.trim(),
+    isActive: scenario.isActive,
+    shortDescription: scenario.shortDescription?.trim() || undefined,
+    isNew: scenario.isNew,
+    isPromoted: scenario.isPromoted,
+    promoText: scenario.promoText.trim(),
+    isTop: scenario.isTop,
+    personality: scenario.personality.trim(),
+    messagingStyle: scenario.messagingStyle.trim(),
+    appearance: scenario.appearance.trim(),
+    situation: scenario.situation.trim(),
+    openingMessage: scenario.openingMessage.trim(),
+  };
+}
+
+function getScenarioGiftId(
+  gift: ICharacterDetails['scenarios'][number]['gifts'][number],
+) {
+  return gift.gift?.id || gift.giftId || '';
+}
+
 async function cloneCharacterScenarios(
   sourceCharacter: ICharacterDetails,
   targetCharacterId: string,
@@ -153,6 +182,78 @@ async function cloneCharacterScenarios(
       );
     }
   }
+}
+
+async function copyScenarioToCharacter({
+  sourceCharacterId,
+  targetCharacterId,
+  scenario,
+  slug,
+}: {
+  sourceCharacterId: string;
+  targetCharacterId: string;
+  scenario: ICharacterDetails['scenarios'][number];
+  slug: string;
+}) {
+  const scenarioPayload = buildScenarioCopyPayload(scenario, slug);
+  const createdScenario = await createScenario(targetCharacterId, scenarioPayload);
+
+  try {
+    if (scenario.liveGenerations) {
+      await updateScenario(targetCharacterId, createdScenario.id, {
+        ...scenarioPayload,
+        liveGenerations: scenario.liveGenerations,
+      });
+    }
+
+    for (const stage of STAGES_IN_ORDER) {
+      const stagePayload = scenario.stages[stage];
+      if (isStageDirectivesEmpty(stagePayload)) {
+        continue;
+      }
+
+      await updateScenarioStage(targetCharacterId, createdScenario.id, stage, {
+        toneAndBehavior: stagePayload.toneAndBehavior.trim(),
+        restrictions: stagePayload.restrictions.trim(),
+        environment: stagePayload.environment.trim(),
+        characterLook: stagePayload.characterLook.trim(),
+        goal: stagePayload.goal.trim(),
+        escalationTrigger: stagePayload.escalationTrigger.trim(),
+      });
+    }
+
+    for (const gift of scenario.gifts) {
+      const giftId = getScenarioGiftId(gift);
+      if (!giftId) {
+        throw new Error('Unable to copy scenario gift without gift id.');
+      }
+
+      await addScenarioStageGift(
+        targetCharacterId,
+        createdScenario.id,
+        gift.stage,
+        {
+          giftId,
+          reason: gift.reason.trim(),
+          buyText: gift.buyText,
+        },
+      );
+    }
+  } catch {
+    const error = new Error(
+      'Scenario created, but copy did not finish.',
+    ) as Error & {
+      createdScenarioId?: string;
+      sourceCharacterId?: string;
+      targetCharacterId?: string;
+    };
+    error.createdScenarioId = createdScenario.id;
+    error.sourceCharacterId = sourceCharacterId;
+    error.targetCharacterId = targetCharacterId;
+    throw error;
+  }
+
+  return createdScenario;
 }
 
 type CharactersQueryOptions<T> = {
@@ -264,6 +365,26 @@ export function useCreateScenario() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to create the scenario.');
+    },
+  });
+}
+
+export function useCopyScenarioToCharacter() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: copyScenarioToCharacter,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.sourceCharacterId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.targetCharacterId),
+      });
+      notifySuccess('Scenario copied.', 'Scenario copied.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to copy the scenario.');
     },
   });
 }

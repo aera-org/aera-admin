@@ -1,4 +1,9 @@
-import { useCharacterImageDetails } from '@/app/character-images';
+import { useEffect, useMemo, useState } from 'react';
+
+import {
+  useCharacterImageDetails,
+  useUpdateCharacterImage,
+} from '@/app/character-images';
 import { DownloadIcon } from '@/assets/icons';
 import {
   Alert,
@@ -9,8 +14,10 @@ import {
   IconButton,
   Skeleton,
   Stack,
+  Switch,
   Typography,
 } from '@/atoms';
+import type { UpdateCharacterImageDto } from '@/common/types';
 import {
   formatPose,
   USER_REQUEST_FIELD_CONFIG,
@@ -54,6 +61,20 @@ export function CharacterImageDetailsDrawer({
   const { data, error, isLoading, refetch } = useCharacterImageDetails(
     open ? imageId : null,
   );
+  const updateMutation = useUpdateCharacterImage();
+  const [flagsDraft, setFlagsDraft] = useState({
+    isPromotional: false,
+    isAnal: false,
+  });
+
+  useEffect(() => {
+    if (!data) return;
+    setFlagsDraft({
+      isPromotional: data.isPromotional,
+      isAnal: Boolean(data.isAnal),
+    });
+  }, [data]);
+
   const userRequestEntries = data
     ? Object.entries(USER_REQUEST_FIELD_CONFIG).map(([fieldKey, config]) => {
         const value =
@@ -73,22 +94,31 @@ export function CharacterImageDetailsDrawer({
       })
     : [];
 
-  const flags = data
-    ? [
-        {
-          label: data.isPregenerated ? 'Pregenerated' : 'Generated',
-          tone: data.isPregenerated
-            ? ('accent' as const)
-            : ('warning' as const),
-          outline: !data.isPregenerated,
-        },
-        {
-          label: data.isPromotional ? 'Promotional' : 'Regular',
-          tone: data.isPromotional ? ('warning' as const) : ('accent' as const),
-          outline: !data.isPromotional,
-        },
-      ]
-    : [];
+  const hasFlagChanges = useMemo(() => {
+    if (!data) return false;
+    return (
+      flagsDraft.isPromotional !== data.isPromotional ||
+      flagsDraft.isAnal !== Boolean(data.isAnal)
+    );
+  }, [data, flagsDraft.isAnal, flagsDraft.isPromotional]);
+
+  const handleSaveFlags = async () => {
+    if (!data) return;
+
+    const payload: UpdateCharacterImageDto = {};
+    if (flagsDraft.isPromotional !== data.isPromotional) {
+      payload.isPromotional = flagsDraft.isPromotional;
+    }
+    if (flagsDraft.isAnal !== Boolean(data.isAnal)) {
+      payload.isAnal = flagsDraft.isAnal;
+    }
+    if (Object.keys(payload).length === 0) return;
+
+    await updateMutation.mutateAsync({
+      id: data.id,
+      payload,
+    });
+  };
 
   return (
     <Drawer
@@ -220,14 +250,6 @@ export function CharacterImageDetailsDrawer({
                     {data.pose ? formatPose(data.pose) : '-'}
                   </Typography>
                 </div>
-                <div>
-                  <Typography variant="caption" tone="muted">
-                    Anal
-                  </Typography>
-                  <Typography variant="body">
-                    {data.isAnal ? 'Yes' : 'No'}
-                  </Typography>
-                </div>
               </Stack>
             </Field>
 
@@ -254,16 +276,49 @@ export function CharacterImageDetailsDrawer({
             </Field>
 
             <Field label="Flags">
-              <div className={s.badges}>
-                {flags.map((flag) => (
+              <div className={s.flagEditor}>
+                <div className={s.flagStatus}>
                   <Badge
-                    key={flag.label}
-                    tone={flag.tone}
-                    outline={flag.outline}
+                    tone={data.isPregenerated ? 'accent' : 'warning'}
+                    outline={!data.isPregenerated}
                   >
-                    {flag.label}
+                    {data.isPregenerated ? 'Pregenerated' : 'Generated'}
                   </Badge>
-                ))}
+                </div>
+                <Switch
+                  checked={flagsDraft.isPromotional}
+                  disabled={updateMutation.isPending}
+                  onChange={(event) =>
+                    setFlagsDraft((prev) => ({
+                      ...prev,
+                      isPromotional: event.target.checked,
+                    }))
+                  }
+                  label={
+                    flagsDraft.isPromotional ? 'Promotional' : 'Regular'
+                  }
+                />
+                <Switch
+                  checked={flagsDraft.isAnal}
+                  disabled={updateMutation.isPending}
+                  onChange={(event) =>
+                    setFlagsDraft((prev) => ({
+                      ...prev,
+                      isAnal: event.target.checked,
+                    }))
+                  }
+                  label={flagsDraft.isAnal ? 'Anal' : 'Not anal'}
+                />
+                <div className={s.flagActions}>
+                  <Button
+                    size="sm"
+                    onClick={handleSaveFlags}
+                    loading={updateMutation.isPending}
+                    disabled={!hasFlagChanges || updateMutation.isPending}
+                  >
+                    Save
+                  </Button>
+                </div>
               </div>
             </Field>
 

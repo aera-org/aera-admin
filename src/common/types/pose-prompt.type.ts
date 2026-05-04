@@ -42,6 +42,7 @@ export enum PhotoAngle {
 
 export interface IPosePromptDetails extends IPosePrompt {
   idx: number;
+  note?: string;
   isAnal: boolean;
   stages: RoleplayStage[];
   angle: PhotoAngle;
@@ -53,6 +54,7 @@ export interface IPosePromptDetails extends IPosePrompt {
 
 export type CreatePosePromptDto = {
   idx: number;
+  note?: string;
   isAnal: boolean;
   stages: RoleplayStage[];
   angle: PhotoAngle;
@@ -62,6 +64,7 @@ export type CreatePosePromptDto = {
 
 export type UpdatePosePromptDto = {
   idx: number;
+  note?: string;
   isAnal: boolean;
   stages: RoleplayStage[];
   angle: PhotoAngle;

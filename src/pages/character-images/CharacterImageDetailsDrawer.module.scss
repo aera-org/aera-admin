@@ -57,16 +57,24 @@
   text-align: center;
 }
 
-.badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
 .state {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+.flagEditor {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.flagStatus {
+  display: flex;
+}
+
+.flagActions {
+  display: flex;
+  justify-content: flex-start;
 }
 
 @media (max-width: 960px) {
