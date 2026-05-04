@@ -15,6 +15,7 @@ import {
   BatchImageDetailsPage,
   BatchImagesPage,
   BroadcastPage,
+  CampaignsPage,
   CharacterDetailsPage,
   CharacterImagesPage,
   CharactersPage,
@@ -67,6 +68,8 @@ function CharacterImageDrawerRedirect() {
   return <Navigate to={`/character-images${search ? `?${search}` : ''}`} replace />;
 }
 
+const isX = import.meta.env.VITE_IS_X === 'true';
+
 export function AppRoutes() {
   return (
     <Routes>
@@ -75,6 +78,7 @@ export function AppRoutes() {
       <Route path="/auth/confirm" element={<ConfirmEmailPage />} />
       <Route path="/auth/forgot" element={<ForgotPasswordPage />} />
       <Route path="/auth/reset" element={<ResetPasswordPage />} />
+      {isX && <Route path="/campaigns" element={<CampaignsPage />} />}
       <Route element={<AuthGuard />}>
         <Route path="/" element={<AnalyticsPage />} />
         <Route path="/ui" element={<UiKitPage />} />
