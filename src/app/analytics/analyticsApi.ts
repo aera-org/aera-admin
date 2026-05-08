@@ -30,6 +30,7 @@ export type AnalyticsMetricsResponse = {
 export type DailyAnalyticsItem = {
   day: string;
   visits: number;
+  opened: number;
   unique: number;
   total: number;
   activationRate: number;

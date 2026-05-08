@@ -20,7 +20,7 @@ import {
   Typography,
 } from '@/atoms';
 import type { ITgUser } from '@/common/types';
-import { formatCharacterType } from '@/common/utils';
+import { cn, formatCharacterType } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 import { SearchSelect } from '@/molecules';
 
@@ -29,6 +29,8 @@ import s from './CustomCharactersPage.module.scss';
 type QueryUpdate = {
   search?: string;
   userId?: string;
+  createdAfter?: string;
+  createdBefore?: string;
   order?: string;
   page?: number;
   pageSize?: number;
@@ -101,11 +103,15 @@ export function CustomCharactersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSearch = searchParams.get('search') ?? '';
   const rawUserId = searchParams.get('userId') ?? '';
+  const rawCreatedAfter = searchParams.get('createdAfter') ?? '';
+  const rawCreatedBefore = searchParams.get('createdBefore') ?? '';
   const rawOrder = searchParams.get('order');
   const rawPage = searchParams.get('page');
   const rawPageSize = searchParams.get('pageSize');
 
   const userId = rawUserId.trim();
+  const createdAfter = rawCreatedAfter.trim();
+  const createdBefore = rawCreatedBefore.trim();
   const [searchInput, setSearchInput] = useState(rawSearch);
   const [userSearch, setUserSearch] = useState('');
   const debouncedSearch = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
@@ -138,6 +144,24 @@ export function CustomCharactersPage() {
           next.set('userId', nextUserId);
         } else {
           next.delete('userId');
+        }
+      }
+
+      if (update.createdAfter !== undefined) {
+        const nextCreatedAfter = update.createdAfter.trim();
+        if (nextCreatedAfter) {
+          next.set('createdAfter', nextCreatedAfter);
+        } else {
+          next.delete('createdAfter');
+        }
+      }
+
+      if (update.createdBefore !== undefined) {
+        const nextCreatedBefore = update.createdBefore.trim();
+        if (nextCreatedBefore) {
+          next.set('createdBefore', nextCreatedBefore);
+        } else {
+          next.delete('createdBefore');
         }
       }
 
@@ -211,12 +235,22 @@ export function CustomCharactersPage() {
     () => ({
       search: normalizedSearch || undefined,
       userId: userId || undefined,
+      createdAfter: createdAfter || undefined,
+      createdBefore: createdBefore || undefined,
       isCustom: true,
       order,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    [normalizedSearch, userId, order, page, pageSize],
+    [
+      normalizedSearch,
+      userId,
+      createdAfter,
+      createdBefore,
+      order,
+      page,
+      pageSize,
+    ],
   );
 
   const { data, error, isLoading, refetch } = useCharacters(queryParams);
@@ -349,7 +383,7 @@ export function CustomCharactersPage() {
         </div>
 
         <div className={s.filters}>
-          <div className={s.filterRow}>
+          <div className={cn(s.filterRow, [s.filterRowL])}>
             <Field
               className={s.filterField}
               label="Search"
@@ -383,6 +417,44 @@ export function CustomCharactersPage() {
                 loading={isUsersLoading}
                 disabled={isUsersLoading}
                 emptyLabel="No users found."
+              />
+            </Field>
+          </div>
+          <div className={s.filterRow}>
+            <Field
+              className={s.filterFieldSm}
+              label="Created after"
+              labelFor="custom-characters-created-after"
+            >
+              <Input
+                id="custom-characters-created-after"
+                type="date"
+                value={createdAfter}
+                onChange={(event) =>
+                  updateSearchParams({
+                    createdAfter: event.target.value,
+                    page: 1,
+                  })
+                }
+                fullWidth
+              />
+            </Field>
+            <Field
+              className={s.filterFieldSm}
+              label="Created before"
+              labelFor="custom-characters-created-before"
+            >
+              <Input
+                id="custom-characters-created-before"
+                type="date"
+                value={createdBefore}
+                onChange={(event) =>
+                  updateSearchParams({
+                    createdBefore: event.target.value,
+                    page: 1,
+                  })
+                }
+                fullWidth
               />
             </Field>
             <Field
@@ -422,12 +494,18 @@ export function CustomCharactersPage() {
         {showEmpty ? (
           <EmptyState
             title="No custom characters found"
-            description="Try adjusting your search, user filter, or order."
+            description="Try adjusting your search, user, date filters, or order."
           />
         ) : null}
 
         {showTable ? (
           <div className={s.tableWrap}>
+            {showFooter ? (
+              <Typography variant="meta" tone="muted" className={s.total}>
+                Total: {total.toLocaleString()}
+              </Typography>
+            ) : null}
+
             <Table
               columns={columns}
               rows={showSkeleton ? skeletonRows : rows}

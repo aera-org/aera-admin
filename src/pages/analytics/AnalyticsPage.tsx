@@ -98,6 +98,7 @@ type ChartDatum = {
 
 type DailyMetricKey =
   | 'visits'
+  | 'opened'
   | 'total'
   | 'activationRate'
   | 'unique'
@@ -108,7 +109,10 @@ type DailyMetricKey =
   | 'arpuu'
   | 'arpc';
 
-type CountryMetricKey = Exclude<DailyMetricKey, 'visits' | 'activationRate'>;
+type CountryMetricKey = Exclude<
+  DailyMetricKey,
+  'visits' | 'opened' | 'activationRate'
+>;
 
 type CountryOrder = 'asc' | 'desc';
 
@@ -300,6 +304,7 @@ function isValidDailyMetric(
 ): value is DailyMetricKey {
   return (
     value === 'visits' ||
+    value === 'opened' ||
     value === 'total' ||
     value === 'activationRate' ||
     value === 'unique' ||
@@ -351,6 +356,11 @@ const DAILY_METRIC_OPTIONS: Array<{
     value: 'visits',
     label: 'Visits',
     description: 'Visits recorded for the day.',
+  },
+  {
+    value: 'opened',
+    label: 'Opened',
+    description: 'Users with at least one open event in the day.',
   },
   {
     value: 'total',
@@ -1902,6 +1912,7 @@ export function AnalyticsPage() {
       (acc, item) => {
         const visits = Number.isFinite(item.visits) ? item.visits : 0;
         acc.visits += Number.isFinite(item.visits) ? item.visits : 0;
+        acc.opened += Number.isFinite(item.opened) ? item.opened : 0;
         acc.total += Number.isFinite(item.total) ? item.total : 0;
         acc.unique += Number.isFinite(item.unique) ? item.unique : 0;
         acc.customers += Number.isFinite(item.customers) ? item.customers : 0;
@@ -1916,6 +1927,7 @@ export function AnalyticsPage() {
       },
       {
         visits: 0,
+        opened: 0,
         total: 0,
         unique: 0,
         customers: 0,
@@ -1971,6 +1983,21 @@ export function AnalyticsPage() {
               className={cn(s.tableHeader, [s.alignRight])}
             >
               Visits
+            </Typography>
+          </Tooltip>
+        ),
+      },
+      {
+        key: 'opened',
+        label: (
+          <Tooltip content="Users with at least one open event in the day.">
+            <Typography
+              variant="meta"
+              as="span"
+              tone="muted"
+              className={cn(s.tableHeader, [s.alignRight])}
+            >
+              Opened
             </Typography>
           </Tooltip>
         ),
@@ -2132,6 +2159,16 @@ export function AnalyticsPage() {
             style={{ fontSize: 14 }}
           >
             {Number.isFinite(item.visits) ? formatCount(item.visits) : '—'}
+          </Typography>
+        ),
+        opened: (
+          <Typography
+            variant="body"
+            as="span"
+            className={s.alignRight}
+            style={{ fontSize: 14 }}
+          >
+            {Number.isFinite(item.opened) ? formatCount(item.opened) : '—'}
           </Typography>
         ),
         total: (
@@ -2746,6 +2783,7 @@ export function AnalyticsPage() {
       .map((item) => [
         item.day,
         Number.isFinite(item.visits) ? item.visits : null,
+        Number.isFinite(item.opened) ? item.opened : null,
         Number.isFinite(item.total) ? item.total : null,
         Number.isFinite(item.activationRate) ? item.activationRate : null,
         Number.isFinite(item.unique) ? item.unique : null,
@@ -2834,6 +2872,7 @@ export function AnalyticsPage() {
             headers: [
               'Day',
               'Visits',
+              'Opened',
               'Total',
               'Activation Rate',
               'Unique',
@@ -3265,6 +3304,14 @@ export function AnalyticsPage() {
                         </Typography>
                         <Typography variant="h3">
                           {dailyTotals ? formatCount(dailyTotals.visits) : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          Opened
+                        </Typography>
+                        <Typography variant="h3">
+                          {dailyTotals ? formatCount(dailyTotals.opened) : '—'}
                         </Typography>
                       </Card>
                       <Card className={s.kpiCard} padding="md">

@@ -24,6 +24,8 @@ import type { PaginatedResponse } from '../paginated-response.type.ts';
 export type CharactersListParams = {
   search?: string;
   userId?: string;
+  createdAfter?: string;
+  createdBefore?: string;
   isCustom?: boolean;
   order?: string;
   skip?: number;
@@ -145,6 +147,8 @@ export async function getCharacters(params: CharactersListParams) {
   const query = new URLSearchParams();
   if (params.search) query.set('search', params.search);
   if (params.userId) query.set('userId', params.userId);
+  if (params.createdAfter) query.set('createdAfter', params.createdAfter);
+  if (params.createdBefore) query.set('createdBefore', params.createdBefore);
   if (typeof params.isCustom === 'boolean') {
     query.set('isCustom', String(params.isCustom));
   }

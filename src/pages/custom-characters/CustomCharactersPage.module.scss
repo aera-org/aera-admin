@@ -21,7 +21,6 @@
 
 .filters {
   display: flex;
-  flex-direction: column;
   gap: var(--space-4);
 }
 
@@ -29,7 +28,11 @@
   display: flex;
   align-items: flex-end;
   gap: var(--space-4);
-  flex-wrap: wrap;
+}
+
+.filterRowL {
+  flex-grow: 1;
+  flex-shrink: 0;
 }
 
 .filterField {

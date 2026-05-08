@@ -11,6 +11,7 @@ export type AnalyticsMetricKey =
   | 'retentionRate'
   | 'churnRate'
   | 'total'
+  | 'opened'
   | 'unique'
   | 'stickinessRatio'
   | 'avgSessionDurationSec'
@@ -61,6 +62,13 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
     key: 'total',
     label: 'Total',
     description: 'Users with more than 1 session in the month.',
+    format: 'count',
+    section: 'main',
+  },
+  {
+    key: 'opened',
+    label: 'Opened',
+    description: 'Users with at least one open event in the month.',
     format: 'count',
     section: 'main',
   },
