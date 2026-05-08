@@ -73,6 +73,7 @@ type ScenarioSectionProps = {
   showIsNew?: boolean;
   showIsPromoted?: boolean;
   showIsTop?: boolean;
+  showVideos?: boolean;
   useCustomCreate?: boolean;
 };
 
@@ -143,6 +144,7 @@ export function ScenarioSection({
   showIsNew = true,
   showIsPromoted = true,
   showIsTop = true,
+  showVideos = false,
   useCustomCreate = false,
 }: ScenarioSectionProps) {
   const queryClient = useQueryClient();
@@ -872,6 +874,7 @@ export function ScenarioSection({
               showIsPromoted={showIsPromoted}
               showIsTop={showIsTop}
               showPromoImages={showPromoImages}
+              showVideos={showVideos}
             />
           ) : null}
         </Stack>

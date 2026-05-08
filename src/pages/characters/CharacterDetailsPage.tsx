@@ -135,6 +135,7 @@ export function CharacterDetailsPage() {
           onSelectScenario={setSelectedScenarioId}
           isLoading={Boolean(isLoading && !data)}
           formatDate={formatDate}
+          showVideos
         />
         {isStoriesEnabled ? (
           <StoriesSection

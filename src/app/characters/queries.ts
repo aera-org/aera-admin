@@ -25,15 +25,19 @@ import {
   createCustomCharacter,
   createCustomScenario,
   createScenario,
+  createScenarioVideo,
   deleteCharacter,
   deleteCharacterStory,
   deleteScenario,
   deleteScenarioStageGift,
+  deleteScenarioVideo,
   getCharacterDetails,
   getCharacters,
   reorderCharacterStories,
   type ScenarioCreateDto,
   type ScenarioUpdateDto,
+  type ScenarioVideoCreateDto,
+  type ScenarioVideoUpdateDto,
   type StageGiftCreateDto,
   type StageGiftUpdateDto,
   type StageUpdateDto,
@@ -42,6 +46,7 @@ import {
   updateScenario,
   updateScenarioStage,
   updateScenarioStageGift,
+  updateScenarioVideo,
 } from './charactersApi';
 
 const characterKeys = {
@@ -574,6 +579,83 @@ export function useDeleteScenarioStageGift() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to delete the gift.');
+    },
+  });
+}
+
+export function useCreateScenarioVideo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      scenarioId,
+      payload,
+    }: {
+      characterId: string;
+      scenarioId: string;
+      payload: ScenarioVideoCreateDto;
+    }) => createScenarioVideo(characterId, scenarioId, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Video added.', 'Video added.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to add the video.');
+    },
+  });
+}
+
+export function useUpdateScenarioVideo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      scenarioId,
+      id,
+      payload,
+    }: {
+      characterId: string;
+      scenarioId: string;
+      id: string;
+      payload: ScenarioVideoUpdateDto;
+    }) => updateScenarioVideo(characterId, scenarioId, id, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Video updated.', 'Video updated.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to update the video.');
+    },
+  });
+}
+
+export function useDeleteScenarioVideo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      scenarioId,
+      id,
+    }: {
+      characterId: string;
+      scenarioId: string;
+      id: string;
+    }) => deleteScenarioVideo(characterId, scenarioId, id),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Video deleted.', 'Video deleted.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to delete the video.');
     },
   });
 }

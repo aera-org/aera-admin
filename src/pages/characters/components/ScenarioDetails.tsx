@@ -33,6 +33,7 @@ import {
 import { ConfirmModal, Drawer, FileUpload } from '@/components/molecules';
 
 import s from '../CharacterDetailsPage.module.scss';
+import { ScenarioVideosSection } from './ScenarioVideosSection';
 
 type ScenarioDetailsProps = {
   characterId: string | null;
@@ -52,6 +53,7 @@ type ScenarioDetailsProps = {
   showIsPromoted?: boolean;
   showIsTop?: boolean;
   showPromoImages?: boolean;
+  showVideos?: boolean;
 };
 
 const EMPTY_STAGE: StageDirectives = {
@@ -175,6 +177,7 @@ export function ScenarioDetails({
   showIsPromoted = true,
   showIsTop = true,
   showPromoImages = true,
+  showVideos = false,
 }: ScenarioDetailsProps) {
   const updateScenarioMutation = useUpdateScenario();
   const updateStageMutation = useUpdateScenarioStage();
@@ -827,6 +830,14 @@ export function ScenarioDetails({
             </div>
           </div>
         </div>
+        {showVideos ? (
+          <ScenarioVideosSection
+            characterId={characterId}
+            scenarioId={scenario.id}
+            videos={scenario.videos ?? []}
+            formatDate={formatDate}
+          />
+        ) : null}
       </Stack>
 
       <Drawer

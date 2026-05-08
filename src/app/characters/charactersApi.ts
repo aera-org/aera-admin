@@ -13,6 +13,8 @@ import type {
   CustomCharacterCreateDto,
   ICharacter,
   ICharacterDetails,
+  IScenarioVideo,
+  Pose,
   RoleplayStage,
   ScenarioLiveGenerations,
   StageDirectives,
@@ -124,6 +126,13 @@ export type StageGiftUpdateDto = {
   reason: string;
   buyText: string;
   boughtImgId?: string;
+};
+export type ScenarioVideoCreateDto = {
+  videoId: string;
+  pose: Pose;
+};
+export type ScenarioVideoUpdateDto = {
+  isActive: boolean;
 };
 export type CharacterStoryCreateDto = {
   fileId: string;
@@ -392,6 +401,62 @@ export async function deleteScenarioStageGift(
   );
   if (!res.ok) {
     throw await buildApiError(res, deleteScenarioGiftFallbackError);
+  }
+  return await parseJsonIfPresent(res);
+}
+
+export async function createScenarioVideo(
+  characterId: string,
+  scenarioId: string,
+  payload: ScenarioVideoCreateDto,
+) {
+  const res = await apiFetch(
+    `/admin/characters/${characterId}/scenarios/${scenarioId}/videos`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, 'Unable to add the video.');
+  }
+  return (await res.json()) as IScenarioVideo;
+}
+
+export async function updateScenarioVideo(
+  characterId: string,
+  scenarioId: string,
+  id: string,
+  payload: ScenarioVideoUpdateDto,
+) {
+  const res = await apiFetch(
+    `/admin/characters/${characterId}/scenarios/${scenarioId}/videos/${id}`,
+    {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, 'Unable to update the video.');
+  }
+  return (await res.json()) as IScenarioVideo;
+}
+
+export async function deleteScenarioVideo(
+  characterId: string,
+  scenarioId: string,
+  id: string,
+) {
+  const res = await apiFetch(
+    `/admin/characters/${characterId}/scenarios/${scenarioId}/videos/${id}`,
+    {
+      method: 'DELETE',
+    },
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, 'Unable to delete the video.');
   }
   return await parseJsonIfPresent(res);
 }

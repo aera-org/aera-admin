@@ -303,6 +303,104 @@
   gap: var(--space-3);
 }
 
+.scenarioVideosSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.scenarioVideoGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.scenarioVideoCard {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-base);
+  background: var(--color-surface);
+  cursor: pointer;
+  min-height: 92px;
+  display: flex;
+  flex-direction: column;
+  transition:
+    border-color var(--transition),
+    background var(--transition);
+}
+
+.scenarioVideoCard:hover,
+.scenarioVideoCard:focus-visible {
+  border-color: hsl(var(--accent));
+}
+
+.scenarioVideoCard:focus-visible {
+  outline: 2px solid hsl(var(--focus-ring));
+  outline-offset: 2px;
+}
+
+.scenarioVideoOverlay {
+  position: absolute;
+  inset: var(--space-3) var(--space-3) auto var(--space-3);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.scenarioVideoHoverActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  opacity: 0.3;
+  pointer-events: auto;
+  transition: opacity var(--transition);
+}
+
+.scenarioVideoCard:hover .scenarioVideoHoverActions,
+.scenarioVideoCard:focus-within .scenarioVideoHoverActions {
+  opacity: 1;
+}
+
+.scenarioVideoMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: auto;
+  padding: var(--space-3);
+  padding-top: var(--space-8);
+}
+
+.scenarioVideoDrawer {
+  width: min(80vw, 560px);
+}
+
+.scenarioVideoDetailsDrawer {
+  width: min(86vw, 720px);
+}
+
+.scenarioVideoDetails,
+.scenarioVideoDetailsPlaceholder {
+  width: 100%;
+  max-height: 70vh;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-sm);
+  background: hsl(var(--bg));
+}
+
+.scenarioVideoDetails {
+  display: block;
+}
+
+.scenarioVideoDetailsPlaceholder {
+  height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 @media (max-width: 900px) {
   .stageLayout {
     grid-template-columns: minmax(0, 1fr);
@@ -320,6 +418,24 @@
   .stageGiftRow {
     flex-direction: column;
     align-items: stretch;
+  }
+}
+
+@media (max-width: 1200px) {
+  .scenarioVideoGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .scenarioVideoGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .scenarioVideoGrid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

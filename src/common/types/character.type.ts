@@ -1,6 +1,7 @@
 import type { IFile } from './file.type.ts';
 import type { IGift } from './gift.type.ts';
 import type { ILora } from './lora.type';
+import type { Pose } from './pose-prompt.type.ts';
 
 export interface ICharacter {
   id: string;
@@ -126,6 +127,15 @@ export interface ScenarioLiveGenerations {
   stages: Record<RoleplayStage, boolean>;
 }
 
+export interface IScenarioVideo {
+  id: string;
+  video: IFile;
+  pose: Pose;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface IScenario {
   id: string;
   name: string;
@@ -151,6 +161,7 @@ export interface IScenario {
   isTop: boolean;
   createdAt: string;
   updatedAt: string;
+  videos: IScenarioVideo[];
 }
 
 export enum StoryType {
