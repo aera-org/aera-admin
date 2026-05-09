@@ -67,8 +67,8 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
   },
   {
     key: 'opened',
-    label: 'Opened',
-    description: 'Users with at least one open event in the month.',
+    label: 'Unique Visits',
+    description: 'Distinct users with at least one open event in the month.',
     format: 'count',
     section: 'main',
   },

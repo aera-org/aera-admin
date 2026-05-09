@@ -354,13 +354,13 @@ const DAILY_METRIC_OPTIONS: Array<{
 }> = [
   {
     value: 'visits',
-    label: 'Visits',
-    description: 'Visits recorded for the day.',
+    label: 'Link Clicks',
+    description: 'Link clicks recorded for the day.',
   },
   {
     value: 'opened',
-    label: 'Opened',
-    description: 'Users with at least one open event in the day.',
+    label: 'Unique Visits',
+    description: 'Distinct users with at least one open event in the day.',
   },
   {
     value: 'total',
@@ -370,7 +370,7 @@ const DAILY_METRIC_OPTIONS: Array<{
   {
     value: 'activationRate',
     label: 'Activation Rate',
-    description: 'Total divided by visits.',
+    description: 'Total divided by link clicks.',
   },
   {
     value: 'unique',
@@ -1975,14 +1975,14 @@ export function AnalyticsPage() {
       {
         key: 'visits',
         label: (
-          <Tooltip content="Visits recorded for the day.">
+          <Tooltip content="Link clicks recorded for the day.">
             <Typography
               variant="meta"
               as="span"
               tone="muted"
               className={cn(s.tableHeader, [s.alignRight])}
             >
-              Visits
+              Link Clicks
             </Typography>
           </Tooltip>
         ),
@@ -1990,14 +1990,14 @@ export function AnalyticsPage() {
       {
         key: 'opened',
         label: (
-          <Tooltip content="Users with at least one open event in the day.">
+          <Tooltip content="Distinct users with at least one open event in the day.">
             <Typography
               variant="meta"
               as="span"
               tone="muted"
               className={cn(s.tableHeader, [s.alignRight])}
             >
-              Opened
+              Unique Visits
             </Typography>
           </Tooltip>
         ),
@@ -2020,7 +2020,7 @@ export function AnalyticsPage() {
       {
         key: 'activationRate',
         label: (
-          <Tooltip content="Total divided by visits.">
+          <Tooltip content="Total divided by link clicks.">
             <Typography
               variant="meta"
               as="span"
@@ -2871,8 +2871,8 @@ export function AnalyticsPage() {
           {
             headers: [
               'Day',
-              'Visits',
-              'Opened',
+              'Link Clicks',
+              'Unique Visits',
               'Total',
               'Activation Rate',
               'Unique',
@@ -3300,7 +3300,7 @@ export function AnalyticsPage() {
                     <Grid columns={6} gap={16}>
                       <Card className={s.kpiCard} padding="md">
                         <Typography variant="meta" tone="muted">
-                          Visits
+                          Link Clicks
                         </Typography>
                         <Typography variant="h3">
                           {dailyTotals ? formatCount(dailyTotals.visits) : '—'}
@@ -3308,7 +3308,7 @@ export function AnalyticsPage() {
                       </Card>
                       <Card className={s.kpiCard} padding="md">
                         <Typography variant="meta" tone="muted">
-                          Opened
+                          Unique Visits
                         </Typography>
                         <Typography variant="h3">
                           {dailyTotals ? formatCount(dailyTotals.opened) : '—'}
