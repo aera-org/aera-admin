@@ -353,9 +353,9 @@ const DAILY_METRIC_OPTIONS: Array<{
   description: string;
 }> = [
   {
-    value: 'opened',
-    label: 'Unique Visits',
-    description: 'Distinct users with at least one open event in the day.',
+    value: 'visits',
+    label: 'Link Clicks',
+    description: 'Link clicks recorded for the day.',
   },
   {
     value: 'total',
@@ -548,7 +548,7 @@ export function AnalyticsPage() {
     [rawStartDate, rawEndDate, defaultDailyStart, defaultDateEnd],
   );
   const dailyMetricKey = isValidDailyMetric(rawDailyMetric)
-    ? rawDailyMetric === 'visits'
+    ? rawDailyMetric === 'opened'
       ? 'total'
       : rawDailyMetric
     : 'total';
@@ -1970,16 +1970,16 @@ export function AnalyticsPage() {
         ),
       },
       {
-        key: 'opened',
+        key: 'visits',
         label: (
-          <Tooltip content="Distinct users with at least one open event in the day.">
+          <Tooltip content="Link clicks recorded for the day.">
             <Typography
               variant="meta"
               as="span"
               tone="muted"
               className={cn(s.tableHeader, [s.alignRight])}
             >
-              Unique Visits
+              Link Clicks
             </Typography>
           </Tooltip>
         ),
@@ -2133,14 +2133,14 @@ export function AnalyticsPage() {
             {item.day ? formatDayLabel(item.day, 'long') : '—'}
           </Typography>
         ),
-        opened: (
+        visits: (
           <Typography
             variant="body"
             as="span"
             className={s.alignRight}
             style={{ fontSize: 14 }}
           >
-            {Number.isFinite(item.opened) ? formatCount(item.opened) : '—'}
+            {Number.isFinite(item.visits) ? formatCount(item.visits) : '—'}
           </Typography>
         ),
         total: (
@@ -2754,7 +2754,7 @@ export function AnalyticsPage() {
       .sort((a, b) => String(b.day).localeCompare(String(a.day)))
       .map((item) => [
         item.day,
-        Number.isFinite(item.opened) ? item.opened : null,
+        Number.isFinite(item.visits) ? item.visits : null,
         Number.isFinite(item.total) ? item.total : null,
         Number.isFinite(item.activationRate) ? item.activationRate : null,
         Number.isFinite(item.unique) ? item.unique : null,
@@ -2842,7 +2842,7 @@ export function AnalyticsPage() {
           {
             headers: [
               'Day',
-              'Unique Visits',
+              'Link Clicks',
               'Total',
               'Activation Rate',
               'Unique',
@@ -3261,7 +3261,7 @@ export function AnalyticsPage() {
               <Section title="Totals">
                 {isDailyLoading ? (
                   <Grid columns={6} gap={16}>
-                    {Array.from({ length: 9 }).map((_, index) => (
+                    {Array.from({ length: 10 }).map((_, index) => (
                       <Skeleton key={index} height={88} />
                     ))}
                   </Grid>
@@ -3270,10 +3270,10 @@ export function AnalyticsPage() {
                     <Grid columns={6} gap={16}>
                       <Card className={s.kpiCard} padding="md">
                         <Typography variant="meta" tone="muted">
-                          Unique Visits
+                          Link Clicks
                         </Typography>
                         <Typography variant="h3">
-                          {dailyTotals ? formatCount(dailyTotals.opened) : '—'}
+                          {dailyTotals ? formatCount(dailyTotals.visits) : '—'}
                         </Typography>
                       </Card>
                       <Card className={s.kpiCard} padding="md">
