@@ -103,6 +103,7 @@ type DailyMetricKey =
   | 'total'
   | 'totalOrganic'
   | 'totalPaid'
+  | 'totalPaidUnique'
   | 'activationRate'
   | 'unique'
   | 'customers'
@@ -119,6 +120,7 @@ type CountryMetricKey = Exclude<
   | 'deeplinkEvents'
   | 'totalOrganic'
   | 'totalPaid'
+  | 'totalPaidUnique'
   | 'activationRate'
 >;
 
@@ -158,6 +160,8 @@ const DAILY_ORGANIC_ACTIVE_USERS_METRIC = getMetricDefinition('totalOrganic');
 const DAILY_TOTAL_DEEPLINK_CLICKS_METRIC =
   getMetricDefinition('deeplinkEvents');
 const DAILY_DEEPLINK_ACTIVE_USERS_METRIC = getMetricDefinition('totalPaid');
+const DAILY_DEEPLINK_ACTIVE_USERS_UNIQUE_METRIC =
+  getMetricDefinition('totalPaidUnique');
 
 function useElementWidth<T extends HTMLElement>() {
   const [node, setNode] = useState<T | null>(null);
@@ -335,6 +339,7 @@ function isValidDailyMetric(
     value === 'total' ||
     value === 'totalOrganic' ||
     value === 'totalPaid' ||
+    value === 'totalPaidUnique' ||
     value === 'activationRate' ||
     value === 'unique' ||
     value === 'customers' ||
@@ -410,6 +415,14 @@ const DAILY_METRIC_OPTIONS: Array<{
     label:
       DAILY_DEEPLINK_ACTIVE_USERS_METRIC?.label ?? 'Deeplink active users',
     description: 'Active users who came from paid external links in the day.',
+  },
+  {
+    value: 'totalPaidUnique',
+    label:
+      DAILY_DEEPLINK_ACTIVE_USERS_UNIQUE_METRIC?.label ??
+      'Deeplink active users (unique)',
+    description:
+      'Unique active users who came from paid external links in the day.',
   },
   {
     value: 'activationRate',
@@ -1464,16 +1477,16 @@ export function AnalyticsPage() {
 
   const deeplinkSortOptions = useMemo(
     () => [
-      { value: 'total', label: 'Total' },
+      { value: 'visits', label: 'Total deeplink clicks' },
+      { value: 'total', label: 'Deeplink active users' },
+      { value: 'unique', label: 'Deeplink active users (unique)' },
       { value: 'activationRate', label: 'Activation Rate' },
       { value: 'revenue', label: 'Revenue' },
       { value: 'arpu', label: 'ARPU' },
       { value: 'arpuu', label: 'ARPUU' },
       { value: 'arpc', label: 'ARPC' },
       { value: 'transactions', label: 'Transactions' },
-      { value: 'visits', label: 'Visits' },
       { value: 'customers', label: 'Customers' },
-      { value: 'unique', label: 'Unique' },
       { value: 'conversion', label: 'Conversion' },
     ],
     [],
@@ -1650,21 +1663,7 @@ export function AnalyticsPage() {
             style={{ fontSize: 12 }}
             className={s.alignRight}
           >
-            Visits
-          </Typography>
-        ),
-      },
-      {
-        key: 'unique',
-        label: (
-          <Typography
-            variant="meta"
-            tone="muted"
-            as="div"
-            style={{ fontSize: 12 }}
-            className={s.alignRight}
-          >
-            Unique
+            Total deeplink clicks
           </Typography>
         ),
       },
@@ -1678,7 +1677,21 @@ export function AnalyticsPage() {
             style={{ fontSize: 12 }}
             className={s.alignRight}
           >
-            Total
+            Deeplink active users
+          </Typography>
+        ),
+      },
+      {
+        key: 'unique',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Deeplink active users (unique)
           </Typography>
         ),
       },
@@ -1975,6 +1988,9 @@ export function AnalyticsPage() {
           ? item.totalOrganic
           : 0;
         acc.totalPaid += Number.isFinite(item.totalPaid) ? item.totalPaid : 0;
+        acc.totalPaidUnique += Number.isFinite(item.totalPaidUnique)
+          ? item.totalPaidUnique
+          : 0;
         acc.unique += Number.isFinite(item.unique) ? item.unique : 0;
         acc.customers += Number.isFinite(item.customers) ? item.customers : 0;
         acc.revenue += Number.isFinite(item.revenue) ? item.revenue : 0;
@@ -1993,6 +2009,7 @@ export function AnalyticsPage() {
         total: 0,
         totalOrganic: 0,
         totalPaid: 0,
+        totalPaidUnique: 0,
         unique: 0,
         customers: 0,
         revenue: 0,
@@ -2120,6 +2137,22 @@ export function AnalyticsPage() {
             >
               {DAILY_DEEPLINK_ACTIVE_USERS_METRIC?.label ??
                 'Deeplink active users'}
+            </Typography>
+          </Tooltip>
+        ),
+      },
+      {
+        key: 'totalPaidUnique',
+        label: (
+          <Tooltip content="Unique active users who came from paid external links in the day.">
+            <Typography
+              variant="meta"
+              as="span"
+              tone="muted"
+              className={cn(s.tableHeader, [s.alignRight])}
+            >
+              {DAILY_DEEPLINK_ACTIVE_USERS_UNIQUE_METRIC?.label ??
+                'Deeplink active users (unique)'}
             </Typography>
           </Tooltip>
         ),
@@ -2310,6 +2343,18 @@ export function AnalyticsPage() {
             style={{ fontSize: 14 }}
           >
             {Number.isFinite(item.totalPaid) ? formatCount(item.totalPaid) : '—'}
+          </Typography>
+        ),
+        totalPaidUnique: (
+          <Typography
+            variant="body"
+            as="span"
+            className={s.alignRight}
+            style={{ fontSize: 14 }}
+          >
+            {Number.isFinite(item.totalPaidUnique)
+              ? formatCount(item.totalPaidUnique)
+              : '—'}
           </Typography>
         ),
         activationRate: (
@@ -2938,6 +2983,7 @@ export function AnalyticsPage() {
         Number.isFinite(item.totalOrganic) ? item.totalOrganic : null,
         Number.isFinite(item.deeplinkEvents) ? item.deeplinkEvents : null,
         Number.isFinite(item.totalPaid) ? item.totalPaid : null,
+        Number.isFinite(item.totalPaidUnique) ? item.totalPaidUnique : null,
         Number.isFinite(item.activationRate) ? item.activationRate : null,
         Number.isFinite(item.unique) ? item.unique : null,
         Number.isFinite(item.customers) ? item.customers : null,
@@ -2965,8 +3011,8 @@ export function AnalyticsPage() {
       ),
       item.scenario?.slug ?? '',
       Number.isFinite(item.visits) ? item.visits : null,
-      Number.isFinite(item.unique) ? item.unique : null,
       Number.isFinite(item.total) ? item.total : null,
+      Number.isFinite(item.unique) ? item.unique : null,
       Number.isFinite(item.activationRate) ? item.activationRate : null,
       Number.isFinite(item.customers) ? item.customers : null,
       Number.isFinite(item.transactions) ? item.transactions : null,
@@ -2999,9 +3045,9 @@ export function AnalyticsPage() {
               'Character',
               'Scenario',
               'Scenario slug',
-              'Visits',
-              'Unique',
-              'Total',
+              'Total deeplink clicks',
+              'Deeplink active users',
+              'Deeplink active users (unique)',
               'Activation Rate',
               'Customers',
               'Transactions',
@@ -3032,6 +3078,8 @@ export function AnalyticsPage() {
                 'Total deeplink clicks',
               DAILY_DEEPLINK_ACTIVE_USERS_METRIC?.label ??
                 'Deeplink active users',
+              DAILY_DEEPLINK_ACTIVE_USERS_UNIQUE_METRIC?.label ??
+                'Deeplink active users (unique)',
               'Activation Rate',
               'Unique',
               'Customers',
@@ -3247,7 +3295,7 @@ export function AnalyticsPage() {
                     <Grid columns={6} gap={16}>
                       <Card className={s.kpiCard} padding="md">
                         <Typography variant="meta" tone="muted">
-                          Visits
+                          Total deeplink clicks
                         </Typography>
                         <Typography variant="h3">
                           {deeplinkTotals
@@ -3257,21 +3305,21 @@ export function AnalyticsPage() {
                       </Card>
                       <Card className={s.kpiCard} padding="md">
                         <Typography variant="meta" tone="muted">
-                          Unique
+                          Deeplink active users
                         </Typography>
                         <Typography variant="h3">
                           {deeplinkTotals
-                            ? formatCount(deeplinkTotals.unique)
+                            ? formatCount(deeplinkTotals.total)
                             : '—'}
                         </Typography>
                       </Card>
                       <Card className={s.kpiCard} padding="md">
                         <Typography variant="meta" tone="muted">
-                          Total
+                          Deeplink active users (unique)
                         </Typography>
                         <Typography variant="h3">
                           {deeplinkTotals
-                            ? formatCount(deeplinkTotals.total)
+                            ? formatCount(deeplinkTotals.unique)
                             : '—'}
                         </Typography>
                       </Card>
@@ -3453,7 +3501,7 @@ export function AnalyticsPage() {
               <Section title="Totals">
                 {isDailyLoading ? (
                   <Grid columns={6} gap={16}>
-                    {Array.from({ length: 13 }).map((_, index) => (
+                    {Array.from({ length: 14 }).map((_, index) => (
                       <Skeleton key={index} height={88} />
                     ))}
                   </Grid>
@@ -3506,6 +3554,17 @@ export function AnalyticsPage() {
                         </Typography>
                         <Typography variant="h3">
                           {dailyTotals ? formatCount(dailyTotals.totalPaid) : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          {DAILY_DEEPLINK_ACTIVE_USERS_UNIQUE_METRIC?.label ??
+                            'Deeplink active users (unique)'}
+                        </Typography>
+                        <Typography variant="h3">
+                          {dailyTotals
+                            ? formatCount(dailyTotals.totalPaidUnique)
+                            : '—'}
                         </Typography>
                       </Card>
                       <Card className={s.kpiCard} padding="md">

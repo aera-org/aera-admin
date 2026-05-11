@@ -10,6 +10,7 @@ export type AnalyticsMetricKey =
   | 'visits'
   | 'deeplinkEvents'
   | 'totalPaid'
+  | 'totalPaidUnique'
   | 'totalOrganic'
   | 'bounceRate'
   | 'retentionRate'
@@ -102,6 +103,13 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
     key: 'totalPaid',
     label: 'Deeplink active users',
     description: 'Active users who came from paid external links.',
+    format: 'count',
+    section: 'main',
+  },
+  {
+    key: 'totalPaidUnique',
+    label: 'Deeplink active users (unique)',
+    description: 'Unique active users who came from paid external links.',
     format: 'count',
     section: 'main',
   },

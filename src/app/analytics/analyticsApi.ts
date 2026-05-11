@@ -36,6 +36,7 @@ export type DailyAnalyticsItem = {
   total: number;
   totalOrganic: number;
   totalPaid: number;
+  totalPaidUnique: number;
   activationRate: number;
   customers: number;
   revenue: number;
