@@ -77,14 +77,6 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
     section: 'main',
   },
   {
-    key: 'deeplinkEvents',
-    label: 'Total link clicks',
-    description:
-      'Total external link clicks (30m cooldown for same user and link).',
-    format: 'count',
-    section: 'main',
-  },
-  {
     key: 'total',
     label: 'Total active users',
     description: 'Active users with at least one chat session in the month.',
@@ -95,6 +87,14 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
     key: 'totalOrganic',
     label: 'Organic Active Users',
     description: 'Active users who came from unknown source.',
+    format: 'count',
+    section: 'main',
+  },
+  {
+    key: 'deeplinkEvents',
+    label: 'Total link clicks',
+    description:
+      'Total external link clicks (30m cooldown for same user and link).',
     format: 'count',
     section: 'main',
   },

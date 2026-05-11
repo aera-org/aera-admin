@@ -64,6 +64,7 @@ export type PaymentsRevenueGroupBy = 'character' | 'scenario' | 'deeplink';
 export type PaymentsConversionBreakdownItem = {
   id: string;
   name: string;
+  characterType?: string | null;
   activeUsers: number;
   payingUsers: number;
   conversionRate: number;
@@ -72,6 +73,7 @@ export type PaymentsConversionBreakdownItem = {
 export type PaymentsRevenueBreakdownItem = {
   id?: string;
   name?: string;
+  characterType?: string | null;
   deeplink?: string;
   revenue: number;
   transactions: number;

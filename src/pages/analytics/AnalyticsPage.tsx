@@ -265,6 +265,18 @@ function formatAnalyticsEntityLabel(
   return type ? `${normalizedName} (${type})` : normalizedName;
 }
 
+function formatBreakdownLabel(
+  name: string | null | undefined,
+  type: string | null | undefined,
+  fallback: string,
+) {
+  const normalizedName = name?.trim();
+  if (normalizedName) {
+    return type ? `${normalizedName} (${type})` : normalizedName;
+  }
+  return fallback;
+}
+
 function formatDayLabel(value: string, variant: 'short' | 'long' = 'short') {
   if (!ISO_DATE_PATTERN.test(value)) return value;
   const date = parseUtcDateId(value);
@@ -1278,7 +1290,11 @@ export function AnalyticsPage() {
     return entries.map((item) => ({
       name: (
         <Typography variant="body" as="span" className={s.breakdownName}>
-          {item.name || item.id || 'Unknown'}
+          {formatBreakdownLabel(
+            item.name,
+            item.characterType,
+            item.id || 'Unknown',
+          )}
         </Typography>
       ),
       activeUsers: (
@@ -1370,7 +1386,11 @@ export function AnalyticsPage() {
   const revenueRows = useMemo(() => {
     const entries = revenueBreakdown ?? [];
     return entries.map((item) => {
-      const label = item.name || item.deeplink || 'Unknown';
+      const label = formatBreakdownLabel(
+        item.name,
+        item.characterType,
+        item.deeplink || 'Unknown',
+      );
       return {
         name: (
           <Typography variant="body" as="span" className={s.breakdownName}>
