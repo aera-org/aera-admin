@@ -2125,6 +2125,21 @@ export function AnalyticsPage() {
         ),
       },
       {
+        key: 'unique',
+        label: (
+          <Tooltip content="Users whose first user message happened in the day.">
+            <Typography
+              variant="meta"
+              as="span"
+              tone="muted"
+              className={cn(s.tableHeader, [s.alignRight])}
+            >
+              Unique users
+            </Typography>
+          </Tooltip>
+        ),
+      },
+      {
         key: 'activationRate',
         label: (
           <Tooltip content="Total divided by link clicks.">
@@ -2135,21 +2150,6 @@ export function AnalyticsPage() {
               className={cn(s.tableHeader, [s.alignRight])}
             >
               AR
-            </Typography>
-          </Tooltip>
-        ),
-      },
-      {
-        key: 'unique',
-        label: (
-          <Tooltip content="Users whose first user message happened in the day.">
-            <Typography
-              variant="meta"
-              as="span"
-              tone="muted"
-              className={cn(s.tableHeader, [s.alignRight])}
-            >
-              Unique
             </Typography>
           </Tooltip>
         ),
@@ -2254,7 +2254,7 @@ export function AnalyticsPage() {
       .sort((a, b) => String(b.day).localeCompare(String(a.day)))
       .map((item) => ({
         day: (
-          <Typography variant="body" as="span">
+          <Typography variant="body" as="span" style={{ fontSize: 14 }}>
             {item.day ? formatDayLabel(item.day, 'long') : '—'}
           </Typography>
         ),
