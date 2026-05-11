@@ -31,8 +31,11 @@ export type DailyAnalyticsItem = {
   day: string;
   visits: number;
   opened: number;
+  deeplinkEvents: number;
   unique: number;
   total: number;
+  totalOrganic: number;
+  totalPaid: number;
   activationRate: number;
   customers: number;
   revenue: number;

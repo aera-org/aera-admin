@@ -85,14 +85,14 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
   },
   {
     key: 'totalOrganic',
-    label: 'Organic Active Users',
+    label: 'Organic active users',
     description: 'Active users who came from unknown source.',
     format: 'count',
     section: 'main',
   },
   {
     key: 'deeplinkEvents',
-    label: 'Total link clicks',
+    label: 'Total deeplink clicks',
     description:
       'Total external link clicks (30m cooldown for same user and link).',
     format: 'count',
