@@ -3203,7 +3203,11 @@ export function AnalyticsPage() {
                     <Skeleton height={240} />
                   ) : deeplinkRows.length ? (
                     <div className={s.tableWrap}>
-                      <Table columns={deeplinkColumns} rows={deeplinkRows} />
+                      <Table
+                        columns={deeplinkColumns}
+                        rows={deeplinkRows}
+                        scrollable
+                      />
                     </div>
                   ) : (
                     <EmptyState
@@ -3490,7 +3494,7 @@ export function AnalyticsPage() {
                     <Skeleton height={240} />
                   ) : dailyRows.length ? (
                     <div className={s.tableWrap}>
-                      <Table columns={dailyColumns} rows={dailyRows} />
+                      <Table columns={dailyColumns} rows={dailyRows} scrollable />
                     </div>
                   ) : (
                     <EmptyState
@@ -3596,6 +3600,7 @@ export function AnalyticsPage() {
                       <Table
                         columns={countryTopColumns}
                         rows={countryTopRows}
+                        scrollable
                       />
                     </div>
                   ) : (
@@ -3752,6 +3757,7 @@ export function AnalyticsPage() {
                         <Table
                           columns={dailyColumns}
                           rows={countrySeriesRows}
+                          scrollable
                         />
                       </div>
                     </Card>
@@ -3865,6 +3871,7 @@ export function AnalyticsPage() {
                           <Table
                             columns={conversionColumns}
                             rows={conversionRows}
+                            scrollable
                           />
                         </div>
                       ) : (
@@ -3912,7 +3919,11 @@ export function AnalyticsPage() {
                         <Skeleton height={180} />
                       ) : revenueRows.length ? (
                         <div className={s.tableWrap}>
-                          <Table columns={revenueColumns} rows={revenueRows} />
+                          <Table
+                            columns={revenueColumns}
+                            rows={revenueRows}
+                            scrollable
+                          />
                         </div>
                       ) : (
                         <EmptyState
@@ -4073,7 +4084,7 @@ export function AnalyticsPage() {
                     <Skeleton height={240} />
                   ) : mainRange?.data.length ? (
                     <div className={s.tableWrap}>
-                      <Table columns={tableColumns} rows={tableRows} />
+                      <Table columns={tableColumns} rows={tableRows} scrollable />
                     </div>
                   ) : (
                     <EmptyState
