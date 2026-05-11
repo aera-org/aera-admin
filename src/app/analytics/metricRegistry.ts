@@ -7,6 +7,10 @@ export type AnalyticsSection =
   | 'countries';
 
 export type AnalyticsMetricKey =
+  | 'visits'
+  | 'deeplinkEvents'
+  | 'totalPaid'
+  | 'totalOrganic'
   | 'bounceRate'
   | 'retentionRate'
   | 'churnRate'
@@ -59,22 +63,51 @@ export type AnalyticsSectionConfig = {
 
 const MAIN_METRICS: AnalyticsMetricDefinition[] = [
   {
-    key: 'total',
-    label: 'Total',
-    description: 'Users with more than 1 session in the month.',
+    key: 'visits',
+    label: 'User visits',
+    description: 'Number of day opens of the bot by all users.',
     format: 'count',
     section: 'main',
   },
   {
     key: 'opened',
-    label: 'Unique Visits',
-    description: 'Distinct users with at least one open event in the month.',
+    label: 'User visits (unique)',
+    description: 'Distinct day opens of the bot by all users.',
+    format: 'count',
+    section: 'main',
+  },
+  {
+    key: 'deeplinkEvents',
+    label: 'Total link clicks',
+    description:
+      'Total external link clicks (30m cooldown for same user and link).',
+    format: 'count',
+    section: 'main',
+  },
+  {
+    key: 'total',
+    label: 'Total active users',
+    description: 'Active users with at least one chat session in the month.',
+    format: 'count',
+    section: 'main',
+  },
+  {
+    key: 'totalOrganic',
+    label: 'Organic Active Users',
+    description: 'Active users who came from unknown source.',
+    format: 'count',
+    section: 'main',
+  },
+  {
+    key: 'totalPaid',
+    label: 'Deeplink active users',
+    description: 'Active users who came from paid external links.',
     format: 'count',
     section: 'main',
   },
   {
     key: 'unique',
-    label: 'Unique',
+    label: 'Unique users',
     description: 'New users within total users in the month.',
     format: 'count',
     section: 'main',
