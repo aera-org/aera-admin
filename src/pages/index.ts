@@ -2,6 +2,7 @@ export { AdminsPage } from './admins/AdminsPage';
 export { AirPurchasesPage } from './air-purchases/AirPurchasesPage';
 export { AnalyticsPage } from './analytics/AnalyticsPage';
 export { AuthCallbackPage } from './auth/AuthCallbackPage';
+export { AuthNewPage } from './auth/AuthNewPage';
 export { AuthPage } from './auth/AuthPage';
 export { ConfirmEmailPage } from './auth/ConfirmEmailPage';
 export { ForgotPasswordPage } from './auth/ForgotPasswordPage';

@@ -1,0 +1,65 @@
+.page {
+  min-height: 100vh;
+  padding: 24px 16px;
+  background: hsl(var(--accent-muted));
+  display: flex;
+  align-items: center;
+}
+
+.container {
+  width: 100%;
+}
+
+.shell {
+  min-height: calc(100vh - 48px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.content {
+  width: min(100%, 400px);
+  align-items: center;
+}
+
+.logoBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  width: auto;
+  height: 72px;
+  border-radius: 50%;
+}
+
+.projectName {
+  color: hsl(var(--accent));
+  font-size: var(--logo-text-size);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.formCard {
+  width: 100%;
+  padding: 28px;
+  background: #ffffff;
+  border-radius: 4px;
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: 16px;
+  }
+
+  .shell {
+    min-height: calc(100vh - 32px);
+  }
+
+  .formCard {
+    padding: 24px;
+  }
+}

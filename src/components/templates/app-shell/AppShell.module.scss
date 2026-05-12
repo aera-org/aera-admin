@@ -8,6 +8,10 @@
   background: hsl(var(--page-bg));
 }
 
+.logoImage {
+  border-radius: 50%;
+}
+
 .sidebar {
   width: var(--sidebar-width);
   position: fixed;
@@ -27,7 +31,6 @@
 }
 
 .brandLogo {
-
   margin-top: 8px;
   //margin-left: 12px;
 
@@ -36,8 +39,8 @@
   gap: 8px;
 
   .logoText {
-    color: #87cefa;
-    font-size: 36px;
+    color: var(--logo-text);
+    font-size: var(--logo-text-size);
     font-family: 'Titan One', var(--font-ui);
     //text-shadow: rgb(235, 64, 226) 0 0 1px;
     letter-spacing: 0.03em;
@@ -68,7 +71,6 @@
     font-family: 'Titan One', var(--font-ui);
   }
 }
-
 
 .main {
   display: flex;

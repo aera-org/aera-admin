@@ -11,27 +11,27 @@
   --gray-800: 212 18% 20%;
   --gray-900: 212 21% 14%;
 
-  --bg: var(--gray-50);
-  --page-bg: var(--gray-100);
+  --page-bg: 286 42% 97%;
   --fg: var(--gray-900);
   --fg-muted: var(--gray-600);
 
-  --border: var(--gray-300);
   --border-strong: var(--gray-400);
 
-  /* Accent - Airy Blue (brighter) */
-  --accent: 208 85% 62%;
-  --accent-hover: 208 85% 57%;
-  --accent-active: 208 85% 52%;
+  /* Accent - Pink Violet */
+  --accent: 316 72% 60%;
+  --accent-hover: 316 72% 55%;
+  --accent-active: 316 72% 50%;
 
-  --accent-muted: 208 87% 94%;
-  --accent-muted-hover: 208 80% 90%;
+  --accent-muted: 314 72% 95%;
+  --accent-muted-hover: 314 68% 91%;
 
   --accent-foreground: 0 0% 100%;
   --focus-ring: var(--gray-500);
 
-  --logo-text: #87cefa;
-  --logo-text-size: 36px;
+  --logo-text: hsl(var(--accent));
+  --logo-text-size: 32px;
+  --bg: 286 42% 97%;
+  --border: 314 42% 86%;
 
   /* Status */
   --warning: 38 92% 50%;

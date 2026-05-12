@@ -1,8 +1,11 @@
 import { useAuth } from '@/app/auth';
 import Logo from '@/assets/logo/logo.png';
+import XLogo from '@/assets/logo/logo-x.png';
 import { Typography } from '@/atoms';
 import { capitalize, cn } from '@/common/utils';
 import { Navigation, UserCard } from '@/organisms';
+
+const logo  = import.meta.env.VITE_IS_X ? XLogo : Logo;
 
 import s from './AppShell.module.scss';
 
@@ -24,7 +27,7 @@ export function AppShell({ children, className }: AppShellProps) {
     <div className={cn(s.page, [className])}>
       <aside className={s.sidebar}>
         <div className={s.brandLogo}>
-          <img src={Logo} alt="Logo" />
+          <img src={logo} alt="Logo" className={s.logoImage} />
 
           <Typography variant="h2" className={s.logoText}>
             {PROJECT_NAME}
