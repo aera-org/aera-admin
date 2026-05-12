@@ -18,7 +18,7 @@ export function AuthNewPage() {
             </div>
 
             <div className={s.formCard}>
-              <AuthSignInForm description="" />
+              <AuthSignInForm submitLabel="Log In" title="Log In" description="" />
             </div>
           </Stack>
         </div>

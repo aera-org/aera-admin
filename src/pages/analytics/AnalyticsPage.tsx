@@ -156,6 +156,7 @@ const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const COUNTRY_LIMIT_OPTIONS = [20, 50, 100] as const;
 const DAILY_USER_VISITS_METRIC = getMetricDefinition('visits');
 const DAILY_TOTAL_ACTIVE_USERS_METRIC = getMetricDefinition('total');
+const DAILY_UNIQUE_ACTIVE_USERS_METRIC = getMetricDefinition('unique');
 const DAILY_ORGANIC_ACTIVE_USERS_METRIC = getMetricDefinition('totalOrganic');
 const DAILY_TOTAL_DEEPLINK_CLICKS_METRIC =
   getMetricDefinition('deeplinkEvents');
@@ -398,6 +399,13 @@ const DAILY_METRIC_OPTIONS: Array<{
     description: 'Active users with at least one chat session in the day.',
   },
   {
+    value: 'unique',
+    label:
+      DAILY_UNIQUE_ACTIVE_USERS_METRIC?.label ??
+      'Total uniqie active users',
+    description: 'Distinct active users with at least one chat session in the day.',
+  },
+  {
     value: 'totalOrganic',
     label:
       DAILY_ORGANIC_ACTIVE_USERS_METRIC?.label ?? 'Organic active users',
@@ -428,11 +436,6 @@ const DAILY_METRIC_OPTIONS: Array<{
     value: 'activationRate',
     label: 'Activation Rate',
     description: 'Total divided by link clicks.',
-  },
-  {
-    value: 'unique',
-    label: 'Unique',
-    description: 'Users whose first user message happened in the day.',
   },
   {
     value: 'customers',
@@ -2088,6 +2091,22 @@ export function AnalyticsPage() {
         ),
       },
       {
+        key: 'unique',
+        label: (
+          <Tooltip content="Distinct active users with at least one chat session in the day.">
+            <Typography
+              variant="meta"
+              as="span"
+              tone="muted"
+              className={cn(s.tableHeader, [s.alignRight])}
+            >
+              {DAILY_UNIQUE_ACTIVE_USERS_METRIC?.label ??
+                'Total uniqie active users'}
+            </Typography>
+          </Tooltip>
+        ),
+      },
+      {
         key: 'totalOrganic',
         label: (
           <Tooltip
@@ -2153,21 +2172,6 @@ export function AnalyticsPage() {
             >
               {DAILY_DEEPLINK_ACTIVE_USERS_UNIQUE_METRIC?.label ??
                 'Deeplink active users (unique)'}
-            </Typography>
-          </Tooltip>
-        ),
-      },
-      {
-        key: 'unique',
-        label: (
-          <Tooltip content="Users whose first user message happened in the day.">
-            <Typography
-              variant="meta"
-              as="span"
-              tone="muted"
-              className={cn(s.tableHeader, [s.alignRight])}
-            >
-              Unique users
             </Typography>
           </Tooltip>
         ),
@@ -2311,6 +2315,16 @@ export function AnalyticsPage() {
             {Number.isFinite(item.total) ? formatCount(item.total) : '—'}
           </Typography>
         ),
+        unique: (
+          <Typography
+            variant="body"
+            as="span"
+            className={s.alignRight}
+            style={{ fontSize: 14 }}
+          >
+            {Number.isFinite(item.unique) ? formatCount(item.unique) : '—'}
+          </Typography>
+        ),
         totalOrganic: (
           <Typography
             variant="body"
@@ -2365,16 +2379,6 @@ export function AnalyticsPage() {
             style={{ fontSize: 14 }}
           >
             {formatDeeplinkPercent(item.activationRate)}
-          </Typography>
-        ),
-        unique: (
-          <Typography
-            variant="body"
-            as="span"
-            className={s.alignRight}
-            style={{ fontSize: 14 }}
-          >
-            {Number.isFinite(item.unique) ? formatCount(item.unique) : '—'}
           </Typography>
         ),
         customers: (
@@ -2980,12 +2984,12 @@ export function AnalyticsPage() {
         item.day,
         Number.isFinite(item.opened) ? item.opened : null,
         Number.isFinite(item.total) ? item.total : null,
+        Number.isFinite(item.unique) ? item.unique : null,
         Number.isFinite(item.totalOrganic) ? item.totalOrganic : null,
         Number.isFinite(item.deeplinkEvents) ? item.deeplinkEvents : null,
         Number.isFinite(item.totalPaid) ? item.totalPaid : null,
         Number.isFinite(item.totalPaidUnique) ? item.totalPaidUnique : null,
         Number.isFinite(item.activationRate) ? item.activationRate : null,
-        Number.isFinite(item.unique) ? item.unique : null,
         Number.isFinite(item.customers) ? item.customers : null,
         Number.isFinite(item.revenue) ? item.revenue : null,
         Number.isFinite(item.conversion) ? item.conversion : null,
@@ -3072,6 +3076,8 @@ export function AnalyticsPage() {
               'Day',
               DAILY_USER_VISITS_METRIC?.label ?? 'User visits',
               DAILY_TOTAL_ACTIVE_USERS_METRIC?.label ?? 'Total active users',
+              DAILY_UNIQUE_ACTIVE_USERS_METRIC?.label ??
+                'Total uniqie active users',
               DAILY_ORGANIC_ACTIVE_USERS_METRIC?.label ??
                 'Organic active users',
               DAILY_TOTAL_DEEPLINK_CLICKS_METRIC?.label ??
@@ -3081,7 +3087,6 @@ export function AnalyticsPage() {
               DAILY_DEEPLINK_ACTIVE_USERS_UNIQUE_METRIC?.label ??
                 'Deeplink active users (unique)',
               'Activation Rate',
-              'Unique',
               'Customers',
               'Revenue (USD)',
               'Conversion rate',
@@ -3527,6 +3532,15 @@ export function AnalyticsPage() {
                       </Card>
                       <Card className={s.kpiCard} padding="md">
                         <Typography variant="meta" tone="muted">
+                          {DAILY_UNIQUE_ACTIVE_USERS_METRIC?.label ??
+                            'Total uniqie active users'}
+                        </Typography>
+                        <Typography variant="h3">
+                          {dailyTotals ? formatCount(dailyTotals.unique) : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
                           {DAILY_ORGANIC_ACTIVE_USERS_METRIC?.label ??
                             'Organic active users'}
                         </Typography>
@@ -3565,14 +3579,6 @@ export function AnalyticsPage() {
                           {dailyTotals
                             ? formatCount(dailyTotals.totalPaidUnique)
                             : '—'}
-                        </Typography>
-                      </Card>
-                      <Card className={s.kpiCard} padding="md">
-                        <Typography variant="meta" tone="muted">
-                          Unique users
-                        </Typography>
-                        <Typography variant="h3">
-                          {dailyTotals ? formatCount(dailyTotals.unique) : '—'}
                         </Typography>
                       </Card>
                       <Card className={s.kpiCard} padding="md">

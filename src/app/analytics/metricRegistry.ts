@@ -85,6 +85,13 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
     section: 'main',
   },
   {
+    key: 'unique',
+    label: 'Total uniqie active users',
+    description: 'Distinct active users with at least one chat session in the month.',
+    format: 'count',
+    section: 'main',
+  },
+  {
     key: 'totalOrganic',
     label: 'Organic active users',
     description: 'Active users who came from unknown source.',
@@ -110,13 +117,6 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
     key: 'totalPaidUnique',
     label: 'Deeplink active users (unique)',
     description: 'Unique active users who came from paid external links.',
-    format: 'count',
-    section: 'main',
-  },
-  {
-    key: 'unique',
-    label: 'Unique users',
-    description: 'New users within total users in the month.',
     format: 'count',
     section: 'main',
   },
