@@ -5,7 +5,7 @@ import { Typography } from '@/atoms';
 import { capitalize, cn } from '@/common/utils';
 import { Navigation, UserCard } from '@/organisms';
 
-const logo  = import.meta.env.VITE_IS_X ? XLogo : Logo;
+const logo  = import.meta.env.VITE_IS_X === 'true' ? XLogo : Logo;
 
 import s from './AppShell.module.scss';
 
