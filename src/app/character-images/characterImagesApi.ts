@@ -1,6 +1,7 @@
 import { apiFetch } from '@/app/api';
 import { buildApiError } from '@/app/api/apiErrors';
 import type {
+  CharacterImageVectorSearchPayload,
   CreateCharacterImageDto,
   ICharacterImage,
   ICharacterImageDetails,
@@ -23,6 +24,7 @@ export type CharacterImagesListParams = {
 };
 
 const fallbackError = 'Unable to load images.';
+const vectorSearchFallbackError = 'Unable to search images.';
 const createFallbackError = 'Unable to create the image.';
 const detailsFallbackError = 'Unable to load the image details.';
 const updateFallbackError = 'Unable to update the image.';
@@ -56,6 +58,20 @@ export async function getCharacterImages(params: CharacterImagesListParams) {
   );
   if (!res.ok) {
     throw await buildApiError(res, fallbackError);
+  }
+  return (await res.json()) as PaginatedResponse<ICharacterImage>;
+}
+
+export async function vectorSearchCharacterImages(
+  payload: CharacterImageVectorSearchPayload,
+) {
+  const res = await apiFetch('/admin/character-images/vector-search', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, vectorSearchFallbackError);
   }
   return (await res.json()) as PaginatedResponse<ICharacterImage>;
 }

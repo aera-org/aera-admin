@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { notifyError, notifySuccess } from '@/app/toast';
 import type {
+  CharacterImageVectorSearchPayload,
   CreateCharacterImageDto,
   UpdateCharacterImageDto,
 } from '@/common/types';
@@ -13,11 +14,14 @@ import {
   getCharacterImages,
   updateCharacterImage,
   type CharacterImagesListParams,
+  vectorSearchCharacterImages,
 } from './characterImagesApi';
 
 const characterImageKeys = {
   list: (params: CharacterImagesListParams) =>
     ['character-images', params] as const,
+  vectorSearch: (payload: CharacterImageVectorSearchPayload | null) =>
+    ['character-images', 'vector-search', payload] as const,
   detail: (id: string) => ['character-images', 'detail', id] as const,
 };
 
@@ -25,6 +29,18 @@ export function useCharacterImages(params: CharacterImagesListParams) {
   return useQuery({
     queryKey: characterImageKeys.list(params),
     queryFn: () => getCharacterImages(params),
+    placeholderData: (previousData) => previousData,
+  });
+}
+
+export function useCharacterImageVectorSearch(
+  payload: CharacterImageVectorSearchPayload | null,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: characterImageKeys.vectorSearch(payload),
+    queryFn: () => vectorSearchCharacterImages(payload!),
+    enabled: enabled && Boolean(payload),
     placeholderData: (previousData) => previousData,
   });
 }

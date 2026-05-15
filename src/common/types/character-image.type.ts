@@ -23,6 +23,20 @@ export type UpdateCharacterImageDto = {
   isAnal?: boolean;
 };
 
+export type CharacterImageVectorSearchPayload = {
+  isPregenerated: boolean;
+  readyOnly: boolean;
+  stage: RoleplayStage;
+  characterId: string;
+  scenarioId: string;
+  userId?: string;
+  pose?: Pose;
+  isAnal?: boolean;
+  userRequest: UserRequest;
+  skip?: number;
+  take?: number;
+};
+
 export interface ICharacterImage {
   id: string;
   description: string;

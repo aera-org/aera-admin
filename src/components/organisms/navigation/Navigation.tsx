@@ -67,13 +67,18 @@ export function Navigation() {
   const visibleItems = isTargetUser
     ? navItems.filter((item) => item.to === '/')
     : navItems;
+  const activeItem = visibleItems
+    .filter(
+      (item) =>
+        location.pathname === item.to ||
+        (item.to !== '/' && location.pathname.startsWith(item.to)),
+    )
+    .sort((a, b) => b.to.length - a.to.length)[0];
 
   return (
     <nav className={s.nav} aria-label="Primary">
       {visibleItems.map((item) => {
-        const isActive =
-          location.pathname === item.to ||
-          (item.to !== '/' && location.pathname.startsWith(item.to));
+        const isActive = activeItem?.to === item.to;
         return (
           <Button
             key={item.to}

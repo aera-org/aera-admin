@@ -20,6 +20,7 @@ import {
   CampaignsPage,
   CharacterDetailsPage,
   CharacterImagesPage,
+  CharacterImagesVectorSearchPage,
   CharactersPage,
   ChatDetailsPage,
   ChatsPage,
@@ -97,6 +98,10 @@ export function AppRoutes() {
         <Route path="/custom-characters" element={<CustomCharactersPage />} />
         <Route path="/air-purchases" element={<AirPurchasesPage />} />
         <Route path="/character-images" element={<CharacterImagesPage />} />
+        <Route
+          path="/character-images/vector-search"
+          element={<CharacterImagesVectorSearchPage />}
+        />
         <Route
           path="/character-images/:id"
           element={<CharacterImageDrawerRedirect />}

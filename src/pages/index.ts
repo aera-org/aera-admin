@@ -12,6 +12,7 @@ export { BatchImagesPage } from './batch-images/BatchImagesPage';
 export { BroadcastPage } from './broadcast/BroadcastPage';
 export { CampaignsPage } from './campaigns/CampaignsPage';
 export { CharacterImagesPage } from './character-images/CharacterImagesPage';
+export { CharacterImagesVectorSearchPage } from './character-images/CharacterImagesVectorSearchPage';
 export { CharacterDetailsPage } from './characters/CharacterDetailsPage';
 export { CharactersPage } from './characters/CharactersPage';
 export { ChatDetailsPage } from './chats/ChatDetailsPage';

@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { isApiRequestError } from '@/app/api/apiErrors';
 import {
@@ -26,22 +26,17 @@ import {
 } from '@/app/characters/charactersApi';
 import { copyFile, markFileUploaded, signUpload } from '@/app/files/filesApi';
 import { notifyError, notifySuccess } from '@/app/toast';
-import { DownloadIcon, PlusIcon, TrashIcon, UploadIcon } from '@/assets/icons';
+import { DownloadIcon, PlusIcon, UploadIcon } from '@/assets/icons';
 import {
-  Alert,
   Badge,
   Button,
   ButtonGroup,
-  Card,
   Container,
-  EmptyState,
   Field,
   FormRow,
   IconButton,
   Input,
-  Pagination,
   Select,
-  Skeleton,
   Stack,
   Switch,
   Textarea,
@@ -60,7 +55,7 @@ import { Drawer } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 import { SearchSelect } from '@/pages/generations/components/SearchSelect';
 
-import { CharacterImageDetailsDrawer } from './CharacterImageDetailsDrawer';
+import { CharacterImagesGallery } from './CharacterImagesGallery';
 import s from './CharacterImagesPage.module.scss';
 import {
   buildCharacterImagesTransferFileName,
@@ -142,11 +137,6 @@ const STAGE_LABELS: Record<RoleplayStage, string> = {
   [RoleplayStage.Aftercare]: 'Aftercare',
 };
 
-const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-});
-
 function useDebouncedValue<T>(value: T, delay: number) {
   const [debounced, setDebounced] = useState(value);
 
@@ -156,13 +146,6 @@ function useDebouncedValue<T>(value: T, delay: number) {
   }, [value, delay]);
 
   return debounced;
-}
-
-function formatDate(value: string | null | undefined) {
-  if (!value) return '-';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return '-';
-  return dateTimeFormatter.format(parsed);
 }
 
 function parsePositiveNumber(value: string | null, fallback: number) {
@@ -562,48 +545,6 @@ export function CharacterImagesPage() {
     ],
     [],
   );
-
-  const skeletonCards = useMemo(
-    () =>
-      Array.from({ length: 6 }, (_, index) => (
-        <Card
-          key={`image-skeleton-${index}`}
-          padding="md"
-          className={s.imageCard}
-        >
-          <div className={s.cardHeader}>
-            <div className={s.cardTitleBlock}>
-              <Skeleton width={140} height={12} />
-              <Skeleton width={180} height={10} />
-            </div>
-          </div>
-          <div className={s.previewFrame}>
-            <Skeleton width="100%" height="100%" />
-          </div>
-          <div className={s.cardMeta}>
-            <Skeleton width={200} height={12} />
-            <div className={s.badges}>
-              <Skeleton width={96} height={20} />
-              <Skeleton width={88} height={20} />
-            </div>
-            <div className={s.cardFooter}>
-              <Skeleton width={110} height={10} />
-              <Skeleton width={120} height={10} />
-            </div>
-          </div>
-        </Card>
-      )),
-    [],
-  );
-
-  const showSkeleton = isLoading && !data;
-  const showEmpty = !showSkeleton && !error && images.length === 0;
-  const showGallery = !showEmpty && !error;
-  const showFooter = showGallery && !showSkeleton;
-
-  const rangeStart = total === 0 ? 0 : effectiveSkip + 1;
-  const rangeEnd =
-    total === 0 ? 0 : Math.min(effectiveSkip + effectiveTake, total);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -1205,6 +1146,13 @@ export function CharacterImagesPage() {
             <Typography variant="h2">Images</Typography>
           </div>
           <ButtonGroup>
+            <Button
+              as={Link}
+              to="/character-images/vector-search"
+              variant="secondary"
+            >
+              Vector search
+            </Button>
             <IconButton
               aria-label="Export images"
               tooltip="Export images"
@@ -1349,193 +1297,38 @@ export function CharacterImagesPage() {
           </div>
         </div>
 
-        {error ? (
-          <Stack className={s.state} gap="12px">
-            <Alert
-              title="Unable to load images"
-              description={
-                error instanceof Error ? error.message : 'Please try again.'
-              }
-              tone="warning"
-            />
-            <Button variant="secondary" onClick={() => refetch()}>
-              Retry
-            </Button>
-          </Stack>
-        ) : null}
-
-        {showEmpty ? (
-          <EmptyState
-            title="No images found"
-            description="Create an image to get started."
-            action={<Button onClick={openCreateDrawer}>Add image</Button>}
-          />
-        ) : null}
-
-        {showGallery ? (
-          <div className={s.galleryWrap}>
-            <div className={s.galleryGrid}>
-              {showSkeleton
-                ? skeletonCards
-                : images.map((image) => (
-                    <Card
-                      key={image.id}
-                      padding="md"
-                      className={s.imageCard}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => updateSearchParams({ imageId: image.id })}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          updateSearchParams({ imageId: image.id });
-                        }
-                      }}
-                    >
-                      <div className={s.cardHeader}>
-                        <div className={s.cardTitleBlock}>
-                          <Typography variant="body" truncate>
-                            {image.character?.name || 'Unknown character'}
-                          </Typography>
-                          <Typography variant="caption" tone="muted" truncate>
-                            {image.scenario?.name || '-'} ·{' '}
-                            {formatStage(image.stage)}
-                          </Typography>
-                        </div>
-                      </div>
-
-                      <div className={s.previewFrame}>
-                        {image.file?.url ? (
-                          <>
-                            <img
-                              className={s.previewImage}
-                              src={image.file.url}
-                              alt={
-                                image.file.name || image.description || image.id
-                              }
-                              loading="lazy"
-                            />
-                            <div className={s.previewActions}>
-                              <IconButton
-                                as="a"
-                                href={image.file.url}
-                                download={image.file.name}
-                                rel="noopener"
-                                aria-label="Download image"
-                                tooltip="Download image"
-                                variant="ghost"
-                                size="sm"
-                                icon={<DownloadIcon />}
-                                // @ts-expect-error Radix anchor event types are incorrect
-                                onClick={(event) => event.stopPropagation()}
-                              />
-                              <IconButton
-                                aria-label="Delete image"
-                                tooltip="Delete image"
-                                variant="ghost"
-                                tone="danger"
-                                size="sm"
-                                icon={<TrashIcon />}
-                                loading={
-                                  deleteImageMutation.isPending &&
-                                  deleteImageMutation.variables === image.id
-                                }
-                                disabled={deleteImageMutation.isPending}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  void handleDeleteImage(image.id);
-                                }}
-                              />
-                            </div>
-                          </>
-                        ) : (
-                          <div className={s.previewPlaceholder}>
-                            <Typography variant="caption" tone="muted">
-                              No image available.
-                            </Typography>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className={s.cardMeta}>
-                        <Typography variant="caption" tone="muted">
-                          {image.description || ''}
-                        </Typography>
-                        <div className={s.badges}>
-                          <Badge
-                            tone={image.isPregenerated ? 'accent' : 'warning'}
-                            outline={!image.isPregenerated}
-                          >
-                            {image.isPregenerated
-                              ? 'Pregenerated'
-                              : 'Generated'}
-                          </Badge>
-                          {image.isPromotional && (
-                            <Badge
-                              tone={image.isPromotional ? 'warning' : 'accent'}
-                              outline={!image.isPromotional}
-                            >
-                              {image.isPromotional ? 'Promotional' : 'Regular'}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className={s.cardFooter}>
-                          <Typography variant="caption" tone="muted">
-                            {formatDate(image.updatedAt)}
-                          </Typography>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-            </div>
-
-            {showFooter ? (
-              <div className={s.footer}>
-                <Typography variant="meta" tone="muted">
-                  {total === 0
-                    ? 'No results'
-                    : `Showing ${rangeStart}-${rangeEnd} of ${total.toLocaleString()}`}
-                </Typography>
-                <div className={s.paginationRow}>
-                  <Select
-                    options={PAGE_SIZE_OPTIONS.map((size) => ({
-                      label: `${size} / page`,
-                      value: String(size),
-                    }))}
-                    size="sm"
-                    variant="ghost"
-                    value={String(pageSize)}
-                    onChange={(value) =>
-                      updateSearchParams({
-                        pageSize: Number(value),
-                        page: 1,
-                      })
-                    }
-                    fitContent
-                  />
-                  {totalPages > 1 ? (
-                    <Pagination
-                      page={page}
-                      totalPages={totalPages}
-                      onChange={(nextPage) =>
-                        updateSearchParams({ page: nextPage })
-                      }
-                    />
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-
-        <CharacterImageDetailsDrawer
-          imageId={selectedImageId}
-          open={Boolean(selectedImageId) && !isDrawerOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              updateSearchParams({ imageId: '' });
-            }
-          }}
+        <CharacterImagesGallery
+          images={images}
+          total={total}
+          effectiveSkip={effectiveSkip}
+          effectiveTake={effectiveTake}
+          page={page}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          isLoading={isLoading}
+          hasLoadedData={Boolean(data)}
+          error={error}
+          selectedImageId={selectedImageId}
+          detailsOpen={Boolean(selectedImageId) && !isDrawerOpen}
+          emptyDescription="Create an image to get started."
+          emptyAction={<Button onClick={openCreateDrawer}>Add image</Button>}
+          onRetry={() => refetch()}
+          onImageOpen={(imageId) => updateSearchParams({ imageId })}
+          onImageClose={() => updateSearchParams({ imageId: '' })}
+          onPageChange={(nextPage) => updateSearchParams({ page: nextPage })}
+          onPageSizeChange={(nextPageSize) =>
+            updateSearchParams({
+              pageSize: nextPageSize,
+              page: 1,
+            })
+          }
+          onDeleteImage={(imageId) => void handleDeleteImage(imageId)}
+          deletePendingId={
+            deleteImageMutation.isPending
+              ? (deleteImageMutation.variables ?? null)
+              : null
+          }
+          deleteDisabled={deleteImageMutation.isPending}
         />
       </Container>
 
