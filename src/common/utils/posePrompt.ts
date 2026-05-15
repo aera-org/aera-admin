@@ -24,6 +24,8 @@ export const POSE_LABELS: Record<Pose, string> = {
   [Pose.Missionary]: 'Missionary',
   [Pose.Footjob]: 'Footjob',
   [Pose.LegsUp]: 'Legs Up',
+  [Pose.Cuddle]: 'Cuddle',
+  [Pose.Kiss]: 'Kiss',
 };
 
 export const photoAngleOptions = Object.values(PhotoAngle).map((value) => ({

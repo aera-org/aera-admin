@@ -29,6 +29,10 @@ export enum Pose {
   Cowgirl = 'cowgirl',
   Doggy = 'doggy',
   Missionary = 'missionary',
+
+  // Aftercare
+  Cuddle = 'cuddle',
+  Kiss = 'kiss',
 }
 
 export enum PhotoAngle {
