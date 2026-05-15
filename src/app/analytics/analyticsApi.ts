@@ -38,6 +38,8 @@ export type DailyAnalyticsItem = {
   totalPaid: number;
   totalPaidUnique: number;
   activationRate: number;
+  openedAppRate: number;
+  seenPaywallRate: number;
   customers: number;
   revenue: number;
   conversion: number;

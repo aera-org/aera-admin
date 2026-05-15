@@ -105,6 +105,8 @@ type DailyMetricKey =
   | 'totalPaid'
   | 'totalPaidUnique'
   | 'activationRate'
+  | 'openedAppRate'
+  | 'seenPaywallRate'
   | 'unique'
   | 'customers'
   | 'revenue'
@@ -122,6 +124,8 @@ type CountryMetricKey = Exclude<
   | 'totalPaid'
   | 'totalPaidUnique'
   | 'activationRate'
+  | 'openedAppRate'
+  | 'seenPaywallRate'
 >;
 
 type CountryOrder = 'asc' | 'desc';
@@ -163,6 +167,8 @@ const DAILY_TOTAL_DEEPLINK_CLICKS_METRIC =
 const DAILY_DEEPLINK_ACTIVE_USERS_METRIC = getMetricDefinition('totalPaid');
 const DAILY_DEEPLINK_ACTIVE_USERS_UNIQUE_METRIC =
   getMetricDefinition('totalPaidUnique');
+const DAILY_OPENED_APP_RATE_METRIC = getMetricDefinition('openedAppRate');
+const DAILY_SEEN_PAYWALL_RATE_METRIC = getMetricDefinition('seenPaywallRate');
 
 function useElementWidth<T extends HTMLElement>() {
   const [node, setNode] = useState<T | null>(null);
@@ -342,6 +348,8 @@ function isValidDailyMetric(
     value === 'totalPaid' ||
     value === 'totalPaidUnique' ||
     value === 'activationRate' ||
+    value === 'openedAppRate' ||
+    value === 'seenPaywallRate' ||
     value === 'unique' ||
     value === 'customers' ||
     value === 'revenue' ||
@@ -436,6 +444,20 @@ const DAILY_METRIC_OPTIONS: Array<{
     value: 'activationRate',
     label: 'Activation Rate',
     description: 'Total divided by link clicks.',
+  },
+  {
+    value: 'openedAppRate',
+    label: DAILY_OPENED_APP_RATE_METRIC?.label ?? 'App Open Rate',
+    description:
+      DAILY_OPENED_APP_RATE_METRIC?.description ??
+      'Percent of total unique users who opened the app',
+  },
+  {
+    value: 'seenPaywallRate',
+    label: DAILY_SEEN_PAYWALL_RATE_METRIC?.label ?? 'Paywall Seen Rate',
+    description:
+      DAILY_SEEN_PAYWALL_RATE_METRIC?.description ??
+      'Percent of total unique users who seen paywall at least 1 time',
   },
   {
     value: 'customers',
@@ -1994,6 +2016,14 @@ export function AnalyticsPage() {
         acc.totalPaidUnique += Number.isFinite(item.totalPaidUnique)
           ? item.totalPaidUnique
           : 0;
+        if (Number.isFinite(item.openedAppRate)) {
+          acc.openedAppRateSum += item.openedAppRate;
+          acc.openedAppRateCount += 1;
+        }
+        if (Number.isFinite(item.seenPaywallRate)) {
+          acc.seenPaywallRateSum += item.seenPaywallRate;
+          acc.seenPaywallRateCount += 1;
+        }
         acc.unique += Number.isFinite(item.unique) ? item.unique : 0;
         acc.customers += Number.isFinite(item.customers) ? item.customers : 0;
         acc.revenue += Number.isFinite(item.revenue) ? item.revenue : 0;
@@ -2013,6 +2043,10 @@ export function AnalyticsPage() {
         totalOrganic: 0,
         totalPaid: 0,
         totalPaidUnique: 0,
+        openedAppRateSum: 0,
+        openedAppRateCount: 0,
+        seenPaywallRateSum: 0,
+        seenPaywallRateCount: 0,
         unique: 0,
         customers: 0,
         revenue: 0,
@@ -2025,6 +2059,14 @@ export function AnalyticsPage() {
       totals.activationRateVisits > 0
         ? (totals.activationRateTotal / totals.activationRateVisits) * 100
         : null;
+    const openedAppRate =
+      totals.openedAppRateCount > 0
+        ? totals.openedAppRateSum / totals.openedAppRateCount
+        : null;
+    const seenPaywallRate =
+      totals.seenPaywallRateCount > 0
+        ? totals.seenPaywallRateSum / totals.seenPaywallRateCount
+        : null;
     const conversion =
       totals.total > 0 ? totals.customers / totals.total : null;
     const arpu = totals.total > 0 ? totals.revenue / totals.total : null;
@@ -2035,10 +2077,23 @@ export function AnalyticsPage() {
     const {
       activationRateVisits: _activationRateVisits,
       activationRateTotal: _activationRateTotal,
+      openedAppRateSum: _openedAppRateSum,
+      openedAppRateCount: _openedAppRateCount,
+      seenPaywallRateSum: _seenPaywallRateSum,
+      seenPaywallRateCount: _seenPaywallRateCount,
       ...displayTotals
     } = totals;
 
-    return { ...displayTotals, activationRate, conversion, arpu, arpuu, arpc };
+    return {
+      ...displayTotals,
+      activationRate,
+      openedAppRate,
+      seenPaywallRate,
+      conversion,
+      arpu,
+      arpuu,
+      arpc,
+    };
   }, [dailyData]);
 
   const dailyColumns = useMemo(
@@ -2187,6 +2242,46 @@ export function AnalyticsPage() {
               className={cn(s.tableHeader, [s.alignRight])}
             >
               AR
+            </Typography>
+          </Tooltip>
+        ),
+      },
+      {
+        key: 'openedAppRate',
+        label: (
+          <Tooltip
+            content={
+              DAILY_OPENED_APP_RATE_METRIC?.description ??
+              'Percent of total unique users who opened the app'
+            }
+          >
+            <Typography
+              variant="meta"
+              as="span"
+              tone="muted"
+              className={cn(s.tableHeader, [s.alignRight])}
+            >
+              {DAILY_OPENED_APP_RATE_METRIC?.label ?? 'App Open Rate'}
+            </Typography>
+          </Tooltip>
+        ),
+      },
+      {
+        key: 'seenPaywallRate',
+        label: (
+          <Tooltip
+            content={
+              DAILY_SEEN_PAYWALL_RATE_METRIC?.description ??
+              'Percent of total unique users who seen paywall at least 1 time'
+            }
+          >
+            <Typography
+              variant="meta"
+              as="span"
+              tone="muted"
+              className={cn(s.tableHeader, [s.alignRight])}
+            >
+              {DAILY_SEEN_PAYWALL_RATE_METRIC?.label ?? 'Paywall Seen Rate'}
             </Typography>
           </Tooltip>
         ),
@@ -2379,6 +2474,40 @@ export function AnalyticsPage() {
             style={{ fontSize: 14 }}
           >
             {formatDeeplinkPercent(item.activationRate)}
+          </Typography>
+        ),
+        openedAppRate: (
+          <Typography
+            variant="body"
+            as="span"
+            className={s.alignRight}
+            style={{ fontSize: 14 }}
+          >
+            {DAILY_OPENED_APP_RATE_METRIC &&
+            Number.isFinite(item.openedAppRate)
+              ? formatMetricValue(
+                  DAILY_OPENED_APP_RATE_METRIC,
+                  item.openedAppRate,
+                  'table',
+                )
+              : '—'}
+          </Typography>
+        ),
+        seenPaywallRate: (
+          <Typography
+            variant="body"
+            as="span"
+            className={s.alignRight}
+            style={{ fontSize: 14 }}
+          >
+            {DAILY_SEEN_PAYWALL_RATE_METRIC &&
+            Number.isFinite(item.seenPaywallRate)
+              ? formatMetricValue(
+                  DAILY_SEEN_PAYWALL_RATE_METRIC,
+                  item.seenPaywallRate,
+                  'table',
+                )
+              : '—'}
           </Typography>
         ),
         customers: (
@@ -2904,6 +3033,18 @@ export function AnalyticsPage() {
       switch (dailyMetricKey) {
         case 'activationRate':
           return formatDeeplinkPercent(value);
+        case 'openedAppRate':
+          return DAILY_OPENED_APP_RATE_METRIC
+            ? formatMetricValue(DAILY_OPENED_APP_RATE_METRIC, value, variant)
+            : formatCount(value, 2);
+        case 'seenPaywallRate':
+          return DAILY_SEEN_PAYWALL_RATE_METRIC
+            ? formatMetricValue(
+                DAILY_SEEN_PAYWALL_RATE_METRIC,
+                value,
+                variant,
+              )
+            : formatCount(value, 2);
         case 'revenue':
           return dailyRevenueMetric
             ? formatMetricValue(dailyRevenueMetric, value, variant)
@@ -2930,6 +3071,8 @@ export function AnalyticsPage() {
     },
     [
       dailyMetricKey,
+      DAILY_OPENED_APP_RATE_METRIC,
+      DAILY_SEEN_PAYWALL_RATE_METRIC,
       dailyRevenueMetric,
       conversionMetric,
       dailyArpuMetric,
@@ -2990,6 +3133,8 @@ export function AnalyticsPage() {
         Number.isFinite(item.totalPaid) ? item.totalPaid : null,
         Number.isFinite(item.totalPaidUnique) ? item.totalPaidUnique : null,
         Number.isFinite(item.activationRate) ? item.activationRate : null,
+        Number.isFinite(item.openedAppRate) ? item.openedAppRate : null,
+        Number.isFinite(item.seenPaywallRate) ? item.seenPaywallRate : null,
         Number.isFinite(item.customers) ? item.customers : null,
         Number.isFinite(item.revenue) ? item.revenue : null,
         Number.isFinite(item.conversion) ? item.conversion : null,
@@ -3087,6 +3232,8 @@ export function AnalyticsPage() {
               DAILY_DEEPLINK_ACTIVE_USERS_UNIQUE_METRIC?.label ??
                 'Deeplink active users (unique)',
               'Activation Rate',
+              DAILY_OPENED_APP_RATE_METRIC?.label ?? 'App Open Rate',
+              DAILY_SEEN_PAYWALL_RATE_METRIC?.label ?? 'Paywall Seen Rate',
               'Customers',
               'Revenue (USD)',
               'Conversion rate',
@@ -3588,6 +3735,36 @@ export function AnalyticsPage() {
                         <Typography variant="h3">
                           {dailyTotals
                             ? formatDeeplinkPercent(dailyTotals.activationRate)
+                            : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          {DAILY_OPENED_APP_RATE_METRIC?.label ??
+                            'App Open Rate'}
+                        </Typography>
+                        <Typography variant="h3">
+                          {dailyTotals && DAILY_OPENED_APP_RATE_METRIC
+                            ? formatMetricValue(
+                                DAILY_OPENED_APP_RATE_METRIC,
+                                dailyTotals.openedAppRate,
+                                'card',
+                              )
+                            : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          {DAILY_SEEN_PAYWALL_RATE_METRIC?.label ??
+                            'Paywall Seen Rate'}
+                        </Typography>
+                        <Typography variant="h3">
+                          {dailyTotals && DAILY_SEEN_PAYWALL_RATE_METRIC
+                            ? formatMetricValue(
+                                DAILY_SEEN_PAYWALL_RATE_METRIC,
+                                dailyTotals.seenPaywallRate,
+                                'card',
+                              )
                             : '—'}
                         </Typography>
                       </Card>

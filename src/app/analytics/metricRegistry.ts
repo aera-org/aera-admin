@@ -12,6 +12,8 @@ export type AnalyticsMetricKey =
   | 'totalPaid'
   | 'totalPaidUnique'
   | 'totalOrganic'
+  | 'openedAppRate'
+  | 'seenPaywallRate'
   | 'bounceRate'
   | 'retentionRate'
   | 'churnRate'
@@ -173,6 +175,23 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
     key: 'chatRecoveryRate',
     label: 'Recovery rate',
     description: 'Unblocked events divided by blocked events in the month.',
+    format: 'percent',
+    section: 'main',
+    precision: 1,
+  },
+  {
+    key: 'openedAppRate',
+    label: 'App Open Rate',
+    description: 'Percent of total unique users who opened the app',
+    format: 'percent',
+    section: 'main',
+    precision: 1,
+  },
+  {
+    key: 'seenPaywallRate',
+    label: 'Paywall Seen Rate',
+    description:
+      'Percent of total unique users who seen paywall at least 1 time',
     format: 'percent',
     section: 'main',
     precision: 1,
