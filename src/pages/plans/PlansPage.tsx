@@ -71,6 +71,7 @@ type CreatePlanValues = {
 };
 
 type EditPlanValues = {
+  price: string;
   isActive: boolean;
   isRecommended: boolean;
   items: PlanItemDraft[];
@@ -301,6 +302,7 @@ export function PlansPage() {
   const [createValues, setCreateValues] =
     useState<CreatePlanValues>(getInitialCreateValues);
   const [editValues, setEditValues] = useState<EditPlanValues>({
+    price: '',
     isActive: false,
     isRecommended: false,
     items: [],
@@ -404,17 +406,32 @@ export function PlansPage() {
     createItemsHasIncomplete,
   ]);
   const editErrors = useMemo(() => {
-    if (!editShowErrors || isEditAirPlan || !editTarget) return {};
+    if (!editShowErrors || !editTarget) return {};
     return {
-      items: editItemsHasIncomplete
-        ? 'Complete or remove partially filled plan items.'
-        : undefined,
+      price: parsePositiveInteger(editValues.price)
+        ? undefined
+        : 'Use a whole number greater than 0.',
+      items:
+        isEditAirPlan || !editItemsHasIncomplete
+          ? undefined
+          : 'Complete or remove partially filled plan items.',
     };
-  }, [editShowErrors, isEditAirPlan, editTarget, editItemsHasIncomplete]);
+  }, [
+    editShowErrors,
+    editTarget,
+    editValues.price,
+    isEditAirPlan,
+    editItemsHasIncomplete,
+  ]);
 
   const editIsValid = useMemo(
-    () => Boolean(editTarget && !editItemsHasIncomplete),
-    [editTarget, editItemsHasIncomplete],
+    () =>
+      Boolean(
+        editTarget &&
+          parsePositiveInteger(editValues.price) &&
+          !editItemsHasIncomplete,
+      ),
+    [editTarget, editValues.price, editItemsHasIncomplete],
   );
 
   const openCreateModal = () => {
@@ -431,6 +448,7 @@ export function PlansPage() {
   const openEditModal = useCallback((plan: IPlan) => {
     setEditTarget(plan);
     setEditValues({
+      price: String(plan.price ?? ''),
       isActive: plan.isActive,
       isRecommended: plan.isRecommended,
       items: toPlanItemDrafts(plan.items),
@@ -546,10 +564,11 @@ export function PlansPage() {
 
   const handleUpdatePlan = async () => {
     if (!editTarget) return;
+    const price = parsePositiveInteger(editValues.price);
     const { completeItems, hasIncomplete } = isEditAirPlan
       ? { completeItems: [] as PlanItem[], hasIncomplete: false }
       : normalizePlanItems(editValues.items);
-    if (hasIncomplete) {
+    if (!price || hasIncomplete) {
       setEditShowErrors(true);
       return;
     }
@@ -557,6 +576,7 @@ export function PlansPage() {
     await updateStatusMutation.mutateAsync({
       id: editTarget.id,
       payload: {
+        price,
         isActive: editValues.isActive,
         isRecommended: editValues.isRecommended,
         ...(isEditAirPlan ? {} : { items: completeItems }),
@@ -1274,6 +1294,7 @@ export function PlansPage() {
               disabled={
                 !editIsValid ||
                 updateStatusMutation.isPending ||
+                Boolean(editErrors.price) ||
                 Boolean(editErrors.items)
               }
             >
@@ -1284,6 +1305,25 @@ export function PlansPage() {
       >
         <Stack gap="16px">
           <FormRow columns={2}>
+            <Field
+              label="Price"
+              labelFor="plan-edit-price"
+              error={editErrors.price}
+            >
+              <Input
+                id="plan-edit-price"
+                inputMode="numeric"
+                placeholder="499"
+                value={editValues.price}
+                onChange={(event) =>
+                  setEditValues((prev) => ({
+                    ...prev,
+                    price: event.target.value,
+                  }))
+                }
+                fullWidth
+              />
+            </Field>
             <Field label="Recommended" labelFor="plan-edit-recommended">
               <Switch
                 id="plan-edit-recommended"

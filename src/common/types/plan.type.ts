@@ -24,6 +24,7 @@ export type PlanCreateDto = {
 export type PlanUpdateDto = {
   isActive: boolean;
   isRecommended: boolean;
+  price: number;
   items?: PlanItem[];
 };
 
