@@ -16,6 +16,10 @@ export type AnalyticsMetricKey =
   | 'seenPaywallRate'
   | 'bounceRate'
   | 'retentionRate'
+  | 'retentionD1'
+  | 'retentionD3'
+  | 'retentionD7'
+  | 'retentionD30'
   | 'churnRate'
   | 'total'
   | 'opened'
@@ -136,6 +140,38 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
     label: 'Retention rate',
     description:
       'Users whose first message was in the month and who returned with a chat session in the next month, divided by users whose first message was in the month.',
+    format: 'percent',
+    section: 'main',
+    precision: 1,
+  },
+  {
+    key: 'retentionD1',
+    label: 'Retention D1',
+    description: 'Percent of users retained on day 1.',
+    format: 'percent',
+    section: 'main',
+    precision: 1,
+  },
+  {
+    key: 'retentionD3',
+    label: 'Retention D3',
+    description: 'Percent of users retained on day 3.',
+    format: 'percent',
+    section: 'main',
+    precision: 1,
+  },
+  {
+    key: 'retentionD7',
+    label: 'Retention D7',
+    description: 'Percent of users retained on day 7.',
+    format: 'percent',
+    section: 'main',
+    precision: 1,
+  },
+  {
+    key: 'retentionD30',
+    label: 'Retention D30',
+    description: 'Percent of users retained on day 30.',
     format: 'percent',
     section: 'main',
     precision: 1,
