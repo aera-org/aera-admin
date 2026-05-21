@@ -20,7 +20,7 @@ import {
   Textarea,
   Typography,
 } from '@/atoms';
-import { PROMPT_TYPE_OPTIONS } from '@/common/consts';
+import { MODEL_PROVIDER_OPTIONS, PROMPT_TYPE_OPTIONS } from '@/common/consts';
 import { PromptType } from '@/common/types';
 import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
 import { AppShell } from '@/components/templates';
@@ -114,6 +114,7 @@ export function PromptUpdatePage() {
           text: values.text,
           type: data.type,
           isActive: values.isActive,
+          modelProvider: data.modelProvider,
         },
       },
     });
@@ -186,6 +187,21 @@ export function PromptUpdatePage() {
                   size="sm"
                   options={PROMPT_TYPE_OPTIONS}
                   value={data?.type ?? PromptType.Chat}
+                  disabled
+                  fullWidth
+                />
+              </Field>
+            </FormRow>
+            <FormRow columns={2}>
+              <Field
+                label="Model provider"
+                labelFor="prompt-edit-model-provider"
+              >
+                <Select
+                  id="prompt-edit-model-provider"
+                  size="sm"
+                  options={MODEL_PROVIDER_OPTIONS}
+                  value={data?.modelProvider ?? MODEL_PROVIDER_OPTIONS[0].value}
                   disabled
                   fullWidth
                 />

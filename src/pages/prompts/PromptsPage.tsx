@@ -19,8 +19,8 @@ import {
   Table,
   Typography,
 } from '@/atoms';
-import { PROMPT_TYPE_OPTIONS } from '@/common/consts';
-import { type IPrompt, PromptType } from '@/common/types';
+import { MODEL_PROVIDER_OPTIONS, PROMPT_TYPE_OPTIONS } from '@/common/consts';
+import { type IPrompt, type ModelProvider, PromptType } from '@/common/types';
 import { capitalize } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 
@@ -102,6 +102,13 @@ function resolveActiveFilter(value: string | null) {
 function resolveTypeFilter(value: string | null) {
   if (Object.values(PromptType).includes(value as PromptType)) return value as PromptType;
   return DEFAULT_TYPE_FILTER;
+}
+
+function formatModelProvider(value: ModelProvider) {
+  return (
+    MODEL_PROVIDER_OPTIONS.find((option) => option.value === value)?.label ??
+    value
+  );
 }
 
 export function PromptsPage() {
@@ -224,6 +231,7 @@ export function PromptsPage() {
     () => [
       { key: 'prompt', label: 'Prompt' },
       { key: 'type', label: 'Type' },
+      { key: 'modelProvider', label: 'Model provider' },
       { key: 'version', label: 'Version' },
       { key: 'status', label: 'Status' },
       { key: 'updated', label: <span className={s.alignRight}>Updated</span> },
@@ -245,6 +253,11 @@ export function PromptsPage() {
         type: (
           <Typography variant="body" tone="muted">
             {capitalize(prompt.type)}
+          </Typography>
+        ),
+        modelProvider: (
+          <Typography variant="body" tone="muted">
+            {formatModelProvider(prompt.modelProvider)}
           </Typography>
         ),
         version: (
@@ -278,6 +291,7 @@ export function PromptsPage() {
           </div>
         ),
         type: <Skeleton width={80} height={12} />,
+        modelProvider: <Skeleton width={90} height={12} />,
         version: <Skeleton width={60} height={12} />,
         status: <Skeleton width={80} height={20} />,
         updated: (

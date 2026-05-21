@@ -15,11 +15,18 @@ export enum PromptType {
   OpeningImageAnime = 'opening-image-anime',
 }
 
+export enum ModelProvider {
+  Grok = 'grok',
+  Mistral = 'mistral',
+  DeepSeek = 'deepseek',
+}
+
 export type CreatePromptDto = {
   name: string;
   text: string;
   type: PromptType;
   isActive: boolean;
+  modelProvider: ModelProvider;
 };
 
 export type UpdatePromptDto = {
@@ -36,6 +43,7 @@ export interface IPrompt {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  modelProvider: ModelProvider;
 }
 
 export interface IPromptDetails extends IPrompt {

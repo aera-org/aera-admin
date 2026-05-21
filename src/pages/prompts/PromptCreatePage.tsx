@@ -15,8 +15,8 @@ import {
   Textarea,
   Typography,
 } from '@/atoms';
-import { PROMPT_TYPE_OPTIONS } from '@/common/consts';
-import { PromptType } from '@/common/types';
+import { MODEL_PROVIDER_OPTIONS, PROMPT_TYPE_OPTIONS } from '@/common/consts';
+import { ModelProvider, PromptType } from '@/common/types';
 import { AppShell } from '@/components/templates';
 
 import s from './PromptFormPage.module.scss';
@@ -32,6 +32,7 @@ export function PromptCreatePage() {
         text: string;
         type: PromptType;
         isActive: boolean;
+        modelProvider: ModelProvider;
       };
     } | null
   )?.template;
@@ -41,6 +42,7 @@ export function PromptCreatePage() {
       text: template?.text ?? '',
       type: template?.type ?? PromptType.Chat,
       isActive: template?.isActive ?? false,
+      modelProvider: template?.modelProvider ?? ModelProvider.Grok,
     }),
     [template],
   );
@@ -85,6 +87,7 @@ export function PromptCreatePage() {
       text,
       type: values.type,
       isActive: values.isActive,
+      modelProvider: values.modelProvider,
     });
     navigate('/prompts');
   };
@@ -137,7 +140,24 @@ export function PromptCreatePage() {
                 fullWidth
               />
             </Field>
+          </FormRow>
 
+          <FormRow columns={2}>
+            <Field label="Model provider" labelFor="prompt-create-model-provider">
+              <Select
+                id="prompt-create-model-provider"
+                size="sm"
+                options={MODEL_PROVIDER_OPTIONS}
+                value={values.modelProvider}
+                onChange={(value) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    modelProvider: value as ModelProvider,
+                  }))
+                }
+                fullWidth
+              />
+            </Field>
             <Field label="Status" labelFor="prompt-create-status">
               <Switch
                 id="prompt-create-status"
