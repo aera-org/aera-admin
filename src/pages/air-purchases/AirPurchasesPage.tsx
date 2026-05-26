@@ -651,6 +651,22 @@ export function AirPurchasesPage() {
 
 
           <div className={s.filterRow}>
+          <Field
+              className={s.filterFieldSm}
+              label="After"
+              labelFor="air-purchases-after"
+            >
+              <Input
+                id="air-purchases-after"
+                size="sm"
+                type="date"
+                value={after}
+                onChange={(event) =>
+                  updateSearchParams({ after: event.target.value, page: 1 })
+                }
+                fullWidth
+              />
+            </Field>
             <Field
               className={s.filterFieldSm}
               label="Before"
@@ -663,22 +679,6 @@ export function AirPurchasesPage() {
                 value={before}
                 onChange={(event) =>
                   updateSearchParams({ before: event.target.value, page: 1 })
-                }
-                fullWidth
-              />
-            </Field>
-            <Field
-              className={s.filterFieldSm}
-              label="After"
-              labelFor="air-purchases-after"
-            >
-              <Input
-                id="air-purchases-after"
-                size="sm"
-                type="date"
-                value={after}
-                onChange={(event) =>
-                  updateSearchParams({ after: event.target.value, page: 1 })
                 }
                 fullWidth
               />

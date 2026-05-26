@@ -13,6 +13,7 @@ export enum PromptType {
   AvatarAnime = 'avatar-anime',
   OpeningImageRealistic = 'opening-image-realistic',
   OpeningImageAnime = 'opening-image-anime',
+  PostLocalization = 'post-localization',
 }
 
 export enum ModelProvider {

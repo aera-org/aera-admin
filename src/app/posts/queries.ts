@@ -9,6 +9,10 @@ import {
   type CreatePostDto,
   deletePost,
   getPosts,
+  localizeAllPosts,
+  type LocalizeAllPostsDto,
+  localizePost,
+  type LocalizePostDto,
   type PostsListParams,
   updatePost,
   type UpdatePostDto,
@@ -90,6 +94,42 @@ export function useDeletePost() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to delete the post.');
+    },
+  });
+}
+
+type PostLocalizationOptions = {
+  id: string;
+  payload: LocalizePostDto;
+};
+
+export function useLocalizePost() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, payload }: PostLocalizationOptions) =>
+      localizePost(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      notifySuccess('Post localization started.', 'Post localization started.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to localize the post.');
+    },
+  });
+}
+
+export function useLocalizeAllPosts() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: LocalizeAllPostsDto) => localizeAllPosts(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      notifySuccess('Posts localization started.', 'Posts localization started.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to localize posts.');
     },
   });
 }

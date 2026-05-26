@@ -15,6 +15,7 @@ export const PROMPT_TYPE_OPTIONS = [
   { label: 'Avatar Anime', value: PromptType.AvatarAnime },
   { label: 'Opening Image Realistic', value: PromptType.OpeningImageRealistic },
   { label: 'Opening Image Anime', value: PromptType.OpeningImageAnime },
+  { label: 'Post Localization', value: PromptType.PostLocalization },
 ];
 
 export const MODEL_PROVIDER_OPTIONS = [

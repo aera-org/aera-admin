@@ -1,6 +1,6 @@
 import { apiFetch } from '@/app/api';
 import { buildApiError } from '@/app/api/apiErrors';
-import { type IPost, PostType } from '@/common/types';
+import { type IPost, Language, PostType } from '@/common/types';
 
 import type { PaginatedResponse } from '../paginated-response.type';
 
@@ -29,11 +29,19 @@ export type CreatePostDto =
     });
 
 export type UpdatePostDto = CreatePostDto;
+export type LocalizePostDto = {
+  languages: Language[];
+};
+export type LocalizeAllPostsDto = {
+  language: Language;
+};
 
 const listFallbackError = 'Unable to load posts.';
 const createFallbackError = 'Unable to create the post.';
 const updateFallbackError = 'Unable to update the post.';
 const deleteFallbackError = 'Unable to delete the post.';
+const localizeFallbackError = 'Unable to localize the post.';
+const localizeAllFallbackError = 'Unable to localize posts.';
 
 function buildListQuery(params: PostsListParams) {
   const query = new URLSearchParams();
@@ -123,5 +131,28 @@ export async function deletePost(id: string) {
   });
   if (!res.ok) {
     throw await buildApiError(res, deleteFallbackError);
+  }
+}
+
+export async function localizePost(id: string, payload: LocalizePostDto) {
+  const res = await apiFetch(`/admin/posts/${id}/localizations`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, localizeFallbackError);
+  }
+  return (await res.json()) as IPost;
+}
+
+export async function localizeAllPosts(payload: LocalizeAllPostsDto) {
+  const res = await apiFetch('/admin/posts/localize', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, localizeAllFallbackError);
   }
 }

@@ -5,7 +5,12 @@ import { useSearchParams } from 'react-router-dom';
 
 import { useCharacters } from '@/app/characters';
 import { getCharacterDetails } from '@/app/characters/charactersApi';
-import { useDeletePost, usePosts } from '@/app/posts';
+import {
+  useDeletePost,
+  useLocalizeAllPosts,
+  useLocalizePost,
+  usePosts,
+} from '@/app/posts';
 import {
   Alert,
   Button,
@@ -18,12 +23,13 @@ import {
   Stack,
   Typography,
 } from '@/atoms';
-import type { ICharacterDetails, IPost } from '@/common/types';
+import type { ICharacterDetails, IPost, Language } from '@/common/types';
 import { formatCharacterSelectLabel } from '@/common/utils';
 import { ConfirmModal } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 
 import { PostItemCard, PostItemCardSkeleton } from './components/PostItemCard';
+import { PostLocalizationModal } from './components/PostLocalizationModal';
 import { PostUpsertDrawer } from './components/PostUpsertDrawer';
 import s from './PostsPage.module.scss';
 
@@ -111,6 +117,8 @@ export function PostsPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<IPost | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IPost | null>(null);
+  const [localizeTarget, setLocalizeTarget] = useState<IPost | null>(null);
+  const [isLocalizeAllOpen, setIsLocalizeAllOpen] = useState(false);
 
   const debouncedSearch = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
   const normalizedSearch = debouncedSearch.trim();
@@ -320,8 +328,10 @@ export function PostsPage() {
 
   const { data, error, isLoading, refetch } = usePosts(queryParams);
   const deleteMutation = useDeletePost();
+  const localizePostMutation = useLocalizePost();
+  const localizeAllPostsMutation = useLocalizeAllPosts();
 
-  const posts = data?.data ?? [];
+  const posts = useMemo(() => data?.data ?? [], [data?.data]);
   const total = data?.total ?? 0;
   const effectiveTake = data?.take ?? pageSize;
   const effectiveSkip = data?.skip ?? (page - 1) * pageSize;
@@ -333,6 +343,14 @@ export function PostsPage() {
       updateSearchParams({ page: totalPages }, true);
     }
   }, [data, page, total, totalPages, updateSearchParams]);
+
+  useEffect(() => {
+    if (!editingPost) return;
+    const nextEditingPost = posts.find((post) => post.id === editingPost.id) ?? null;
+    if (nextEditingPost && nextEditingPost !== editingPost) {
+      setEditingPost(nextEditingPost);
+    }
+  }, [editingPost, posts]);
 
   const postSkeletonCards = useMemo(
     () =>
@@ -378,6 +396,20 @@ export function PostsPage() {
     }
   };
 
+  const handleLocalizePost = async (payload: { languages: Language[] }) => {
+    if (!localizeTarget) return;
+    await localizePostMutation.mutateAsync({
+      id: localizeTarget.id,
+      payload,
+    });
+    setLocalizeTarget(null);
+  };
+
+  const handleLocalizeAll = async (payload: { language: Language }) => {
+    await localizeAllPostsMutation.mutateAsync(payload);
+    setIsLocalizeAllOpen(false);
+  };
+
   return (
     <AppShell>
       <Container size="wide" className={s.page}>
@@ -389,6 +421,14 @@ export function PostsPage() {
             </Typography>
           </div>
           <div className={s.headerActions}>
+            <Button
+              variant="secondary"
+              onClick={() => setIsLocalizeAllOpen(true)}
+              loading={localizeAllPostsMutation.isPending}
+              disabled={localizeAllPostsMutation.isPending}
+            >
+              Localize All
+            </Button>
             <Button onClick={handleCreate}>Create post</Button>
           </div>
         </div>
@@ -550,6 +590,51 @@ export function PostsPage() {
             : effectiveCharacterId || drawerScenarioLookup?.characterId
         }
         initialScenarioId={editingPost ? editingPost.scenario.id : scenarioFilter}
+        onLocalize={setLocalizeTarget}
+        isLocalizing={
+          localizePostMutation.isPending &&
+          Boolean(localizeTarget && editingPost?.id === localizeTarget.id)
+        }
+      />
+
+      <PostLocalizationModal
+        key={localizeTarget?.id ?? 'post-localize-closed'}
+        open={Boolean(localizeTarget)}
+        mode="multiple"
+        title="Localize post"
+        description="Select the languages to generate for this post."
+        submitLabel="Localize"
+        loading={localizePostMutation.isPending}
+        onClose={() => {
+          if (!localizePostMutation.isPending) {
+            setLocalizeTarget(null);
+          }
+        }}
+        onSubmit={async (payload) => {
+          if ('languages' in payload) {
+            await handleLocalizePost(payload);
+          }
+        }}
+      />
+
+      <PostLocalizationModal
+        key={isLocalizeAllOpen ? 'localize-all-open' : 'localize-all-closed'}
+        open={isLocalizeAllOpen}
+        mode="single"
+        title="Localize all posts"
+        description="Select one language to generate across all posts."
+        submitLabel="Localize"
+        loading={localizeAllPostsMutation.isPending}
+        onClose={() => {
+          if (!localizeAllPostsMutation.isPending) {
+            setIsLocalizeAllOpen(false);
+          }
+        }}
+        onSubmit={async (payload) => {
+          if ('language' in payload) {
+            await handleLocalizeAll(payload);
+          }
+        }}
       />
 
       <ConfirmModal

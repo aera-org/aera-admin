@@ -33,6 +33,7 @@ import {
   FileStatus,
   type IFile,
   type IPost,
+  Language,
   PostType,
 } from '@/common/types';
 import { formatCharacterSelectLabel } from '@/common/utils';
@@ -42,6 +43,7 @@ import {
   type SearchSelectOption,
 } from '@/components/molecules';
 
+import { getLanguageLabel } from '../postLocalization';
 import s from './PostUpsertDrawer.module.scss';
 
 type PostUpsertDrawerProps = {
@@ -50,6 +52,8 @@ type PostUpsertDrawerProps = {
   post?: IPost | null;
   initialCharacterId?: string;
   initialScenarioId?: string;
+  onLocalize?: (post: IPost) => void;
+  isLocalizing?: boolean;
 };
 
 type UploadItem = {
@@ -217,6 +221,8 @@ export function PostUpsertDrawer({
   post = null,
   initialCharacterId = '',
   initialScenarioId = '',
+  onLocalize,
+  isLocalizing = false,
 }: PostUpsertDrawerProps) {
   const [characterSearch, setCharacterSearch] = useState('');
   const [values, setValues] = useState<Values>({
@@ -283,6 +289,13 @@ export function PostUpsertDrawer({
     isUploadingFile ||
     createMutation.isPending ||
     updateMutation.isPending;
+  const localizationEntries = useMemo(
+    () =>
+      Object.entries(post?.localizations ?? {}).filter(
+        (entry): entry is [string, string] => Boolean(entry[1]?.trim()),
+      ),
+    [post?.localizations],
+  );
 
   const resetState = useCallback(() => {
     const postType = post?.type ?? PostType.Img;
@@ -488,6 +501,25 @@ export function PostUpsertDrawer({
       className={s.drawer}
     >
       <div className={s.form}>
+        {post ? (
+          <div className={s.topActions}>
+            <Typography variant="meta" tone="muted">
+              Localization actions are available for existing posts only.
+            </Typography>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                if (!post || !onLocalize) return;
+                onLocalize(post);
+              }}
+              loading={isLocalizing}
+              disabled={isBusy || isLocalizing || !onLocalize}
+            >
+              Localize
+            </Button>
+          </div>
+        ) : null}
+
         <FormRow columns={2}>
           <Field
             label="Character"
@@ -708,6 +740,34 @@ export function PostUpsertDrawer({
             disabled={isBusy}
           />
         </Field>
+
+        {post ? (
+          <Field label="Localizations">
+            {localizationEntries.length > 0 ? (
+              <div className={s.localizationList}>
+                {localizationEntries.map(([language, text]) => (
+                  <div key={language} className={s.localizationItem}>
+                    <Typography variant="meta" tone="muted">
+                      {getLanguageLabel(language as Language)}
+                    </Typography>
+                    <Typography
+                      variant="body"
+                      className={s.localizationText}
+                    >
+                      {text}
+                    </Typography>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={s.uploadEmpty}>
+                <Typography variant="caption" tone="muted">
+                  No localizations yet.
+                </Typography>
+              </div>
+            )}
+          </Field>
+        ) : null}
 
         <div className={s.drawerActions}>
           <Button

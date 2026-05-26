@@ -6,6 +6,11 @@ export enum PostType {
     Video = 'video',
 }
 
+export enum Language {
+    Russian = 'ru',
+    French = 'fr',
+}
+
 export interface IPost {
     id: string;
     text: string;
@@ -16,4 +21,5 @@ export interface IPost {
     scenario: IScenario;
     updatedAt: string;
     createdAt: string;
+    localizations: Partial<Record<Language, string>>;
 }
