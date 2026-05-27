@@ -72,8 +72,17 @@ function CharacterImageDrawerRedirect() {
 }
 
 const isX = import.meta.env.VITE_IS_X === 'true';
+const isCampaigns = import.meta.env.VITE_CAMPAIGNS === 'true';
 
 export function AppRoutes() {
+  if(isCampaigns) {
+    return (
+      <Routes>
+        <Route path="/" element={<CampaignsPage />} />
+      </Routes>
+    );
+  }
+
   return (
     <Routes>
       <Route path="/auth" element={isX ? <AuthNewPage /> : <AuthPage />} />
@@ -81,7 +90,6 @@ export function AppRoutes() {
       <Route path="/auth/confirm" element={<ConfirmEmailPage />} />
       <Route path="/auth/forgot" element={<ForgotPasswordPage />} />
       <Route path="/auth/reset" element={<ResetPasswordPage />} />
-      {isX && <Route path="/campaigns" element={<CampaignsPage />} />}
       <Route element={<AuthGuard />}>
         <Route path="/" element={<AnalyticsPage />} />
         <Route path="/ui" element={<UiKitPage />} />
