@@ -30,6 +30,7 @@ export {
   useDeleteScenario,
   useDeleteScenarioStageGift,
   useDeleteScenarioVideo,
+  useGenerateScenarioOpeningImage,
   useReorderCharacterStories,
   useUpdateCharacter,
   useUpdateCharacterStory,

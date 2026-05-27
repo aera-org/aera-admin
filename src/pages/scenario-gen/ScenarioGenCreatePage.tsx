@@ -9,12 +9,11 @@ import {
   Button,
   Container,
   Field,
-  FormRow,
-  Input,
+  FormRow, 
   Select,
   Stack,
   Textarea,
-  Typography,
+  Typography
 } from '@/atoms';
 import { formatCharacterSelectLabel } from '@/common/utils';
 import { AppShell } from '@/components/templates';
@@ -23,7 +22,6 @@ import s from './ScenarioGenCreatePage.module.scss';
 
 type ScenarioGenCreateTemplate = {
   characterId: string;
-  name: string;
   context: string;
 };
 
@@ -50,7 +48,6 @@ export function ScenarioGenCreatePage() {
   const initialValues = useMemo(
     () => ({
       characterId: template?.characterId ?? '',
-      name: template?.name ?? '',
       context: template?.context ?? '',
     }),
     [template],
@@ -72,29 +69,26 @@ export function ScenarioGenCreatePage() {
     if (!showErrors) return {};
     return {
       characterId: values.characterId ? undefined : 'Select a character.',
-      name: values.name.trim() ? undefined : 'Enter a name.',
       context: values.context.trim() ? undefined : 'Enter context.',
     };
-  }, [showErrors, values.characterId, values.context, values.name]);
+  }, [showErrors, values.characterId, values.context]);
 
   const isValid = useMemo(
-    () => Boolean(values.characterId && values.name.trim() && values.context.trim()),
-    [values.characterId, values.context, values.name],
+    () => Boolean(values.characterId && values.context.trim()),
+    [values.characterId, values.context],
   );
 
   const handleCreate = async () => {
     const characterId = values.characterId;
-    const name = values.name.trim();
     const context = values.context.trim();
 
-    if (!characterId || !name || !context) {
+    if (!characterId || !context) {
       setShowErrors(true);
       return;
     }
 
     const result = await createMutation.mutateAsync({
       characterId,
-      name,
       context,
     });
 
@@ -130,7 +124,7 @@ export function ScenarioGenCreatePage() {
         ) : null}
 
         <Stack gap="16px" className={s.form}>
-          <FormRow columns={2}>
+          <FormRow columns={1}>
             <Field
               label="Character"
               labelFor="scenario-gen-create-character"
@@ -151,26 +145,6 @@ export function ScenarioGenCreatePage() {
                   areCharactersLoading ? 'Loading characters...' : 'Select character'
                 }
                 invalid={Boolean(errors.characterId)}
-                fullWidth
-              />
-            </Field>
-
-            <Field
-              label="Name"
-              labelFor="scenario-gen-create-name"
-              error={errors.name}
-            >
-              <Input
-                id="scenario-gen-create-name"
-                size="sm"
-                value={values.name}
-                onChange={(event) =>
-                  setValues((prev) => ({
-                    ...prev,
-                    name: event.target.value,
-                  }))
-                }
-                invalid={Boolean(errors.name)}
                 fullWidth
               />
             </Field>

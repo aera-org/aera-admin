@@ -26,7 +26,6 @@ export interface IScenarioGenDetails extends IScenarioGen {
 
 export interface ScenarioGenCreateDto {
   characterId: string;
-  name: string;
   context: string;
 }
 

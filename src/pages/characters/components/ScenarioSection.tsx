@@ -180,6 +180,7 @@ export function ScenarioSection({
     name: '',
     emoji: '',
     slug: '',
+    level: '',
     description: '',
     isActive: true,
     shortDescription: '',
@@ -286,7 +287,20 @@ export function ScenarioSection({
     [customFormValues, customShowErrors, getCustomErrors],
   );
   const editValidationErrors = useMemo(
-    () => (editShowErrors ? getBaseErrors(editValues) : {}),
+    () => {
+      if (!editShowErrors) return {};
+
+      const errors = getBaseErrors(editValues) as Record<string, string>;
+      const levelValue = Number(editValues.level);
+      if (
+        !editValues.level.trim() ||
+        Number.isNaN(levelValue) ||
+        !Number.isFinite(levelValue)
+      ) {
+        errors.level = 'Enter a level.';
+      }
+      return errors;
+    },
     [editShowErrors, editValues, getBaseErrors],
   );
   const copyValidationErrors = useMemo(() => {
@@ -317,7 +331,15 @@ export function ScenarioSection({
     [customFormValues, getCustomErrors],
   );
   const isEditValid = useMemo(
-    () => Object.keys(getBaseErrors(editValues)).length === 0,
+    () => {
+      const hasBaseErrors = Object.keys(getBaseErrors(editValues)).length > 0;
+      const levelValue = Number(editValues.level);
+      const hasLevelError =
+        !editValues.level.trim() ||
+        Number.isNaN(levelValue) ||
+        !Number.isFinite(levelValue);
+      return !hasBaseErrors && !hasLevelError;
+    },
     [editValues, getBaseErrors],
   );
   const isCopyValid = useMemo(
@@ -335,6 +357,7 @@ export function ScenarioSection({
       name: '',
       emoji: '',
       slug: '',
+      level: '',
       description: '',
       isActive: true,
       shortDescription: '',
@@ -371,6 +394,7 @@ export function ScenarioSection({
       name: selectedScenario.name ?? '',
       emoji: selectedScenario.emoji ?? '',
       slug: selectedScenario.slug ?? '',
+      level: String(selectedScenario.level ?? ''),
       description: selectedScenario.description ?? '',
       isActive: Boolean(selectedScenario.isActive),
       shortDescription: selectedScenario.shortDescription ?? '',
@@ -505,7 +529,13 @@ export function ScenarioSection({
   const handleEdit = async () => {
     if (!characterId || !selectedScenario) return;
     const errors = getBaseErrors(editValues);
-    if (Object.values(errors).some(Boolean)) {
+    const levelValue = Number(editValues.level);
+    if (
+      Object.values(errors).some(Boolean) ||
+      !editValues.level.trim() ||
+      Number.isNaN(levelValue) ||
+      !Number.isFinite(levelValue)
+    ) {
       setEditShowErrors(true);
       return;
     }
@@ -516,6 +546,7 @@ export function ScenarioSection({
         name: editValues.name.trim(),
         emoji: editValues.emoji.trim(),
         slug: editValues.slug.trim() || undefined,
+        level: levelValue,
         description: editValues.description.trim(),
         isActive: showStatus ? editValues.isActive : selectedScenario.isActive,
         shortDescription: editValues.shortDescription.trim() || undefined,
@@ -1453,7 +1484,7 @@ export function ScenarioSection({
             </Field>
           </FormRow>
 
-          <FormRow columns={3}>
+          <FormRow columns={2}>
             <Field label="Slug" labelFor="scenario-edit-slug">
               <Input
                 id="scenario-edit-slug"
@@ -1468,6 +1499,29 @@ export function ScenarioSection({
                 fullWidth
               />
             </Field>
+            <Field
+              label="Level"
+              labelFor="scenario-edit-level"
+              error={editValidationErrors.level}
+            >
+              <Input
+                id="scenario-edit-level"
+                size="sm"
+                type="number"
+                min={0}
+                value={editValues.level}
+                onChange={(event) =>
+                  setEditValues((prev) => ({
+                    ...prev,
+                    level: event.target.value,
+                  }))
+                }
+                fullWidth
+              />
+            </Field>
+          </FormRow>
+
+          <FormRow columns={2}>
             <Field label="Status" labelFor="scenario-edit-is-active">
               <Switch
                 id="scenario-edit-is-active"

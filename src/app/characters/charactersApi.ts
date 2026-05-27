@@ -43,6 +43,8 @@ const createScenarioFallbackError = 'Unable to create the scenario.';
 const createCustomScenarioFallbackError =
   'Unable to create the custom scenario.';
 const deleteScenarioFallbackError = 'Unable to delete the scenario.';
+const generateScenarioOpeningImageFallbackError =
+  'Unable to generate the opening image.';
 const createScenarioGiftFallbackError = 'Unable to add the gift.';
 const updateScenarioGiftFallbackError = 'Unable to update the gift.';
 const deleteScenarioGiftFallbackError = 'Unable to delete the gift.';
@@ -113,6 +115,7 @@ export type ScenarioCreateDto = {
 };
 
 export type ScenarioUpdateDto = ScenarioCreateDto & {
+  level?: number;
   liveGenerations?: ScenarioLiveGenerations;
 };
 export type StageUpdateDto = StageDirectives;
@@ -266,6 +269,22 @@ export async function deleteScenario(characterId: string, scenarioId: string) {
   );
   if (!res.ok) {
     throw await buildApiError(res, deleteScenarioFallbackError);
+  }
+  return await parseJsonIfPresent(res);
+}
+
+export async function generateScenarioOpeningImage(
+  characterId: string,
+  scenarioId: string,
+) {
+  const res = await apiFetch(
+    `/admin/characters/${characterId}/scenarios/${scenarioId}/opening-image`,
+    {
+      method: 'POST',
+    },
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, generateScenarioOpeningImageFallbackError);
   }
   return await parseJsonIfPresent(res);
 }

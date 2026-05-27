@@ -31,6 +31,7 @@ import {
   deleteScenario,
   deleteScenarioStageGift,
   deleteScenarioVideo,
+  generateScenarioOpeningImage,
   getCharacterDetails,
   getCharacters,
   reorderCharacterStories,
@@ -461,6 +462,32 @@ export function useDeleteScenario() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to delete the scenario.');
+    },
+  });
+}
+
+export function useGenerateScenarioOpeningImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      scenarioId,
+    }: {
+      characterId: string;
+      scenarioId: string;
+    }) => generateScenarioOpeningImage(characterId, scenarioId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess(
+        'Opening image generation started.',
+        'Opening image generation started.',
+      );
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to generate the opening image.');
     },
   });
 }

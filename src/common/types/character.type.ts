@@ -161,6 +161,7 @@ export interface IScenario {
   isTop: boolean;
   createdAt: string;
   updatedAt: string;
+  level: number;
   videos: IScenarioVideo[];
 }
 

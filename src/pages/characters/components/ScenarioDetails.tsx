@@ -3,13 +3,19 @@ import { useMemo, useState } from 'react';
 import {
   useCreateScenarioStageGift,
   useDeleteScenarioStageGift,
+  useGenerateScenarioOpeningImage,
   useUpdateScenario,
   useUpdateScenarioStage,
   useUpdateScenarioStageGift,
 } from '@/app/characters';
 import { useGifts } from '@/app/gifts';
 import { notifyError } from '@/app/toast';
-import { CopyIcon, PencilLineIcon, TrashIcon } from '@/assets/icons';
+import {
+  CopyIcon,
+  ImageIcon,
+  PencilLineIcon,
+  TrashIcon,
+} from '@/assets/icons';
 import {
   Badge,
   Button,
@@ -138,6 +144,7 @@ function buildScenarioPayload(
     name: scenario.name.trim(),
     emoji: scenario.emoji.trim(),
     slug: scenario.slug?.trim() || undefined,
+    level: scenario.level,
     description: scenario.description.trim(),
     isActive: scenario.isActive,
     shortDescription: scenario.shortDescription?.trim() || undefined,
@@ -180,6 +187,7 @@ export function ScenarioDetails({
   showVideos = false,
 }: ScenarioDetailsProps) {
   const updateScenarioMutation = useUpdateScenario();
+  const generateOpeningImageMutation = useGenerateScenarioOpeningImage();
   const updateStageMutation = useUpdateScenarioStage();
   const createGiftMutation = useCreateScenarioStageGift();
   const updateGiftMutation = useUpdateScenarioStageGift();
@@ -428,6 +436,15 @@ export function ScenarioDetails({
     setGiftToDeleteId(null);
   };
 
+  const handleGenerateOpeningImage = async () => {
+    if (!characterId) return;
+
+    await generateOpeningImageMutation.mutateAsync({
+      characterId,
+      scenarioId: scenario.id,
+    });
+  };
+
   return (
     <div className={s.detailsCard}>
       <div className={s.detailsHeader}>
@@ -449,6 +466,16 @@ export function ScenarioDetails({
             size="sm"
             onClick={onCopy}
             disabled={!canCopy}
+          />
+          <IconButton
+            aria-label="Generate opening image"
+            icon={<ImageIcon />}
+            tooltip="Generate opening image"
+            variant="ghost"
+            size="sm"
+            onClick={() => void handleGenerateOpeningImage()}
+            loading={generateOpeningImageMutation.isPending}
+            disabled={!characterId || generateOpeningImageMutation.isPending}
           />
           {allowEdit ? (
             <IconButton
@@ -481,6 +508,12 @@ export function ScenarioDetails({
             Slug
           </Typography>
           <Typography variant="body">{scenario.slug || '-'}</Typography>
+        </div>
+        <div className={s.detailBlock}>
+          <Typography variant="caption" tone="muted">
+            Level
+          </Typography>
+          <Typography variant="body">{scenario.level}</Typography>
         </div>
         <div className={s.detailBlock}>
           <Typography variant="caption" tone="muted">
