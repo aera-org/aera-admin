@@ -71,6 +71,7 @@ function CharacterImageDrawerRedirect() {
   return <Navigate to={`/character-images${search ? `?${search}` : ''}`} replace />;
 }
 
+// comment
 const isX = import.meta.env.VITE_IS_X === 'true';
 const isCampaigns = import.meta.env.VITE_CAMPAIGNS === 'true';
 
