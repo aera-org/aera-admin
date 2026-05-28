@@ -9,6 +9,8 @@ export type {
   ScenarioUpdateDto,
   ScenarioVideoCreateDto,
   ScenarioVideoUpdateDto,
+  ScenarioVideoV2CreateDto,
+  ScenarioVideoV2UpdateDto,
   StageGiftCreateDto,
   StageGiftUpdateDto,
   StageUpdateDto,
@@ -25,6 +27,7 @@ export {
   useCreateScenario,
   useCreateScenarioStageGift,
   useCreateScenarioVideo,
+  useCreateScenarioVideoV2,
   useDeleteCharacter,
   useDeleteCharacterStory,
   useDeleteScenario,
@@ -38,4 +41,5 @@ export {
   useUpdateScenarioStage,
   useUpdateScenarioStageGift,
   useUpdateScenarioVideo,
+  useUpdateScenarioVideoV2,
 } from './queries';

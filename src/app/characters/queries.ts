@@ -26,6 +26,7 @@ import {
   createCustomScenario,
   createScenario,
   createScenarioVideo,
+  createScenarioVideoV2,
   deleteCharacter,
   deleteCharacterStory,
   deleteScenario,
@@ -39,6 +40,8 @@ import {
   type ScenarioUpdateDto,
   type ScenarioVideoCreateDto,
   type ScenarioVideoUpdateDto,
+  type ScenarioVideoV2CreateDto,
+  type ScenarioVideoV2UpdateDto,
   type StageGiftCreateDto,
   type StageGiftUpdateDto,
   type StageUpdateDto,
@@ -48,6 +51,7 @@ import {
   updateScenarioStage,
   updateScenarioStageGift,
   updateScenarioVideo,
+  updateScenarioVideoV2,
 } from './charactersApi';
 
 const characterKeys = {
@@ -667,6 +671,31 @@ export function useCreateScenarioVideo() {
   });
 }
 
+export function useCreateScenarioVideoV2() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      scenarioId,
+      payload,
+    }: {
+      characterId: string;
+      scenarioId: string;
+      payload: ScenarioVideoV2CreateDto;
+    }) => createScenarioVideoV2(characterId, scenarioId, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Video added.', 'Video added.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to add the video.');
+    },
+  });
+}
+
 export function useUpdateScenarioVideo() {
   const queryClient = useQueryClient();
 
@@ -682,6 +711,33 @@ export function useUpdateScenarioVideo() {
       id: string;
       payload: ScenarioVideoUpdateDto;
     }) => updateScenarioVideo(characterId, scenarioId, id, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Video updated.', 'Video updated.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to update the video.');
+    },
+  });
+}
+
+export function useUpdateScenarioVideoV2() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      scenarioId,
+      id,
+      payload,
+    }: {
+      characterId: string;
+      scenarioId: string;
+      id: string;
+      payload: ScenarioVideoV2UpdateDto;
+    }) => updateScenarioVideoV2(characterId, scenarioId, id, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: characterKeys.details(variables.characterId),

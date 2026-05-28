@@ -28,6 +28,7 @@ import {
   Textarea,
   Typography,
 } from '@/atoms';
+import { isX } from '@/common/is-x';
 import {
   FileDir,
   type ICharacterDetails,
@@ -40,6 +41,7 @@ import { ConfirmModal, Drawer, FileUpload } from '@/components/molecules';
 
 import s from '../CharacterDetailsPage.module.scss';
 import { ScenarioVideosSection } from './ScenarioVideosSection';
+import { ScenarioVideosV2Section } from './ScenarioVideosV2Section';
 
 type ScenarioDetailsProps = {
   characterId: string | null;
@@ -894,12 +896,21 @@ export function ScenarioDetails({
           </div>
         </div>
         {showVideos ? (
-          <ScenarioVideosSection
-            characterId={characterId}
-            scenarioId={scenario.id}
-            videos={scenario.videos ?? []}
-            formatDate={formatDate}
-          />
+          <>
+            {isX  ? <ScenarioVideosV2Section
+              characterId={characterId}
+              scenarioId={scenario.id}
+              videos={scenario.videos ?? []}
+              formatDate={formatDate}
+            /> : 
+            <ScenarioVideosSection
+              characterId={characterId}
+              scenarioId={scenario.id}
+              videos={scenario.videos ?? []}
+              formatDate={formatDate}
+            />
+}
+          </>
         ) : null}
       </Stack>
 

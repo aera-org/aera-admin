@@ -1,0 +1,1 @@
+export const isX = import.meta.env.VITE_IS_X === 'true';

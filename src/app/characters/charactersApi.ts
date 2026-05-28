@@ -140,6 +140,18 @@ export type ScenarioVideoCreateDto = {
 export type ScenarioVideoUpdateDto = {
   isActive: boolean;
 };
+export type ScenarioVideoV2CreateDto = {
+  videoId: string;
+  pose?: Pose;
+  stage?: RoleplayStage;
+  isPaid?: boolean;
+};
+export type ScenarioVideoV2UpdateDto = {
+  isActive: boolean;
+  pose?: Pose;
+  stage?: RoleplayStage;
+  isPaid?: boolean;
+};
 export type CharacterStoryCreateDto = {
   fileId: string;
   type: StoryType;
@@ -446,11 +458,50 @@ export async function createScenarioVideo(
   return (await res.json()) as IScenarioVideo;
 }
 
+export async function createScenarioVideoV2(
+  characterId: string,
+  scenarioId: string,
+  payload: ScenarioVideoV2CreateDto,
+) {
+  const res = await apiFetch(
+    `/admin/characters/${characterId}/scenarios/${scenarioId}/videos`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, 'Unable to add the video.');
+  }
+  return (await res.json()) as IScenarioVideo;
+}
+
 export async function updateScenarioVideo(
   characterId: string,
   scenarioId: string,
   id: string,
   payload: ScenarioVideoUpdateDto,
+) {
+  const res = await apiFetch(
+    `/admin/characters/${characterId}/scenarios/${scenarioId}/videos/${id}`,
+    {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, 'Unable to update the video.');
+  }
+  return (await res.json()) as IScenarioVideo;
+}
+
+export async function updateScenarioVideoV2(
+  characterId: string,
+  scenarioId: string,
+  id: string,
+  payload: ScenarioVideoV2UpdateDto,
 ) {
   const res = await apiFetch(
     `/admin/characters/${characterId}/scenarios/${scenarioId}/videos/${id}`,
