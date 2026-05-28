@@ -99,6 +99,7 @@ function buildScenarioClonePayload(
         ? normalizedSlug
         : `anime-${normalizedSlug}`
       : undefined,
+    level: scenario.level,
     description: scenario.description.trim(),
     isActive: scenario.isActive,
     shortDescription: scenario.shortDescription?.trim() || undefined,
@@ -111,6 +112,9 @@ function buildScenarioClonePayload(
     appearance: scenario.appearance.trim(),
     situation: scenario.situation.trim(),
     openingMessage: scenario.openingMessage.trim(),
+    transitionMessage:
+      scenario.level > 1 ? scenario.transitionMessage?.trim() || null : null,
+    opensAfterId: null,
   };
 }
 
@@ -122,6 +126,7 @@ function buildScenarioCopyPayload(
     name: scenario.name.trim(),
     emoji: scenario.emoji.trim(),
     slug: slug.trim(),
+    level: scenario.level,
     description: scenario.description.trim(),
     isActive: scenario.isActive,
     shortDescription: scenario.shortDescription?.trim() || undefined,
@@ -134,6 +139,9 @@ function buildScenarioCopyPayload(
     appearance: scenario.appearance.trim(),
     situation: scenario.situation.trim(),
     openingMessage: scenario.openingMessage.trim(),
+    transitionMessage:
+      scenario.level > 1 ? scenario.transitionMessage?.trim() || null : null,
+    opensAfterId: null,
   };
 }
 
@@ -147,11 +155,35 @@ async function cloneCharacterScenarios(
   sourceCharacter: ICharacterDetails,
   targetCharacterId: string,
 ) {
+  const createdScenarioMap = new Map<
+    string,
+    { source: ICharacterDetails['scenarios'][number]; createdId: string }
+  >();
+
   for (const scenario of sourceCharacter.scenarios) {
     const createdScenario = await createScenario(
       targetCharacterId,
       buildScenarioClonePayload(scenario),
     );
+    createdScenarioMap.set(scenario.id, {
+      source: scenario,
+      createdId: createdScenario.id,
+    });
+  }
+
+  for (const { source: scenario, createdId } of createdScenarioMap.values()) {
+    const mappedOpensAfterId = scenario.opensAfterId
+      ? createdScenarioMap.get(scenario.opensAfterId)?.createdId ?? null
+      : null;
+
+    if (scenario.liveGenerations || mappedOpensAfterId) {
+      await updateScenario(targetCharacterId, createdId, {
+        ...buildScenarioClonePayload(scenario),
+        opensAfterId:
+          scenario.level > 1 ? mappedOpensAfterId || null : null,
+        liveGenerations: scenario.liveGenerations,
+      });
+    }
 
     for (const stage of STAGES_IN_ORDER) {
       const stagePayload = scenario.stages[stage];
@@ -159,7 +191,7 @@ async function cloneCharacterScenarios(
         continue;
       }
 
-      await updateScenarioStage(targetCharacterId, createdScenario.id, stage, {
+      await updateScenarioStage(targetCharacterId, createdId, stage, {
         toneAndBehavior: stagePayload.toneAndBehavior.trim(),
         restrictions: stagePayload.restrictions.trim(),
         environment: stagePayload.environment.trim(),
@@ -177,7 +209,7 @@ async function cloneCharacterScenarios(
 
       await addScenarioStageGift(
         targetCharacterId,
-        createdScenario.id,
+        createdId,
         gift.stage,
         {
           giftId: sourceGiftId,

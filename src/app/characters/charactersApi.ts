@@ -97,6 +97,7 @@ export type ScenarioCreateDto = {
   name: string;
   emoji: string;
   slug?: string;
+  level?: number;
   description: string;
   isActive?: boolean;
   shortDescription?: string;
@@ -112,6 +113,8 @@ export type ScenarioCreateDto = {
   situation: string;
   openingMessage: string;
   openingImageId?: string;
+  transitionMessage?: string | null;
+  opensAfterId?: string | null;
 };
 
 export type ScenarioUpdateDto = ScenarioCreateDto & {

@@ -38,6 +38,7 @@ type ScenarioTransferScenario = {
   name: string;
   emoji: string;
   slug?: string;
+  level: number;
   description: string;
   isActive: boolean;
   shortDescription: string;
@@ -49,6 +50,8 @@ type ScenarioTransferScenario = {
   appearance: string;
   situation: string;
   openingMessage: string;
+  transitionMessage: string;
+  opensAfterId: string;
   openingImage: ScenarioTransferFile;
   stages: Record<RoleplayStage, StageDirectives>;
   gifts: ScenarioTransferGift[];
@@ -97,6 +100,13 @@ function ensureNonEmptyString(value: unknown, path: string) {
 function ensureBoolean(value: unknown, path: string) {
   if (typeof value !== 'boolean') {
     throw new Error(`Invalid import file: "${path}" must be a boolean.`);
+  }
+  return value;
+}
+
+function ensureNumber(value: unknown, path: string) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    throw new Error(`Invalid import file: "${path}" must be a number.`);
   }
   return value;
 }
@@ -285,6 +295,7 @@ export function buildScenarioTransferPayload({
       name: sanitizeString(scenario.name),
       emoji: sanitizeString(scenario.emoji),
       slug: sanitizeString(scenario.slug),
+      level: scenario.level,
       description: sanitizeString(scenario.description),
       isActive: Boolean(scenario.isActive),
       shortDescription: sanitizeString(scenario.shortDescription),
@@ -316,6 +327,10 @@ export function buildScenarioTransferPayload({
       appearance: sanitizeString(scenario.appearance),
       situation: sanitizeString(scenario.situation),
       openingMessage: sanitizeString(scenario.openingMessage),
+      transitionMessage:
+        scenario.level > 1 ? sanitizeString(scenario.transitionMessage) : '',
+      opensAfterId:
+        scenario.level > 1 ? sanitizeString(scenario.opensAfterId) : '',
       openingImage: {
         id: openingImage.id,
         name: openingImage.name,
@@ -440,6 +455,10 @@ export async function parseScenarioTransferFile(file: File) {
       name: ensureString(scenarioObj.name, 'scenario.name'),
       emoji: ensureString(scenarioObj.emoji, 'scenario.emoji'),
       slug: ensureString(scenarioObj.slug ?? '', 'scenario.slug'),
+      level:
+        scenarioObj.level === undefined
+          ? 1
+          : ensureNumber(scenarioObj.level, 'scenario.level'),
       description: ensureString(
         scenarioObj.description,
         'scenario.description',
@@ -478,6 +497,14 @@ export async function parseScenarioTransferFile(file: File) {
       openingMessage: ensureString(
         scenarioObj.openingMessage,
         'scenario.openingMessage',
+      ),
+      transitionMessage: ensureString(
+        scenarioObj.transitionMessage ?? '',
+        'scenario.transitionMessage',
+      ),
+      opensAfterId: ensureString(
+        scenarioObj.opensAfterId ?? '',
+        'scenario.opensAfterId',
       ),
       openingImage: parseTransferFile(
         scenarioObj.openingImage,

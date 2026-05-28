@@ -27,6 +27,7 @@ import {
   IconButton,
   Input,
   Modal,
+  Select,
   Skeleton,
   Stack,
   Switch,
@@ -116,6 +117,7 @@ const SCENARIO_CHARACTER_TRAIT_OPTIONS = Object.values(
   label: SCENARIO_CHARACTER_TRAIT_LABELS[value],
 }));
 const CUSTOM_SCENARIO_TRAITS_MAX = 3;
+const BASE_SCENARIO_LEVEL = 1;
 
 function isStageDirectivesEmpty(stage: StageDirectives) {
   return (
@@ -180,7 +182,9 @@ export function ScenarioSection({
     name: '',
     emoji: '',
     slug: '',
-    level: '',
+    level: String(BASE_SCENARIO_LEVEL),
+    transitionMessage: '',
+    opensAfterId: '',
     description: '',
     isActive: true,
     shortDescription: '',
@@ -216,6 +220,28 @@ export function ScenarioSection({
   }));
   const selectedScenario =
     scenarios.find((scenario) => scenario.id === selectedScenarioId) ?? null;
+  const createOpensAfterOptions = useMemo(
+    () => [
+      { value: '', label: 'No prerequisite' },
+      ...scenarios.map((scenario) => ({
+        value: scenario.id,
+        label: scenario.name || scenario.slug || scenario.id,
+      })),
+    ],
+    [scenarios],
+  );
+  const editOpensAfterOptions = useMemo(
+    () => [
+      { value: '', label: 'No prerequisite' },
+      ...scenarios
+        .filter((scenario) => scenario.id !== selectedScenario?.id)
+        .map((scenario) => ({
+          value: scenario.id,
+          label: scenario.name || scenario.slug || scenario.id,
+        })),
+    ],
+    [scenarios, selectedScenario?.id],
+  );
   const { data: copyCharacterData, isLoading: isCopyCharactersLoading } =
     useCharacters(
       {
@@ -256,6 +282,15 @@ export function ScenarioSection({
   const getCreateErrors = useCallback(
     (values: typeof formValues) => {
       const errors = getBaseErrors(values);
+      const levelValue = Number(values.level);
+      if (
+        !values.level.trim() ||
+        Number.isNaN(levelValue) ||
+        !Number.isFinite(levelValue) ||
+        levelValue < BASE_SCENARIO_LEVEL
+      ) {
+        errors.level = 'Enter a level.';
+      }
       if (!values.openingImageId) errors.openingImageId = 'Upload an image.';
       return errors;
     },
@@ -295,7 +330,8 @@ export function ScenarioSection({
       if (
         !editValues.level.trim() ||
         Number.isNaN(levelValue) ||
-        !Number.isFinite(levelValue)
+        !Number.isFinite(levelValue) ||
+        levelValue < BASE_SCENARIO_LEVEL
       ) {
         errors.level = 'Enter a level.';
       }
@@ -337,7 +373,8 @@ export function ScenarioSection({
       const hasLevelError =
         !editValues.level.trim() ||
         Number.isNaN(levelValue) ||
-        !Number.isFinite(levelValue);
+        !Number.isFinite(levelValue) ||
+        levelValue < BASE_SCENARIO_LEVEL;
       return !hasBaseErrors && !hasLevelError;
     },
     [editValues, getBaseErrors],
@@ -357,7 +394,9 @@ export function ScenarioSection({
       name: '',
       emoji: '',
       slug: '',
-      level: '',
+      level: String(BASE_SCENARIO_LEVEL),
+      transitionMessage: '',
+      opensAfterId: '',
       description: '',
       isActive: true,
       shortDescription: '',
@@ -395,6 +434,8 @@ export function ScenarioSection({
       emoji: selectedScenario.emoji ?? '',
       slug: selectedScenario.slug ?? '',
       level: String(selectedScenario.level ?? ''),
+      transitionMessage: selectedScenario.transitionMessage ?? '',
+      opensAfterId: selectedScenario.opensAfterId ?? '',
       description: selectedScenario.description ?? '',
       isActive: Boolean(selectedScenario.isActive),
       shortDescription: selectedScenario.shortDescription ?? '',
@@ -446,36 +487,16 @@ export function ScenarioSection({
 
   const handleCreate = async () => {
     if (!characterId) return;
-    const errors = {
-      name: formValues.name.trim() ? undefined : 'Enter a name.',
-      emoji: formValues.emoji.trim() ? undefined : 'Enter an emoji.',
-      description: formValues.description.trim()
-        ? undefined
-        : 'Enter a description.',
-      personality: formValues.personality.trim()
-        ? undefined
-        : 'Enter a personality.',
-      messagingStyle: formValues.messagingStyle.trim()
-        ? undefined
-        : 'Enter a messaging style.',
-      appearance: formValues.appearance.trim()
-        ? undefined
-        : 'Enter an appearance.',
-      situation: formValues.situation.trim() ? undefined : 'Enter a situation.',
-      openingMessage: formValues.openingMessage.trim()
-        ? undefined
-        : 'Enter an opening message.',
-      openingImageId: formValues.openingImageId
-        ? undefined
-        : 'Upload an image.',
-    };
+    const errors = getCreateErrors(formValues);
     if (Object.values(errors).some(Boolean)) {
       setShowErrors(true);
       return;
     }
+    const levelValue = Number(formValues.level);
     const result = await createMutation.mutateAsync({
       characterId,
       payload: {
+        level: levelValue,
         name: formValues.name.trim(),
         emoji: formValues.emoji.trim(),
         slug: formValues.slug.trim() || undefined,
@@ -494,6 +515,14 @@ export function ScenarioSection({
         situation: formValues.situation.trim(),
         openingMessage: formValues.openingMessage.trim(),
         openingImageId: formValues.openingImageId,
+        transitionMessage:
+          Number(formValues.level) > BASE_SCENARIO_LEVEL
+            ? formValues.transitionMessage.trim() || null
+            : null,
+        opensAfterId:
+          Number(formValues.level) > BASE_SCENARIO_LEVEL
+            ? formValues.opensAfterId || null
+            : null,
       },
     });
     setIsCreateOpen(false);
@@ -534,7 +563,8 @@ export function ScenarioSection({
       Object.values(errors).some(Boolean) ||
       !editValues.level.trim() ||
       Number.isNaN(levelValue) ||
-      !Number.isFinite(levelValue)
+      !Number.isFinite(levelValue) ||
+      levelValue < BASE_SCENARIO_LEVEL
     ) {
       setEditShowErrors(true);
       return;
@@ -570,6 +600,14 @@ export function ScenarioSection({
         situation: editValues.situation.trim(),
         openingMessage: editValues.openingMessage.trim(),
         openingImageId: editValues.openingImageId || undefined,
+        transitionMessage:
+          levelValue > BASE_SCENARIO_LEVEL
+            ? editValues.transitionMessage.trim() || null
+            : null,
+        opensAfterId:
+          levelValue > BASE_SCENARIO_LEVEL
+            ? editValues.opensAfterId || null
+            : null,
       },
     });
     setIsEditOpen(false);
@@ -751,6 +789,7 @@ export function ScenarioSection({
         name: scenarioPayload.name.trim(),
         emoji: scenarioPayload.emoji.trim(),
         slug: scenarioPayload.slug?.trim() || undefined,
+        level: scenarioPayload.level,
         description: scenarioPayload.description.trim(),
         isActive: scenarioPayload.isActive,
         shortDescription: scenarioPayload.shortDescription.trim() || undefined,
@@ -763,6 +802,15 @@ export function ScenarioSection({
         situation: scenarioPayload.situation.trim(),
         openingMessage: scenarioPayload.openingMessage.trim(),
         openingImageId: scenarioPayload.openingImage.id,
+        transitionMessage:
+          scenarioPayload.level > BASE_SCENARIO_LEVEL
+            ? scenarioPayload.transitionMessage.trim() || null
+            : null,
+        opensAfterId:
+          scenarioPayload.level > BASE_SCENARIO_LEVEL &&
+          scenarios.some((scenario) => scenario.id === scenarioPayload.opensAfterId)
+            ? scenarioPayload.opensAfterId
+            : null,
       });
 
       for (const stage of STAGES_IN_ORDER) {
@@ -885,6 +933,7 @@ export function ScenarioSection({
             <ScenarioDetails
               characterId={characterId}
               scenario={selectedScenario}
+              scenarios={scenarios}
               formatDate={formatDate}
               onEdit={openEditModal}
               onCopy={() => openCopyModal(selectedScenario)}
@@ -1040,7 +1089,7 @@ export function ScenarioSection({
           </FormRow>
 
           {showIsNew ? (
-            <FormRow columns={2}>
+            <FormRow columns={3}>
               <Field label="Slug" labelFor="scenario-create-slug">
                 <Input
                   id="scenario-create-slug"
@@ -1053,6 +1102,38 @@ export function ScenarioSection({
                     }))
                   }
                   placeholder="Optional"
+                  fullWidth
+                />
+              </Field>
+              <Field
+                label="Level"
+                labelFor="scenario-create-level"
+                error={validationErrors.level}
+              >
+                <Input
+                  id="scenario-create-level"
+                  size="sm"
+                  type="number"
+                  min={1}
+                  value={formValues.level}
+                  onChange={(event) =>
+                    setFormValues((prev) => {
+                      const nextLevel = event.target.value;
+                      const levelValue = Number(nextLevel);
+                      return {
+                        ...prev,
+                        level: nextLevel,
+                        transitionMessage:
+                          levelValue > BASE_SCENARIO_LEVEL
+                            ? prev.transitionMessage
+                            : '',
+                        opensAfterId:
+                          levelValue > BASE_SCENARIO_LEVEL
+                            ? prev.opensAfterId
+                            : '',
+                      };
+                    })
+                  }
                   fullWidth
                 />
               </Field>
@@ -1071,22 +1152,97 @@ export function ScenarioSection({
               </Field>
             </FormRow>
           ) : (
-            <Field label="Slug" labelFor="scenario-create-slug">
-              <Input
-                id="scenario-create-slug"
-                size="sm"
-                value={formValues.slug}
-                onChange={(event) =>
-                  setFormValues((prev) => ({
-                    ...prev,
-                    slug: event.target.value,
-                  }))
-                }
-                placeholder="Optional"
-                fullWidth
-              />
-            </Field>
+            <FormRow columns={2}>
+              <Field label="Slug" labelFor="scenario-create-slug">
+                <Input
+                  id="scenario-create-slug"
+                  size="sm"
+                  value={formValues.slug}
+                  onChange={(event) =>
+                    setFormValues((prev) => ({
+                      ...prev,
+                      slug: event.target.value,
+                    }))
+                  }
+                  placeholder="Optional"
+                  fullWidth
+                />
+              </Field>
+              <Field
+                label="Level"
+                labelFor="scenario-create-level"
+                error={validationErrors.level}
+              >
+                <Input
+                  id="scenario-create-level"
+                  size="sm"
+                  type="number"
+                  min={1}
+                  value={formValues.level}
+                  onChange={(event) =>
+                    setFormValues((prev) => {
+                      const nextLevel = event.target.value;
+                      const levelValue = Number(nextLevel);
+                      return {
+                        ...prev,
+                        level: nextLevel,
+                        transitionMessage:
+                          levelValue > BASE_SCENARIO_LEVEL
+                            ? prev.transitionMessage
+                            : '',
+                        opensAfterId:
+                          levelValue > BASE_SCENARIO_LEVEL
+                            ? prev.opensAfterId
+                            : '',
+                      };
+                    })
+                  }
+                  fullWidth
+                />
+              </Field>
+            </FormRow>
           )}
+
+          {Number(formValues.level) > BASE_SCENARIO_LEVEL ? (
+            <>
+              <Field
+                label="Opens after"
+                labelFor="scenario-create-opens-after"
+              >
+                <Select
+                  id="scenario-create-opens-after"
+                  size="sm"
+                  value={formValues.opensAfterId}
+                  options={createOpensAfterOptions}
+                  onChange={(value) =>
+                    setFormValues((prev) => ({
+                      ...prev,
+                      opensAfterId: value,
+                    }))
+                  }
+                  placeholder="Select scenario"
+                  fullWidth
+                />
+              </Field>
+              <Field
+                label="Transition text"
+                labelFor="scenario-create-transition-text"
+              >
+                <Textarea
+                  id="scenario-create-transition-text"
+                  value={formValues.transitionMessage}
+                  onChange={(event) =>
+                    setFormValues((prev) => ({
+                      ...prev,
+                      transitionMessage: event.target.value,
+                    }))
+                  }
+                  rows={2}
+                  fullWidth
+                />
+              </Field>
+            </>
+          ) : null}
 
           <Field
             label="Description"
@@ -1508,18 +1664,71 @@ export function ScenarioSection({
                 id="scenario-edit-level"
                 size="sm"
                 type="number"
-                min={0}
+                  min={1}
                 value={editValues.level}
                 onChange={(event) =>
-                  setEditValues((prev) => ({
-                    ...prev,
-                    level: event.target.value,
-                  }))
+                  setEditValues((prev) => {
+                    const nextLevel = event.target.value;
+                    const levelValue = Number(nextLevel);
+                    return {
+                      ...prev,
+                      level: nextLevel,
+                      transitionMessage:
+                        levelValue > BASE_SCENARIO_LEVEL
+                          ? prev.transitionMessage
+                          : '',
+                      opensAfterId:
+                        levelValue > BASE_SCENARIO_LEVEL
+                          ? prev.opensAfterId
+                          : '',
+                    };
+                  })
                 }
                 fullWidth
               />
             </Field>
           </FormRow>
+
+          {Number(editValues.level) > BASE_SCENARIO_LEVEL ? (
+            <>
+              <Field
+                label="Opens after"
+                labelFor="scenario-edit-opens-after"
+              >
+                <Select
+                  id="scenario-edit-opens-after"
+                  size="sm"
+                  value={editValues.opensAfterId}
+                  options={editOpensAfterOptions}
+                  onChange={(value) =>
+                    setEditValues((prev) => ({
+                      ...prev,
+                      opensAfterId: value,
+                    }))
+                  }
+                  placeholder="Select scenario"
+                  fullWidth
+                />
+              </Field>
+              <Field
+                label="Transition text"
+                labelFor="scenario-edit-transition-text"
+              >
+                <Textarea
+                  id="scenario-edit-transition-text"
+                  value={editValues.transitionMessage}
+                  onChange={(event) =>
+                    setEditValues((prev) => ({
+                      ...prev,
+                      transitionMessage: event.target.value,
+                    }))
+                  }
+                  rows={2}
+                  fullWidth
+                />
+              </Field>
+            </>
+          ) : null}
 
           <FormRow columns={2}>
             <Field label="Status" labelFor="scenario-edit-is-active">

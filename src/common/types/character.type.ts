@@ -163,6 +163,8 @@ export interface IScenario {
   updatedAt: string;
   level: number;
   videos: IScenarioVideo[];
+  transitionMessage: string | null;
+  opensAfterId: string | null;
 }
 
 export enum StoryType {

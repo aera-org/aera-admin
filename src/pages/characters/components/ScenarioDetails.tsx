@@ -44,6 +44,7 @@ import { ScenarioVideosSection } from './ScenarioVideosSection';
 type ScenarioDetailsProps = {
   characterId: string | null;
   scenario: ICharacterDetails['scenarios'][number];
+  scenarios: ICharacterDetails['scenarios'];
   formatDate: (value: string | null | undefined) => string;
   onEdit: () => void;
   onCopy: () => void;
@@ -159,6 +160,9 @@ function buildScenarioPayload(
     appearance: scenario.appearance.trim(),
     situation: scenario.situation.trim(),
     openingMessage: scenario.openingMessage.trim(),
+    transitionMessage:
+      scenario.level > 1 ? scenario.transitionMessage?.trim() || null : null,
+    opensAfterId: scenario.level > 1 ? scenario.opensAfterId || null : null,
     openingImageId: scenario.openingImage?.id,
     liveGenerations: {
       stages: nextLiveGenerationStages,
@@ -169,6 +173,7 @@ function buildScenarioPayload(
 export function ScenarioDetails({
   characterId,
   scenario,
+  scenarios,
   formatDate,
   onEdit,
   onCopy,
@@ -224,6 +229,11 @@ export function ScenarioDetails({
   const selectedStageLiveGeneration = Boolean(
     scenario.liveGenerations?.stages?.[selectedStage],
   );
+  const opensAfterScenarioName = useMemo(() => {
+    if (!scenario.opensAfterId) return null;
+    const match = scenarios.find((item) => item.id === scenario.opensAfterId);
+    return match?.name || match?.slug || null;
+  }, [scenario.opensAfterId, scenarios]);
   const stageGift = useMemo(
     () => scenario.gifts.find((gift) => gift.stage === selectedStage) ?? null,
     [scenario.gifts, selectedStage],
@@ -551,6 +561,26 @@ export function ScenarioDetails({
             {scenario.shortDescription || '-'}
           </Typography>
         </div>
+        {scenario.level > 1 ? (
+          <>
+            <div className={s.detailBlock}>
+              <Typography variant="caption" tone="muted">
+                Opens after
+              </Typography>
+              <Typography variant="body">
+                {opensAfterScenarioName || '-'}
+              </Typography>
+            </div>
+            <div className={s.detailBlock}>
+              <Typography variant="caption" tone="muted">
+                Transition text
+              </Typography>
+              <Typography variant="body" className={s.multiline}>
+                {scenario.transitionMessage || '-'}
+              </Typography>
+            </div>
+          </>
+        ) : null}
         {showStatus || showIsNew || showIsPromoted || showIsTop ? (
           <FormRow columns={3}>
             {showStatus ? (
