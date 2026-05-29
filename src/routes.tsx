@@ -53,6 +53,7 @@ import {
   ScenarioGenPage,
   UiKitPage,
   UserDetailsPage,
+  UserProgressPage,
   UsersPage,
   VideoDetailsPage,
   VideosPage,
@@ -124,6 +125,7 @@ export function AppRoutes() {
         />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/users/:id" element={<UserDetailsPage />} />
+        <Route path="/user-progress" element={<UserProgressPage />} />
         <Route path="/chats" element={<ChatsPage />} />
         <Route path="/chats/:id" element={<ChatDetailsPage />} />
         <Route path="/generations/new" element={<GenerateImagePage />} />

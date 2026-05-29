@@ -52,6 +52,7 @@ const navItems: NavItem[] = [
   { label: 'Videos', to: '/videos', icon: <ImageIcon /> },
   { label: 'Gifts', to: '/gifts', icon: <GiftIcon /> },
   { label: 'Users', to: '/users', icon: <UserIcon /> },
+  { label: 'User Progress', to: '/user-progress', icon: <ChartIcon /> },
   { label: 'Air Purchases', to: '/air-purchases', icon: <DollarSignIcon /> },
   { label: 'Chats', to: '/chats', icon: <SendIcon /> },
   { label: 'LoRAs', to: '/loras', icon: <LayersIcon /> },

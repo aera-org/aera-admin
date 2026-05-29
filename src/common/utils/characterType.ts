@@ -1,8 +1,8 @@
 import { CharacterType } from '../types';
 
 export const CHARACTER_TYPE_LABELS: Record<CharacterType, string> = {
-  [CharacterType.Realistic]: 'Realistic',
-  [CharacterType.Anime]: 'Anime',
+  [CharacterType.Realistic]: 'realistic',
+  [CharacterType.Anime]: 'anime',
 };
 
 export const characterTypeOptions = Object.values(CharacterType).map(
