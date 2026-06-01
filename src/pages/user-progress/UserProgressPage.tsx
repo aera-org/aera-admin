@@ -17,6 +17,7 @@ import {
   Table,
   Typography,
 } from '@/atoms';
+import type { ScenarioProgressStats } from '@/common/types';
 import { formatCharacterType } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 
@@ -24,6 +25,22 @@ import s from './UserProgressPage.module.scss';
 
 const DEFAULT_AFTER = '2026-05-27';
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const TABLE_MIN_WIDTH = 1320;
+
+const METRIC_DEFINITIONS: Array<{
+  key: keyof ScenarioProgressStats;
+  label: string;
+}> = [
+  { key: 'total', label: 'Total' },
+  { key: 'pending', label: 'Pending' },
+  { key: 'notified', label: 'Notified' },
+  { key: 'accepted', label: 'Accepted' },
+  { key: 'declined', label: 'Declined' },
+  { key: 'started', label: 'Started' },
+  { key: 'startedNextDay', label: 'Started next day' },
+];
+const KPI_GRID_COLUMNS = METRIC_DEFINITIONS.length;
+
 
 type QueryUpdate = {
   after?: string;
@@ -84,6 +101,38 @@ function buildScenarioName(
 ) {
   if (!metadata) return scenarioId;
   return `${metadata.characterName} - ${metadata.name} (${formatCharacterType(metadata.characterType)})`;
+}
+
+function buildMetricCards(stats?: ScenarioProgressStats) {
+  return METRIC_DEFINITIONS.map((metric) => {
+    const value = stats?.[metric.key] ?? 0;
+    const total = stats?.total ?? 0;
+
+    if (metric.key === 'total') {
+      return (
+        <MetricCard
+          key={metric.key}
+          label={metric.label}
+          value={formatCount(value)}
+        />
+      );
+    }
+
+    return (
+      <MetricCard
+        key={metric.key}
+        label={metric.label}
+        value={buildPercentValue(value, total)}
+        meta={formatCount(value)}
+      />
+    );
+  });
+}
+
+function buildMetricCardSkeletons(prefix: string) {
+  return Array.from({ length: METRIC_DEFINITIONS.length }).map((_, index) => (
+    <Skeleton key={`${prefix}-${index}`} height={124} />
+  ));
 }
 
 function MetricCard({ label, value, meta }: MetricCardProps) {
@@ -165,25 +214,18 @@ export function UserProgressPage() {
     [after, before],
   );
 
-  const {
-    data,
-    error,
-    isLoading,
-  } = useUserProgressStats(progressQuery, hasValidDates);
-
-  const totals = data?.totals;
-  const total = totals?.total ?? 0;
-  const accepted = totals?.accepted ?? 0;
-  const declined = totals?.declined ?? 0;
-  const pending = totals?.pending ?? 0;
+  const { data, error, isLoading } = useUserProgressStats(
+    progressQuery,
+    hasValidDates,
+  );
 
   const breakdownColumns = useMemo(
     () => [
       { key: 'name', label: 'Name' },
-      { key: 'total', label: 'Total' },
-      { key: 'pending', label: 'Pending' },
-      { key: 'accepted', label: 'Accepted' },
-      { key: 'declined', label: 'Declined' },
+      ...METRIC_DEFINITIONS.map((metric) => ({
+        key: metric.key,
+        label: metric.label,
+      })),
     ],
     [],
   );
@@ -198,16 +240,24 @@ export function UserProgressPage() {
 
         return {
           nameValue: name,
+          totalValue: stats.total,
           name: (
             <div className={`${s.tableCell} ${s.nameCell}`}>
               <Typography variant="body">{name}</Typography>
             </div>
           ),
-          totalValue: stats.total,
-          total: formatCount(stats.total),
-          pending: buildPercentWithCount(stats.pending, stats.total),
-          accepted: buildPercentWithCount(stats.accepted, stats.total),
-          declined: buildPercentWithCount(stats.declined, stats.total),
+          ...Object.fromEntries(
+            METRIC_DEFINITIONS.map((metric) => {
+              if (metric.key === 'total') {
+                return [metric.key, formatCount(stats[metric.key])];
+              }
+
+              return [
+                metric.key,
+                buildPercentWithCount(stats[metric.key], stats.total),
+              ];
+            }),
+          ),
         };
       })
       .sort((left, right) => {
@@ -223,10 +273,15 @@ export function UserProgressPage() {
     () =>
       Array.from({ length: 5 }).map((_, index) => ({
         name: <Skeleton key={`name-${index}`} height={20} />,
-        total: <Skeleton key={`total-${index}`} height={20} />,
-        pending: <Skeleton key={`pending-${index}`} height={40} />,
-        accepted: <Skeleton key={`accepted-${index}`} height={40} />,
-        declined: <Skeleton key={`declined-${index}`} height={40} />,
+        ...Object.fromEntries(
+          METRIC_DEFINITIONS.map((metric) => [
+            metric.key,
+            <Skeleton
+              key={`${metric.key}-${index}`}
+              height={metric.key === 'total' ? 20 : 40}
+            />,
+          ]),
+        ),
       })),
     [],
   );
@@ -249,7 +304,7 @@ export function UserProgressPage() {
 
           <div className={s.filters}>
             <FormRow columns={2}>
-              <Field label="After" className={s.filterField}>
+              <Field label="From" className={s.filterField}>
                 <Input
                   type="date"
                   size="sm"
@@ -260,7 +315,7 @@ export function UserProgressPage() {
                   fullWidth
                 />
               </Field>
-              <Field label="Before" className={s.filterField}>
+              <Field label="To" className={s.filterField}>
                 <Input
                   type="date"
                   size="sm"
@@ -273,35 +328,30 @@ export function UserProgressPage() {
               </Field>
             </FormRow>
             <Typography variant="caption" tone="muted" className={s.note}>
-              Accepted, declined, and pending are calculated from total.
+              All non-total metrics are calculated from total.
             </Typography>
           </div>
 
           <Section title="Totals">
             {isLoading && !data ? (
-              <Grid columns={4} gap={16}>
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <Skeleton key={index} height={124} />
-                ))}
+              <Grid columns={KPI_GRID_COLUMNS} gap={4}>
+                {buildMetricCardSkeletons('totals')}
               </Grid>
             ) : (
-              <Grid columns={4} gap={16}>
-                <MetricCard label="Total" value={formatCount(total)} />
-                <MetricCard
-                  label="Pending"
-                  value={buildPercentValue(pending, total)}
-                  meta={formatCount(pending)}
-                />
-                <MetricCard
-                  label="Accepted"
-                  value={buildPercentValue(accepted, total)}
-                  meta={formatCount(accepted)}
-                />
-                <MetricCard
-                  label="Declined"
-                  value={buildPercentValue(declined, total)}
-                  meta={formatCount(declined)}
-                />
+              <Grid columns={KPI_GRID_COLUMNS} gap={4}>
+                {buildMetricCards(data?.totals)}
+              </Grid>
+            )}
+          </Section>
+
+          <Section title="Unique totals">
+            {isLoading && !data ? (
+              <Grid columns={KPI_GRID_COLUMNS} gap={4}>
+                {buildMetricCardSkeletons('totals-unique')}
+              </Grid>
+            ) : (
+              <Grid columns={KPI_GRID_COLUMNS} gap={4}>
+                {buildMetricCards(data?.totalsUnique)}
               </Grid>
             )}
           </Section>
@@ -312,7 +362,7 @@ export function UserProgressPage() {
                 columns={breakdownColumns}
                 rows={breakdownSkeletonRows}
                 scrollable
-                minWidth={920}
+                minWidth={TABLE_MIN_WIDTH}
               />
             ) : breakdownRows.length === 0 ? (
               <EmptyState
@@ -324,7 +374,7 @@ export function UserProgressPage() {
                 columns={breakdownColumns}
                 rows={breakdownRows}
                 scrollable
-                minWidth={920}
+                minWidth={TABLE_MIN_WIDTH}
               />
             )}
           </Section>

@@ -653,7 +653,7 @@ export function AirPurchasesPage() {
           <div className={s.filterRow}>
           <Field
               className={s.filterFieldSm}
-              label="After"
+              label="From"
               labelFor="air-purchases-after"
             >
               <Input
@@ -669,7 +669,7 @@ export function AirPurchasesPage() {
             </Field>
             <Field
               className={s.filterFieldSm}
-              label="Before"
+              label="To"
               labelFor="air-purchases-before"
             >
               <Input
