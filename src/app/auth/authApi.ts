@@ -34,10 +34,14 @@ export class AuthRequestError extends Error {
 }
 
 function getCookie(name: string) {
-  return document.cookie
+  console.log('document.cookie', document.cookie);
+  const cookie = document.cookie
     .split('; ')
     .find((row) => row.startsWith(`${name}=`))
     ?.split('=')[1];
+  console.log('cookie', cookie);
+
+  return cookie;
 }
 
 function normalizeError(message?: string | string[]) {
