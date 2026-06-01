@@ -33,6 +33,13 @@ export class AuthRequestError extends Error {
   }
 }
 
+function getCookie(name: string) {
+  return document.cookie
+    .split('; ')
+    .find((row) => row.startsWith(`${name}=`))
+    ?.split('=')[1];
+}
+
 function normalizeError(message?: string | string[]) {
   if (!message) {
     return 'Something went wrong. Please try again.';
@@ -81,7 +88,7 @@ async function parseError(res: Response) {
       rawMessage: normalizedRaw,
       message: mapErrorMessage(normalizedRaw) ?? normalizeError(normalizedRaw!),
     };
-  } catch (error) {
+  } catch {
     return {
       rawMessage: null,
       message: `Request failed with status ${res.status}.`,
@@ -106,9 +113,16 @@ async function parseAuthResponse(res: Response) {
 
 export async function refreshAccessToken() {
   if (!refreshPromise) {
+    const csrfToken = getCookie('csrf_token');
+
     refreshPromise = fetch(`${getApiUrl()}/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
+      headers: csrfToken
+        ? {
+            'x-csrf-token': decodeURIComponent(csrfToken),
+          }
+        : undefined,
     })
       .then(async (res) => {
         if (!res.ok) {
@@ -173,9 +187,15 @@ export async function register({
 }
 
 export async function logout() {
+  const csrfToken = getCookie('csrf_token');
   const res = await fetch(`${getApiUrl()}/auth/logout`, {
     method: 'POST',
     credentials: 'include',
+    headers: csrfToken
+      ? {
+          'x-csrf-token': decodeURIComponent(csrfToken),
+        }
+      : undefined,
   });
 
   if (!res.ok) {
