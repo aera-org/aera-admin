@@ -2,15 +2,16 @@ import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import type { DeeplinkAnalyticsItem } from '@/app/analytics/analyticsApi';
 import { downloadCsvFile } from '@/app/analytics/exportCsv';
 import { formatCount } from '@/app/analytics/format';
-import type { DeeplinkAnalyticsItem } from '@/app/analytics/analyticsApi';
 import {
   getCampaigns,
   getOpenCampaignScenarios,
 } from '@/app/campaigns';
 
 import s from './CampaignsPage.module.scss';
+
 
 type CampaignSortKey =
   | 'total'
@@ -42,13 +43,7 @@ const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const SORT_OPTIONS: { value: CampaignSortKey; label: string }[] = [
   { value: 'total', label: 'Users' },
   { value: 'activationRate', label: 'Activation Rate' },
-  { value: 'revenue', label: 'Revenue' },
-  { value: 'arpu', label: 'ARPU' },
-  { value: 'arpuu', label: 'ARPUU' },
-  { value: 'arpc', label: 'ARPC' },
-  { value: 'transactions', label: 'Transactions' },
   { value: 'visits', label: 'CTR' },
-  { value: 'customers', label: 'Customers' },
   { value: 'unique', label: 'Unique' },
   { value: 'conversion', label: 'Conversion' },
 ];
@@ -104,18 +99,6 @@ function formatPercent(value: number | null | undefined) {
     return '—';
   }
   return `${formatCount(value, 1)}%`;
-}
-
-function formatCurrency(value: number | null | undefined) {
-  if (value === null || value === undefined || !Number.isFinite(value)) {
-    return '—';
-  }
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 2,
-  }).format(value);
 }
 
 function formatNumber(value: number | null | undefined, precision = 0) {
@@ -511,38 +494,8 @@ export function CampaignsPage() {
             </span>
           </div>
           <div className={s.metric}>
-            <span className={s.metricLabel}>Customers</span>
-            <span className={s.metricValue}>{formatNumber(totals?.customers)}</span>
-          </div>
-          <div className={s.metric}>
-            <span className={s.metricLabel}>Revenue</span>
-            <span className={s.metricValue}>{formatCurrency(totals?.revenue)}</span>
-          </div>
-          <div className={s.metric}>
-            <span className={s.metricLabel}>Transactions</span>
-            <span className={s.metricValue}>
-              {formatNumber(totals?.transactions)}
-            </span>
-          </div>
-          <div className={s.metric}>
-            <span className={s.metricLabel}>ARPU</span>
-            <span className={s.metricValue}>{formatCurrency(totals?.arpu)}</span>
-          </div>
-          <div className={s.metric}>
-            <span className={s.metricLabel}>ARPUU</span>
-            <span className={s.metricValue}>{formatCurrency(totals?.arpuu)}</span>
-          </div>
-          <div className={s.metric}>
-            <span className={s.metricLabel}>ARPC</span>
-            <span className={s.metricValue}>{formatCurrency(totals?.arpc)}</span>
-          </div>
-          <div className={s.metric}>
             <span className={s.metricLabel}>Conversion</span>
             <span className={s.metricValue}>{formatPercent(totals?.conversion)}</span>
-          </div>
-          <div className={s.metric}>
-            <span className={s.metricLabel}>Rows</span>
-            <span className={s.metricValue}>{formatNumber(sortedRows.length)}</span>
           </div>
         </section>
 
@@ -566,12 +519,6 @@ export function CampaignsPage() {
                   <th className={s.number}>Unique</th>
                   <th className={s.number}>Activation</th>
                   <th className={s.number}>Conversion</th>
-                  <th className={s.number}>Transactions</th>
-                  <th className={s.number}>Customers</th>
-                  <th className={s.number}>Revenue</th>
-                  <th className={s.number}>ARPU</th>
-                  <th className={s.number}>ARPUU</th>
-                  <th className={s.number}>ARPC</th>
                 </tr>
               </thead>
               <tbody className={isLoading ? s.loadingRows : undefined}>
@@ -605,14 +552,6 @@ export function CampaignsPage() {
                         {formatPercent(item.activationRate)}
                       </td>
                       <td className={s.number}>{formatPercent(item.conversion)}</td>
-                      <td className={s.number}>
-                        {formatNumber(item.transactions)}
-                      </td>
-                      <td className={s.number}>{formatNumber(item.customers)}</td>
-                      <td className={s.number}>{formatCurrency(item.revenue)}</td>
-                      <td className={s.number}>{formatCurrency(item.arpu)}</td>
-                      <td className={s.number}>{formatCurrency(item.arpuu)}</td>
-                      <td className={s.number}>{formatCurrency(item.arpc)}</td>
                     </tr>
                   ))
                 )}

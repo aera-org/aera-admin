@@ -33,11 +33,11 @@ const METRIC_DEFINITIONS: Array<{
 }> = [
   { key: 'total', label: 'Total' },
   { key: 'pending', label: 'Pending' },
-  { key: 'notified', label: 'Notified' },
+  { key: 'notified', label: 'Confirmed' },
   { key: 'accepted', label: 'Accepted' },
   { key: 'declined', label: 'Declined' },
-  { key: 'started', label: 'Started' },
   { key: 'startedNextDay', label: 'Started next day' },
+  { key: 'started', label: 'Started any time' },
 ];
 const KPI_GRID_COLUMNS = METRIC_DEFINITIONS.length;
 
