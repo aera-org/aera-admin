@@ -39,5 +39,5 @@ export async function getInAppPurchases(params: InAppPurchasesListParams) {
   if (!res.ok) {
     throw await buildApiError(res, fallbackError);
   }
-  return (await res.json()) as PaginatedResponse<IInAppPurchaseEntity>;
+  return (await res.json()) as PaginatedResponse<IInAppPurchaseEntity> & { extra: { totalAmount: string } };
 }

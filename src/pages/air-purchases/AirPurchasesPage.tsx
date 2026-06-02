@@ -417,6 +417,7 @@ export function AirPurchasesPage() {
 
   const { data, error, isLoading, refetch } = useInAppPurchases(queryParams);
 
+  const totalAmount = data?.extra?.totalAmount ?? '0';
   const purchases = useMemo(() => data?.data ?? [], [data?.data]);
   const total = data?.total ?? 0;
   const effectiveTake = data?.take ?? pageSize;
@@ -742,7 +743,7 @@ export function AirPurchasesPage() {
           <div className={s.tableWrap}>
             {showFooter ? (
               <Typography variant="meta" tone="muted">
-                Total: {total.toLocaleString()}
+                Total: {totalAmount} AIR for {total.toLocaleString()} purchases
               </Typography>
             ) : null}
 
