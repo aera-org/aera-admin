@@ -1,7 +1,13 @@
-import { FileDir, FileStatus, type IGiftDetails } from '@/common/types';
+import {
+  FileDir,
+  FileStatus,
+  type IGiftDetails,
+  type RoleplayStage,
+} from '@/common/types';
+import { isRoleplayStage, normalizeRoleplayStages } from '@/common/utils';
 
 const GIFTS_TRANSFER_SCHEMA = 'gifts';
-const GIFTS_TRANSFER_VERSION = 1;
+const GIFTS_TRANSFER_VERSION = 2;
 
 export type GiftTransferFile = {
   id: string;
@@ -18,6 +24,7 @@ export type GiftTransferItem = {
   description: string;
   price: number;
   isActive: boolean;
+  stages: RoleplayStage[];
   img: GiftTransferFile;
 };
 
@@ -70,6 +77,28 @@ function ensureBoolean(value: unknown, path: string) {
   return value;
 }
 
+function parseStages(value: unknown, path: string) {
+  if (!Array.isArray(value)) {
+    throw new Error(`Invalid import file: "${path}" must be an array.`);
+  }
+
+  const stages = value.map((stage, index) => {
+    if (!isRoleplayStage(stage)) {
+      throw new Error(
+        `Invalid import file: "${path}[${index}]" has unsupported value.`,
+      );
+    }
+    return stage;
+  });
+
+  const normalizedStages = normalizeRoleplayStages(stages);
+  if (normalizedStages.length === 0) {
+    throw new Error(`Invalid import file: "${path}" must not be empty.`);
+  }
+
+  return normalizedStages;
+}
+
 function parseTransferFile(value: unknown, path: string): GiftTransferFile {
   const obj = ensureRecord(value, path);
   const dir = ensureString(obj.dir, `${path}.dir`);
@@ -115,6 +144,7 @@ function parseTransferGift(value: unknown, path: string): GiftTransferItem {
     description: ensureNonEmptyString(obj.description, `${path}.description`),
     price: ensurePositiveNumber(obj.price, `${path}.price`),
     isActive: ensureBoolean(obj.isActive, `${path}.isActive`),
+    stages: parseStages(obj.stages, `${path}.stages`),
     img: parseTransferFile(obj.img, `${path}.img`),
   };
 }
@@ -153,6 +183,12 @@ export function buildGiftsTransferPayload(gifts: IGiftDetails[]) {
         `Unable to export gifts: gift "${name}" has invalid price.`,
       );
     }
+    const stages = normalizeRoleplayStages(gift.stages ?? []);
+    if (stages.length === 0) {
+      throw new Error(
+        `Unable to export gifts: gift "${name}" has no stages.`,
+      );
+    }
     if (
       !gift.img?.id ||
       !gift.img?.name ||
@@ -169,6 +205,7 @@ export function buildGiftsTransferPayload(gifts: IGiftDetails[]) {
       description,
       price: gift.price,
       isActive: Boolean(gift.isActive),
+      stages,
       img: {
         id: gift.img.id,
         name: gift.img.name,
@@ -233,7 +270,7 @@ export async function parseGiftsTransferFile(file: File) {
   }
   if (version !== GIFTS_TRANSFER_VERSION) {
     throw new Error(
-      `Invalid import file: unsupported version "${String(version)}".`,
+      `Invalid import file: unsupported version "${String(version)}". Expected "${GIFTS_TRANSFER_VERSION}" with gift stages.`,
     );
   }
 

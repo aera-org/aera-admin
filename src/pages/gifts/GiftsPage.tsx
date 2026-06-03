@@ -27,6 +27,7 @@ import {
   Badge,
   Button,
   ButtonGroup,
+  Checkbox,
   Container,
   EmptyState,
   Field,
@@ -43,7 +44,12 @@ import {
   Textarea,
   Typography,
 } from '@/atoms';
-import { FileDir, type IFile,type IGift } from '@/common/types';
+import { FileDir, type IFile, type IGift,RoleplayStage, STAGES_IN_ORDER } from '@/common/types';
+import {
+  formatRoleplayStage,
+  formatRoleplayStages,
+  normalizeRoleplayStages,
+} from '@/common/utils';
 import { FileUpload } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 
@@ -138,6 +144,7 @@ export function GiftsPage() {
     price: '',
     isActive: true,
     imgId: '',
+    stages: [] as RoleplayStage[],
   });
 
   const createMutation = useCreateGift();
@@ -209,7 +216,7 @@ export function GiftsPage() {
 
   const { data, error, isLoading, refetch } = useGifts(queryParams);
 
-  const gifts = data?.data ?? [];
+  const gifts = useMemo(() => data?.data ?? [], [data?.data]);
   const total = data?.total ?? 0;
   const effectiveTake = data?.take ?? pageSize;
   const effectiveSkip = data?.skip ?? (page - 1) * pageSize;
@@ -226,6 +233,7 @@ export function GiftsPage() {
     () => [
       { key: 'gift', label: 'Gift' },
       { key: 'price', label: 'Price' },
+      { key: 'stages', label: 'Stages' },
       { key: 'status', label: 'Status' },
       { key: 'updated', label: <span className={s.alignRight}>Updated</span> },
     ],
@@ -246,6 +254,11 @@ export function GiftsPage() {
         price: (
           <Typography variant="body" tone="muted">
             {gift.price.toLocaleString()}
+          </Typography>
+        ),
+        stages: (
+          <Typography variant="body" tone="muted">
+            {formatRoleplayStages(gift.stages)}
           </Typography>
         ),
         status: gift.isActive ? (
@@ -274,6 +287,7 @@ export function GiftsPage() {
           </div>
         ),
         price: <Skeleton width={80} height={12} />,
+        stages: <Skeleton width={180} height={12} />,
         status: <Skeleton width={80} height={20} />,
         updated: (
           <div className={s.alignRight}>
@@ -295,7 +309,13 @@ export function GiftsPage() {
 
   const createValidationErrors = useMemo(() => {
     if (!createShowErrors) return {};
-    const errors: { name?: string; description?: string; price?: string; imgId?: string } = {};
+    const errors: {
+      name?: string;
+      description?: string;
+      price?: string;
+      imgId?: string;
+      stages?: string;
+    } = {};
     if (!createValues.name.trim()) {
       errors.name = 'Enter a name.';
     }
@@ -310,8 +330,18 @@ export function GiftsPage() {
     if (!createValues.imgId) {
       errors.imgId = 'Upload an image.';
     }
+    if (createValues.stages.length === 0) {
+      errors.stages = 'Select at least one stage.';
+    }
     return errors;
-  }, [createShowErrors, createValues.description, createValues.imgId, createValues.name, createValues.price]);
+  }, [
+    createShowErrors,
+    createValues.description,
+    createValues.imgId,
+    createValues.name,
+    createValues.price,
+    createValues.stages,
+  ]);
 
   const createIsValid = useMemo(
     () =>
@@ -320,9 +350,16 @@ export function GiftsPage() {
           createValues.description.trim() &&
           createValues.imgId &&
           createValues.price.trim() &&
-          Number(createValues.price) > 0,
+          Number(createValues.price) > 0 &&
+          createValues.stages.length > 0,
       ),
-    [createValues.description, createValues.imgId, createValues.name, createValues.price],
+    [
+      createValues.description,
+      createValues.imgId,
+      createValues.name,
+      createValues.price,
+      createValues.stages,
+    ],
   );
 
   const openCreateModal = () => {
@@ -332,6 +369,7 @@ export function GiftsPage() {
       price: '',
       isActive: true,
       imgId: '',
+      stages: [],
     });
     setCreateFile(null);
     setCreateShowErrors(false);
@@ -355,8 +393,16 @@ export function GiftsPage() {
           : 'Enter a positive number.'
         : 'Enter a price.',
       imgId: createValues.imgId ? undefined : 'Upload an image.',
+      stages:
+        createValues.stages.length > 0 ? undefined : 'Select at least one stage.',
     };
-    if (errors.name || errors.description || errors.price || errors.imgId) {
+    if (
+      errors.name ||
+      errors.description ||
+      errors.price ||
+      errors.imgId ||
+      errors.stages
+    ) {
       setCreateShowErrors(true);
       return;
     }
@@ -367,6 +413,7 @@ export function GiftsPage() {
       price: Number(createValues.price),
       imgId: createValues.imgId,
       isActive: createValues.isActive,
+      stages: normalizeRoleplayStages(createValues.stages),
     });
 
     setIsCreateOpen(false);
@@ -508,6 +555,7 @@ export function GiftsPage() {
           price: item.gift.price,
           isActive: item.gift.isActive,
           imgId: item.gift.img.id,
+          stages: item.gift.stages,
         });
       }
 
@@ -518,6 +566,7 @@ export function GiftsPage() {
           price: gift.price,
           isActive: gift.isActive,
           imgId: gift.img.id,
+          stages: gift.stages,
         });
       }
 
@@ -721,7 +770,8 @@ export function GiftsPage() {
                   createValidationErrors.name ||
                     createValidationErrors.description ||
                     createValidationErrors.price ||
-                    createValidationErrors.imgId,
+                    createValidationErrors.imgId ||
+                    createValidationErrors.stages,
                 )
               }
             >
@@ -792,6 +842,27 @@ export function GiftsPage() {
               rows={4}
               fullWidth
             />
+          </Field>
+
+          <Field label="Stages" error={createValidationErrors.stages}>
+            <FormRow columns={2}>
+              {STAGES_IN_ORDER.map((stage) => (
+                <Checkbox
+                  key={stage}
+                  checked={createValues.stages.includes(stage)}
+                  onChange={(event) =>
+                    setCreateValues((prev) => ({
+                      ...prev,
+                      stages: event.target.checked
+                        ? normalizeRoleplayStages([...prev.stages, stage])
+                        : prev.stages.filter((item) => item !== stage),
+                    }))
+                  }
+                  label={formatRoleplayStage(stage)}
+                  disabled={createMutation.isPending}
+                />
+              ))}
+            </FormRow>
           </Field>
 
           <Field label="Status">

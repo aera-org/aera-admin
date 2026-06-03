@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useDeleteGift, useGiftDetails, useUpdateGift } from '@/app/gifts';
@@ -7,6 +7,7 @@ import {
   Alert,
   Badge,
   Button,
+  Checkbox,
   Container,
   EmptyState,
   Field,
@@ -19,7 +20,17 @@ import {
   Textarea,
   Typography,
 } from '@/atoms';
-import { FileDir, type IFile } from '@/common/types';
+import {
+  FileDir,
+  type IFile,
+  RoleplayStage,
+  STAGES_IN_ORDER,
+} from '@/common/types';
+import {
+  formatRoleplayStage,
+  formatRoleplayStages,
+  normalizeRoleplayStages,
+} from '@/common/utils';
 import { ConfirmModal, FileUpload } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 
@@ -55,23 +66,17 @@ export function GiftDetailsPage() {
     price: '',
     isActive: true,
     imgId: '',
+    stages: [] as RoleplayStage[],
   });
-
-  useEffect(() => {
-    if (!data) return;
-    setEditValues({
-      name: data.name ?? '',
-      description: data.description ?? '',
-      price: String(data.price ?? ''),
-      isActive: Boolean(data.isActive),
-      imgId: data.img?.id ?? '',
-    });
-    setEditFile(data.img ?? null);
-  }, [data]);
 
   const editValidationErrors = useMemo(() => {
     if (!editShowErrors) return {};
-    const errors: { name?: string; description?: string; price?: string } = {};
+    const errors: {
+      name?: string;
+      description?: string;
+      price?: string;
+      stages?: string;
+    } = {};
     if (!editValues.name.trim()) {
       errors.name = 'Enter a name.';
     }
@@ -86,18 +91,33 @@ export function GiftDetailsPage() {
     ) {
       errors.price = 'Enter a positive number.';
     }
+    if (editValues.stages.length === 0) {
+      errors.stages = 'Select at least one stage.';
+    }
     return errors;
-  }, [editShowErrors, editValues.description, editValues.name, editValues.price]);
+  }, [
+    editShowErrors,
+    editValues.description,
+    editValues.name,
+    editValues.price,
+    editValues.stages,
+  ]);
 
   const editIsValid = useMemo(
     () =>
       Boolean(
-        editValues.name.trim() &&
+          editValues.name.trim() &&
           editValues.description.trim() &&
           editValues.price.trim() &&
-          Number(editValues.price) > 0,
+          Number(editValues.price) > 0 &&
+          editValues.stages.length > 0,
       ),
-    [editValues.description, editValues.name, editValues.price],
+    [
+      editValues.description,
+      editValues.name,
+      editValues.price,
+      editValues.stages,
+    ],
   );
 
   const openEditModal = () => {
@@ -108,6 +128,7 @@ export function GiftDetailsPage() {
       price: String(data.price ?? ''),
       isActive: Boolean(data.isActive),
       imgId: data.img?.id ?? '',
+      stages: normalizeRoleplayStages(data.stages ?? []),
     });
     setEditFile(data.img ?? null);
     setEditShowErrors(false);
@@ -131,8 +152,10 @@ export function GiftDetailsPage() {
           ? undefined
           : 'Enter a positive number.'
         : 'Enter a price.',
+      stages:
+        editValues.stages.length > 0 ? undefined : 'Select at least one stage.',
     };
-    if (errors.name || errors.description || errors.price) {
+    if (errors.name || errors.description || errors.price || errors.stages) {
       setEditShowErrors(true);
       return;
     }
@@ -142,6 +165,7 @@ export function GiftDetailsPage() {
       description: editValues.description.trim(),
       price: Number(editValues.price),
       isActive: editValues.isActive,
+      stages: normalizeRoleplayStages(editValues.stages),
       ...(editValues.imgId && editValues.imgId !== data?.img?.id
         ? { imgId: editValues.imgId }
         : {}),
@@ -258,6 +282,11 @@ export function GiftDetailsPage() {
               <Field label="Price">
                 <Typography variant="body">{data.price}</Typography>
               </Field>
+              <Field label="Stages">
+                <Typography variant="body">
+                  {formatRoleplayStages(data.stages)}
+                </Typography>
+              </Field>
               <Field label="Status">
                 {data.isActive ? (
                   <Badge tone="success">Active</Badge>
@@ -300,7 +329,8 @@ export function GiftDetailsPage() {
                 Boolean(
                   editValidationErrors.name ||
                     editValidationErrors.description ||
-                    editValidationErrors.price,
+                    editValidationErrors.price ||
+                    editValidationErrors.stages,
                 )
               }
             >
@@ -371,6 +401,27 @@ export function GiftDetailsPage() {
               rows={4}
               fullWidth
             />
+          </Field>
+
+          <Field label="Stages" error={editValidationErrors.stages}>
+            <FormRow columns={2}>
+              {STAGES_IN_ORDER.map((stage) => (
+                <Checkbox
+                  key={stage}
+                  checked={editValues.stages.includes(stage)}
+                  onChange={(event) =>
+                    setEditValues((prev) => ({
+                      ...prev,
+                      stages: event.target.checked
+                        ? normalizeRoleplayStages([...prev.stages, stage])
+                        : prev.stages.filter((item) => item !== stage),
+                    }))
+                  }
+                  label={formatRoleplayStage(stage)}
+                  disabled={updateMutation.isPending}
+                />
+              ))}
+            </FormRow>
           </Field>
 
           <Field label="Status">

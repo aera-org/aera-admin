@@ -16,6 +16,7 @@ export type {
   StageUpdateDto,
 } from './charactersApi';
 export {
+  useAddScenarioGifts,
   useCharacterDetails,
   useCharacters,
   useCloneCharacterAsAnime,

@@ -16,6 +16,7 @@ export const PROMPT_TYPE_OPTIONS = [
   { label: 'Opening Image Realistic', value: PromptType.OpeningImageRealistic },
   { label: 'Opening Image Anime', value: PromptType.OpeningImageAnime },
   { label: 'Post Localization', value: PromptType.PostLocalization },
+  { label: 'Scenario Gifts', value: PromptType.ScenarioGifts },
 ];
 
 export const MODEL_PROVIDER_OPTIONS = [

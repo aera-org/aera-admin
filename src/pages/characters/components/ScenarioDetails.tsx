@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import {
+  useAddScenarioGifts,
   useCreateScenarioStageGift,
   useDeleteScenarioStageGift,
   useGenerateScenarioOpeningImage,
@@ -12,6 +13,7 @@ import { useGifts } from '@/app/gifts';
 import { notifyError } from '@/app/toast';
 import {
   CopyIcon,
+  GiftIcon,
   ImageIcon,
   PencilLineIcon,
   TrashIcon,
@@ -194,6 +196,7 @@ export function ScenarioDetails({
   showVideos = false,
 }: ScenarioDetailsProps) {
   const updateScenarioMutation = useUpdateScenario();
+  const addScenarioGiftsMutation = useAddScenarioGifts();
   const generateOpeningImageMutation = useGenerateScenarioOpeningImage();
   const updateStageMutation = useUpdateScenarioStage();
   const createGiftMutation = useCreateScenarioStageGift();
@@ -457,6 +460,15 @@ export function ScenarioDetails({
     });
   };
 
+  const handleAddScenarioGifts = async () => {
+    if (!characterId) return;
+
+    await addScenarioGiftsMutation.mutateAsync({
+      characterId,
+      scenarioId: scenario.id,
+    });
+  };
+
   return (
     <div className={s.detailsCard}>
       <div className={s.detailsHeader}>
@@ -488,6 +500,16 @@ export function ScenarioDetails({
             onClick={() => void handleGenerateOpeningImage()}
             loading={generateOpeningImageMutation.isPending}
             disabled={!characterId || generateOpeningImageMutation.isPending}
+          />
+          <IconButton
+            aria-label="Add Gifts"
+            icon={<GiftIcon />}
+            tooltip="Add Gifts"
+            variant="ghost"
+            size="sm"
+            onClick={() => void handleAddScenarioGifts()}
+            loading={addScenarioGiftsMutation.isPending}
+            disabled={!characterId || addScenarioGiftsMutation.isPending}
           />
           {allowEdit ? (
             <IconButton

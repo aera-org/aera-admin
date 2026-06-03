@@ -1,9 +1,11 @@
+import type { RoleplayStage } from './character.type.ts';
 import type { IFile } from './file.type.ts';
 
 export interface IGift {
   id: string;
   name: string;
   price: number;
+  stages: RoleplayStage[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -20,6 +22,7 @@ export interface CreateGiftDto {
   price: number;
   imgId: string;
   isActive: boolean;
+  stages: RoleplayStage[];
 }
 
 export interface UpdateGiftDto {
@@ -28,4 +31,5 @@ export interface UpdateGiftDto {
   price?: number;
   imgId?: string;
   isActive?: boolean;
+  stages?: RoleplayStage[];
 }

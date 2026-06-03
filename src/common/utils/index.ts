@@ -12,11 +12,17 @@ export {
   poseOptions,
 } from './posePrompt';
 export {
+  formatRoleplayStage,
+  formatRoleplayStages,
+  isRoleplayStage,
+  normalizeRoleplayStages,
+} from './stage';
+export {
   formatUserRequestForDisplay,
+  type GenerationRequestMode,
   getAllowedGenerationRequestModes,
   getVisibleUserRequestFieldKeys,
-  resolveGenerationRequestMode,
   requiresPosePrompt,
-  type GenerationRequestMode,
+  resolveGenerationRequestMode,
   USER_REQUEST_FIELD_CONFIG,
 } from './userRequest';

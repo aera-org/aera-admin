@@ -45,6 +45,7 @@ const createCustomScenarioFallbackError =
 const deleteScenarioFallbackError = 'Unable to delete the scenario.';
 const generateScenarioOpeningImageFallbackError =
   'Unable to generate the opening image.';
+const addScenarioGiftsFallbackError = 'Unable to add gifts.';
 const createScenarioGiftFallbackError = 'Unable to add the gift.';
 const updateScenarioGiftFallbackError = 'Unable to update the gift.';
 const deleteScenarioGiftFallbackError = 'Unable to delete the gift.';
@@ -300,6 +301,22 @@ export async function generateScenarioOpeningImage(
   );
   if (!res.ok) {
     throw await buildApiError(res, generateScenarioOpeningImageFallbackError);
+  }
+  return await parseJsonIfPresent(res);
+}
+
+export async function addScenarioGifts(
+  characterId: string,
+  scenarioId: string,
+) {
+  const res = await apiFetch(
+    `/admin/characters/${characterId}/scenarios/${scenarioId}/gifts`,
+    {
+      method: 'POST',
+    },
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, addScenarioGiftsFallbackError);
   }
   return await parseJsonIfPresent(res);
 }

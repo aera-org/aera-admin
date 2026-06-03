@@ -13,6 +13,7 @@ import {
 
 import type { PaginatedResponse } from '../paginated-response.type.ts';
 import {
+  addScenarioGifts,
   addScenarioStageGift,
   type CharacterCreateDto,
   type CharactersListParams,
@@ -524,6 +525,29 @@ export function useGenerateScenarioOpeningImage() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to generate the opening image.');
+    },
+  });
+}
+
+export function useAddScenarioGifts() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      scenarioId,
+    }: {
+      characterId: string;
+      scenarioId: string;
+    }) => addScenarioGifts(characterId, scenarioId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Gifts added.', 'Gifts added.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to add gifts.');
     },
   });
 }
