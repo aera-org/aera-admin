@@ -27,20 +27,33 @@ const DEFAULT_AFTER = '2026-05-27';
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const TABLE_MIN_WIDTH = 1320;
 
-const METRIC_DEFINITIONS: Array<{
+type PercentageBase = 'raw' | 'total' | 'totalMinusPending';
+
+type MetricDefinition = {
   key: keyof ScenarioProgressStats;
   label: string;
-}> = [
-  { key: 'total', label: 'Total' },
-  { key: 'pending', label: 'Pending' },
-  { key: 'notified', label: 'Confirmed' },
-  { key: 'accepted', label: 'Accepted' },
-  { key: 'declined', label: 'Declined' },
-  { key: 'startedNextDay', label: 'Started next day' },
-  { key: 'started', label: 'Started any time' },
-];
-const KPI_GRID_COLUMNS = METRIC_DEFINITIONS.length;
+  percentageBase: PercentageBase;
+};
 
+const METRIC_DEFINITIONS: MetricDefinition[] = [
+  { key: 'total', label: 'Total', percentageBase: 'raw' },
+  { key: 'pending', label: 'Pending', percentageBase: 'total' },
+  { key: 'notified', label: 'Confirmed', percentageBase: 'total' },
+  { key: 'accepted', label: 'Accepted', percentageBase: 'totalMinusPending' },
+  { key: 'declined', label: 'Declined', percentageBase: 'totalMinusPending' },
+  {
+    key: 'startedNextDay',
+    label: 'Started next day',
+    percentageBase: 'totalMinusPending',
+  },
+  {
+    key: 'started',
+    label: 'Started any time',
+    percentageBase: 'totalMinusPending',
+  },
+];
+
+const KPI_GRID_COLUMNS = METRIC_DEFINITIONS.length;
 
 type QueryUpdate = {
   after?: string;
@@ -75,15 +88,33 @@ function formatPercent(value: number) {
   }).format(value);
 }
 
-function buildPercentValue(count: number, total: number) {
-  if (total <= 0) return '0%';
-  return `${formatPercent((count / total) * 100)}%`;
+function getMetricDenominator(
+  stats: ScenarioProgressStats | undefined,
+  metric: MetricDefinition,
+) {
+  if (!stats) return 0;
+  if (metric.percentageBase === 'total') return stats.total;
+  if (metric.percentageBase === 'totalMinusPending') {
+    return Math.max(stats.total - stats.pending, 0);
+  }
+  return 0;
 }
 
-function buildPercentWithCount(count: number, total: number) {
+function buildPercentValue(count: number, denominator: number) {
+  if (denominator <= 0) return '0%';
+  return `${formatPercent((count / denominator) * 100)}%`;
+}
+
+function buildPercentWithCount(
+  count: number,
+  stats: ScenarioProgressStats,
+  metric: MetricDefinition,
+) {
   return (
     <div className={s.tableCell}>
-      <Typography variant="body">{buildPercentValue(count, total)}</Typography>
+      <Typography variant="body">
+        {buildPercentValue(count, getMetricDenominator(stats, metric))}
+      </Typography>
       <Typography variant="caption" className={s.tableMeta}>
         {formatCount(count)}
       </Typography>
@@ -106,9 +137,8 @@ function buildScenarioName(
 function buildMetricCards(stats?: ScenarioProgressStats) {
   return METRIC_DEFINITIONS.map((metric) => {
     const value = stats?.[metric.key] ?? 0;
-    const total = stats?.total ?? 0;
 
-    if (metric.key === 'total') {
+    if (metric.percentageBase === 'raw') {
       return (
         <MetricCard
           key={metric.key}
@@ -122,7 +152,7 @@ function buildMetricCards(stats?: ScenarioProgressStats) {
       <MetricCard
         key={metric.key}
         label={metric.label}
-        value={buildPercentValue(value, total)}
+        value={buildPercentValue(value, getMetricDenominator(stats, metric))}
         meta={formatCount(value)}
       />
     );
@@ -248,14 +278,11 @@ export function UserProgressPage() {
           ),
           ...Object.fromEntries(
             METRIC_DEFINITIONS.map((metric) => {
-              if (metric.key === 'total') {
+              if (metric.percentageBase === 'raw') {
                 return [metric.key, formatCount(stats[metric.key])];
               }
 
-              return [
-                metric.key,
-                buildPercentWithCount(stats[metric.key], stats.total),
-              ];
+              return [metric.key, buildPercentWithCount(stats[metric.key], stats, metric)];
             }),
           ),
         };
@@ -278,7 +305,7 @@ export function UserProgressPage() {
             metric.key,
             <Skeleton
               key={`${metric.key}-${index}`}
-              height={metric.key === 'total' ? 20 : 40}
+              height={metric.percentageBase === 'raw' ? 20 : 40}
             />,
           ]),
         ),
@@ -328,7 +355,7 @@ export function UserProgressPage() {
               </Field>
             </FormRow>
             <Typography variant="caption" tone="muted" className={s.note}>
-              All non-total metrics are calculated from total.
+              Pending and confirmed are calculated from total. Accepted, declined, and started metrics are calculated from total minus pending.
             </Typography>
           </div>
 
