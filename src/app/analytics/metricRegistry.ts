@@ -32,11 +32,14 @@ export type AnalyticsMetricKey =
   | 'repeatPurchaseRate'
   | 'averagePurchaseValue'
   | 'ltv'
+  | 'ltvAll'
   | 'averageRevenuePerUser'
   | 'averageRevenuePerUniqueUser'
+  | 'averageRevenuePerUniqueUserAll'
   | 'averageRevenuePerCustomer'
   | 'revenue'
   | 'customers'
+  | 'uniqueAll'
   | 'totalTransactions'
   | 'errorRate'
   | 'avgResponseTime'
@@ -279,6 +282,22 @@ const PAYMENTS_METRICS: AnalyticsMetricDefinition[] = [
     currency: 'usd',
   },
   {
+    key: 'averageRevenuePerUniqueUserAll',
+    label: 'ARPUU All',
+    description: 'Total revenue in month / registered users in month.',
+    format: 'currency',
+    section: 'payments',
+    precision: 2,
+    currency: 'usd',
+  },
+  {
+    key: 'uniqueAll',
+    label: 'Unique All',
+    description: 'Users registered in the month.',
+    format: 'count',
+    section: 'payments',
+  },
+  {
     key: 'averageRevenuePerCustomer',
     label: 'ARPC',
     description: 'Total revenue in month / customers in month.',
@@ -319,6 +338,16 @@ const PAYMENTS_METRICS: AnalyticsMetricDefinition[] = [
     key: 'ltv',
     label: 'LTV',
     description: 'Average revenue per unique user divided by churn rate.',
+    format: 'currency',
+    section: 'payments',
+    precision: 2,
+    currency: 'usd',
+  },
+  {
+    key: 'ltvAll',
+    label: 'LTV All',
+    description:
+      'Average revenue per registered user divided by churn rate.',
     format: 'currency',
     section: 'payments',
     precision: 2,

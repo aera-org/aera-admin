@@ -35,6 +35,7 @@ import {
 } from '@/common/types';
 import {
   formatCharacterSelectLabel,
+  formatGenerationRequestMode,
   type GenerationRequestMode,
   getAllowedGenerationRequestModes,
   getVisibleUserRequestFieldKeys,
@@ -1000,14 +1001,14 @@ export function GenerateImagePage() {
 
           {requestModeOptions.length > 1 ? (
             <FormRow columns={1}>
-              <Field label="Prelude mode">
+              <Field label="Request mode">
                 <RadioGroup
                   name="generation-request-mode"
                   value={values.requestMode}
-                  options={[
-                    { label: 'Manual request', value: 'manual' },
-                    { label: 'Pose prompt', value: 'pose_prompt' },
-                  ]}
+                  options={requestModeOptions.map((mode) => ({
+                    label: formatGenerationRequestMode(mode),
+                    value: mode,
+                  }))}
                   onChange={(value) =>
                     setValues((prev) => ({
                       ...prev,

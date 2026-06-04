@@ -141,10 +141,12 @@ type DeeplinkSortKey =
   | 'revenue'
   | 'arpu'
   | 'arpuu'
+  | 'arpuuAll'
   | 'arpc'
   | 'transactions'
   | 'visits'
   | 'unique'
+  | 'uniqueAll'
   | 'customers'
   | 'conversion';
 
@@ -327,10 +329,12 @@ function isValidDeeplinkSort(
     value === 'revenue' ||
     value === 'arpu' ||
     value === 'arpuu' ||
+    value === 'arpuuAll' ||
     value === 'arpc' ||
     value === 'transactions' ||
     value === 'visits' ||
     value === 'unique' ||
+    value === 'uniqueAll' ||
     value === 'customers' ||
     value === 'conversion'
   );
@@ -1240,6 +1244,10 @@ export function AnalyticsPage() {
     () => getMetricDefinition('averageRevenuePerUniqueUser'),
     [],
   );
+  const dailyArpuuAllMetric = useMemo(
+    () => getMetricDefinition('averageRevenuePerUniqueUserAll'),
+    [],
+  );
   const dailyArpcMetric = useMemo(
     () => getMetricDefinition('averageRevenuePerCustomer'),
     [],
@@ -1505,10 +1513,12 @@ export function AnalyticsPage() {
       { value: 'visits', label: 'Total deeplink clicks' },
       { value: 'total', label: 'Deeplink active users' },
       { value: 'unique', label: 'Deeplink active users (unique)' },
+      { value: 'uniqueAll', label: 'Deeplink active users (unique) All' },
       { value: 'activationRate', label: 'Activation Rate' },
       { value: 'revenue', label: 'Revenue' },
       { value: 'arpu', label: 'ARPU' },
       { value: 'arpuu', label: 'ARPUU' },
+      { value: 'arpuuAll', label: 'ARPUU All' },
       { value: 'arpc', label: 'ARPC' },
       { value: 'transactions', label: 'Transactions' },
       { value: 'customers', label: 'Customers' },
@@ -1621,6 +1631,7 @@ export function AnalyticsPage() {
       (acc, item) => {
         acc.total += Number.isFinite(item.total) ? item.total : 0;
         acc.unique += Number.isFinite(item.unique) ? item.unique : 0;
+        acc.uniqueAll += Number.isFinite(item.uniqueAll) ? item.uniqueAll : 0;
         acc.visits += Number.isFinite(item.visits) ? item.visits : 0;
         acc.customers += Number.isFinite(item.customers) ? item.customers : 0;
         acc.transactions += Number.isFinite(item.transactions)
@@ -1632,6 +1643,7 @@ export function AnalyticsPage() {
       {
         total: 0,
         unique: 0,
+        uniqueAll: 0,
         visits: 0,
         customers: 0,
         transactions: 0,
@@ -1643,11 +1655,21 @@ export function AnalyticsPage() {
       totals.total > 0 ? (totals.customers / totals.total) * 100 : null;
     const arpu = totals.total > 0 ? totals.revenue / totals.total : null;
     const arpuu = totals.unique > 0 ? totals.revenue / totals.unique : null;
+    const arpuuAll =
+      totals.uniqueAll > 0 ? totals.revenue / totals.uniqueAll : null;
     const arpc =
       totals.customers > 0 ? totals.revenue / totals.customers : null;
     const activationRate = getDeeplinkActivationRate(totals);
 
-    return { ...totals, conversion, arpu, arpuu, arpc, activationRate };
+    return {
+      ...totals,
+      conversion,
+      arpu,
+      arpuu,
+      arpuuAll,
+      arpc,
+      activationRate,
+    };
   }, [deeplinkViewData]);
 
   const deeplinkColumns = useMemo(
@@ -1717,6 +1739,20 @@ export function AnalyticsPage() {
             className={s.alignRight}
           >
             Deeplink active users (unique)
+          </Typography>
+        ),
+      },
+      {
+        key: 'uniqueAll',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            Deeplink active users (unique) All
           </Typography>
         ),
       },
@@ -1805,6 +1841,20 @@ export function AnalyticsPage() {
         ),
       },
       {
+        key: 'arpuuAll',
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            style={{ fontSize: 12 }}
+            className={s.alignRight}
+          >
+            ARPUU All
+          </Typography>
+        ),
+      },
+      {
         key: 'arpc',
         label: (
           <Typography
@@ -1887,6 +1937,16 @@ export function AnalyticsPage() {
           {Number.isFinite(item.unique) ? formatCount(item.unique) : '—'}
         </Typography>
       ),
+      uniqueAll: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {Number.isFinite(item.uniqueAll) ? formatCount(item.uniqueAll) : '—'}
+        </Typography>
+      ),
       total: (
         <Typography
           variant="body"
@@ -1965,6 +2025,18 @@ export function AnalyticsPage() {
             : '—'}
         </Typography>
       ),
+      arpuuAll: (
+        <Typography
+          variant="body"
+          as="span"
+          className={s.alignRight}
+          style={{ fontSize: 14 }}
+        >
+          {dailyArpuuAllMetric && Number.isFinite(item.arpuuAll)
+            ? formatMetricValue(dailyArpuuAllMetric, item.arpuuAll, 'table')
+            : '—'}
+        </Typography>
+      ),
       arpc: (
         <Typography
           variant="body"
@@ -1994,6 +2066,7 @@ export function AnalyticsPage() {
     paymentsRevenueMetric,
     dailyArpuMetric,
     dailyArpuuMetric,
+    dailyArpuuAllMetric,
     dailyArpcMetric,
   ]);
 
@@ -3162,12 +3235,14 @@ export function AnalyticsPage() {
       Number.isFinite(item.visits) ? item.visits : null,
       Number.isFinite(item.total) ? item.total : null,
       Number.isFinite(item.unique) ? item.unique : null,
+      Number.isFinite(item.uniqueAll) ? item.uniqueAll : null,
       Number.isFinite(item.activationRate) ? item.activationRate : null,
       Number.isFinite(item.customers) ? item.customers : null,
       Number.isFinite(item.transactions) ? item.transactions : null,
       Number.isFinite(item.revenue) ? item.revenue : null,
       Number.isFinite(item.arpu) ? item.arpu : null,
       Number.isFinite(item.arpuu) ? item.arpuu : null,
+      Number.isFinite(item.arpuuAll) ? item.arpuuAll : null,
       Number.isFinite(item.arpc) ? item.arpc : null,
       Number.isFinite(item.conversion) ? item.conversion : null,
     ]);
@@ -3197,12 +3272,14 @@ export function AnalyticsPage() {
               'Total deeplink clicks',
               'Deeplink active users',
               'Deeplink active users (unique)',
+              'Deeplink active users (unique) All',
               'Activation Rate',
               'Customers',
               'Transactions',
               'Revenue (USD)',
               'ARPU (USD)',
               'ARPUU (USD)',
+              'ARPUU All (USD)',
               'ARPC (USD)',
               'Conversion rate',
             ],
@@ -3438,7 +3515,7 @@ export function AnalyticsPage() {
               <Section title="Totals">
                 {isDeeplinksLoading ? (
                   <Grid columns={6} gap={16}>
-                    {Array.from({ length: 11 }).map((_, index) => (
+                    {Array.from({ length: 13 }).map((_, index) => (
                       <Skeleton key={index} height={88} />
                     ))}
                   </Grid>
@@ -3472,6 +3549,16 @@ export function AnalyticsPage() {
                         <Typography variant="h3">
                           {deeplinkTotals
                             ? formatCount(deeplinkTotals.unique)
+                            : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          Deeplink active users (unique) All
+                        </Typography>
+                        <Typography variant="h3">
+                          {deeplinkTotals
+                            ? formatCount(deeplinkTotals.uniqueAll)
                             : '—'}
                         </Typography>
                       </Card>
@@ -3544,6 +3631,20 @@ export function AnalyticsPage() {
                             ? formatMetricValue(
                                 dailyArpuuMetric,
                                 deeplinkTotals.arpuu,
+                                'card',
+                              )
+                            : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          ARPUU All
+                        </Typography>
+                        <Typography variant="h3">
+                          {deeplinkTotals && dailyArpuuAllMetric
+                            ? formatMetricValue(
+                                dailyArpuuAllMetric,
+                                deeplinkTotals.arpuuAll,
                                 'card',
                               )
                             : '—'}

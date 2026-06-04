@@ -20,11 +20,48 @@ const DEFAULT_FIELD_KEYS: UserRequestFieldKey[] = [
   'environmentChanges',
   'faceExpression',
 ];
+const POSE_PROMPT_FIELD_KEYS: UserRequestFieldKey[] = ['clothesChanges'];
 const DEFAULT_REQUEST_MODE: GenerationRequestMode = 'manual';
-const PRELUDE_REQUEST_MODE_OPTIONS: GenerationRequestMode[] = [
-  'manual',
-  'pose_prompt',
-];
+
+type StageRequestConfig = {
+  modes: readonly GenerationRequestMode[];
+  defaultMode: GenerationRequestMode;
+  fieldKeysByMode: Record<GenerationRequestMode, UserRequestFieldKey[]>;
+};
+
+const DEFAULT_STAGE_REQUEST_CONFIG: StageRequestConfig = {
+  modes: [DEFAULT_REQUEST_MODE],
+  defaultMode: DEFAULT_REQUEST_MODE,
+  fieldKeysByMode: {
+    manual: DEFAULT_FIELD_KEYS,
+    pose_prompt: POSE_PROMPT_FIELD_KEYS,
+  },
+};
+
+const POSE_PROMPT_ENABLED_STAGE_REQUEST_CONFIG: StageRequestConfig = {
+  modes: ['manual', 'pose_prompt'],
+  defaultMode: DEFAULT_REQUEST_MODE,
+  fieldKeysByMode: {
+    manual: DEFAULT_FIELD_KEYS,
+    pose_prompt: POSE_PROMPT_FIELD_KEYS,
+  },
+};
+
+const SEX_STAGE_REQUEST_CONFIG: StageRequestConfig = {
+  modes: ['pose_prompt'],
+  defaultMode: 'pose_prompt',
+  fieldKeysByMode: {
+    manual: DEFAULT_FIELD_KEYS,
+    pose_prompt: POSE_PROMPT_FIELD_KEYS,
+  },
+};
+
+const STAGE_REQUEST_CONFIGS: Partial<Record<RoleplayStage, StageRequestConfig>> =
+  {
+    [RoleplayStage.Prelude]: POSE_PROMPT_ENABLED_STAGE_REQUEST_CONFIG,
+    [RoleplayStage.Aftercare]: POSE_PROMPT_ENABLED_STAGE_REQUEST_CONFIG,
+    [RoleplayStage.Sex]: SEX_STAGE_REQUEST_CONFIG,
+  };
 
 export const USER_REQUEST_FIELD_CONFIG: Record<
   UserRequestFieldKey,
@@ -48,18 +85,24 @@ export const USER_REQUEST_FIELD_CONFIG: Record<
   },
 };
 
+function getStageRequestConfig(
+  stage: RoleplayStage | '' | null | undefined,
+): StageRequestConfig {
+  if (!stage) {
+    return DEFAULT_STAGE_REQUEST_CONFIG;
+  }
+
+  return STAGE_REQUEST_CONFIGS[stage] ?? DEFAULT_STAGE_REQUEST_CONFIG;
+}
+
+export function formatGenerationRequestMode(mode: GenerationRequestMode) {
+  return mode === 'pose_prompt' ? 'Pose prompt' : 'Manual request';
+}
+
 export function getAllowedGenerationRequestModes(
   stage: RoleplayStage | '' | null | undefined,
 ) {
-  if (stage === RoleplayStage.Sex) {
-    return ['pose_prompt'] as const;
-  }
-
-  if (stage === RoleplayStage.Prelude) {
-    return PRELUDE_REQUEST_MODE_OPTIONS;
-  }
-
-  return [DEFAULT_REQUEST_MODE] as const;
+  return getStageRequestConfig(stage).modes;
 }
 
 export function resolveGenerationRequestMode(
@@ -67,19 +110,17 @@ export function resolveGenerationRequestMode(
   requestMode?: GenerationRequestMode | null,
   hasPosePrompt = false,
 ): GenerationRequestMode {
-  if (stage === RoleplayStage.Sex) {
+  const config = getStageRequestConfig(stage);
+
+  if (requestMode && config.modes.includes(requestMode)) {
+    return requestMode;
+  }
+
+  if (hasPosePrompt && config.modes.includes('pose_prompt')) {
     return 'pose_prompt';
   }
 
-  if (stage === RoleplayStage.Prelude) {
-    if (requestMode === 'pose_prompt' || requestMode === 'manual') {
-      return requestMode;
-    }
-
-    return hasPosePrompt ? 'pose_prompt' : 'manual';
-  }
-
-  return DEFAULT_REQUEST_MODE;
+  return config.defaultMode;
 }
 
 export function requiresPosePrompt(
@@ -98,9 +139,14 @@ export function getVisibleUserRequestFieldKeys(
   requestMode?: GenerationRequestMode | null,
   hasPosePrompt = false,
 ) {
-  return requiresPosePrompt(stage, requestMode, hasPosePrompt)
-    ? (['clothesChanges'] satisfies UserRequestFieldKey[])
-    : DEFAULT_FIELD_KEYS;
+  const config = getStageRequestConfig(stage);
+  const resolvedMode = resolveGenerationRequestMode(
+    stage,
+    requestMode,
+    hasPosePrompt,
+  );
+
+  return config.fieldKeysByMode[resolvedMode];
 }
 
 export function formatUserRequestForDisplay(

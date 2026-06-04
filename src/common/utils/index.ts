@@ -18,6 +18,7 @@ export {
   normalizeRoleplayStages,
 } from './stage';
 export {
+  formatGenerationRequestMode,
   formatUserRequestForDisplay,
   type GenerationRequestMode,
   getAllowedGenerationRequestModes,

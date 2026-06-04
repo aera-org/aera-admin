@@ -92,6 +92,7 @@ export type DeeplinkAnalyticsItem = {
   scenario?: { id: string; name: string; slug?: string | null } | null;
   total: number;
   unique: number;
+  uniqueAll: number;
   visits: number;
   customers: number;
   transactions: number;
@@ -99,6 +100,7 @@ export type DeeplinkAnalyticsItem = {
   conversion: number;
   arpu: number;
   arpuu: number;
+  arpuuAll: number;
   arpc: number;
 };
 
