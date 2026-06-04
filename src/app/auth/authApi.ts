@@ -117,7 +117,7 @@ async function parseAuthResponse(res: Response) {
 
 export async function refreshAccessToken() {
   if (!refreshPromise) {
-    refreshPromise = fetch(`${getApiUrl()}/auth/refresh`, {
+    refreshPromise = fetch(`${getApiUrl()}/admin/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
     })
@@ -143,7 +143,7 @@ export async function login({
   email: string;
   password: string;
 }) {
-  const res = await fetch(`${getApiUrl()}/auth/login`, {
+  const res = await fetch(`${getApiUrl()}/admin/auth/login`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     credentials: 'include',
@@ -162,7 +162,7 @@ export async function register({
   password: string;
   fullName: string;
 }) {
-  const res = await fetch(`${getApiUrl()}/auth/register`, {
+  const res = await fetch(`${getApiUrl()}/admin/auth/register`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     credentials: 'include',
@@ -184,7 +184,7 @@ export async function register({
 }
 
 export async function logout() {
-  const res = await fetch(`${getApiUrl()}/auth/logout`, {
+  const res = await fetch(`${getApiUrl()}/admin/auth/logout`, {
     method: 'POST',
     credentials: 'include',
   });
@@ -197,7 +197,7 @@ export async function logout() {
 }
 
 export async function confirmEmail({ token }: { token: string }) {
-  const res = await fetch(`${getApiUrl()}/auth/confirm-email`, {
+  const res = await fetch(`${getApiUrl()}/admin/auth/confirm-email`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     credentials: 'include',
@@ -208,7 +208,7 @@ export async function confirmEmail({ token }: { token: string }) {
 }
 
 export async function resendConfirmation({ email }: { email: string }) {
-  const res = await fetch(`${getApiUrl()}/auth/resend-confirmation`, {
+  const res = await fetch(`${getApiUrl()}/admin/auth/resend-confirmation`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -222,7 +222,7 @@ export async function resendConfirmation({ email }: { email: string }) {
 }
 
 export async function requestPasswordReset({ email }: { email: string }) {
-  const res = await fetch(`${getApiUrl()}/auth/forgot-password`, {
+  const res = await fetch(`${getApiUrl()}/admin/auth/forgot-password`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -242,7 +242,7 @@ export async function confirmPasswordReset({
   token: string;
   newPassword: string;
 }) {
-  const res = await fetch(`${getApiUrl()}/auth/confirm-forgot-password`, {
+  const res = await fetch(`${getApiUrl()}/admin/auth/confirm-forgot-password`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ token, newPassword }),
@@ -287,7 +287,7 @@ export async function exchangeGoogleCode({
     throw new Error('Missing PKCE verifier. Please try again.');
   }
 
-  const res = await fetch(`${getApiUrl()}/auth/google/exchange`, {
+  const res = await fetch(`${getApiUrl()}/admin/auth/google/exchange`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     credentials: 'include',
