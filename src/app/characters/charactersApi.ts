@@ -121,6 +121,10 @@ export type ScenarioCreateDto = {
 export type ScenarioUpdateDto = ScenarioCreateDto & {
   level?: number;
   liveGenerations?: ScenarioLiveGenerations;
+  promoVideoId?: string | null;
+};
+export type ScenarioPromoVideoUpdateDto = {
+  promoVideoId: string | null;
 };
 export type StageUpdateDto = StageDirectives;
 export type StageGiftCreateDto = {
@@ -261,6 +265,25 @@ export async function updateScenario(
   characterId: string,
   scenarioId: string,
   payload: ScenarioUpdateDto,
+) {
+  const res = await apiFetch(
+    `/admin/characters/${characterId}/scenarios/${scenarioId}`,
+    {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, updateFallbackError);
+  }
+  return (await res.json()) as ICharacterDetails['scenarios'][number];
+}
+
+export async function updateScenarioPromoVideo(
+  characterId: string,
+  scenarioId: string,
+  payload: ScenarioPromoVideoUpdateDto,
 ) {
   const res = await apiFetch(
     `/admin/characters/${characterId}/scenarios/${scenarioId}`,

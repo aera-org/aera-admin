@@ -6,6 +6,7 @@ import {
   useDeleteScenarioStageGift,
   useGenerateScenarioOpeningImage,
   useUpdateScenario,
+  useUpdateScenarioPromoVideo,
   useUpdateScenarioStage,
   useUpdateScenarioStageGift,
 } from '@/app/characters';
@@ -17,6 +18,7 @@ import {
   ImageIcon,
   PencilLineIcon,
   TrashIcon,
+  UploadIcon,
 } from '@/assets/icons';
 import {
   Badge,
@@ -100,6 +102,8 @@ const EMPTY_GIFT_VALUES: StageGiftFormValues = {
   buyText: '',
   boughtImgId: '',
 };
+const VIDEO_ACCEPT =
+  'video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v';
 
 function buildStageGiftCreatePayload(values: StageGiftFormValues) {
   return {
@@ -159,6 +163,7 @@ function buildScenarioPayload(
     isTop: scenario.isTop,
     promoImgId: scenario.promoImg?.id,
     promoImgHorizontalId: scenario.promoImgHorizontal?.id,
+    promoVideoId: scenario.promoVideo?.id,
     personality: scenario.personality.trim(),
     messagingStyle: scenario.messagingStyle.trim(),
     appearance: scenario.appearance.trim(),
@@ -196,6 +201,7 @@ export function ScenarioDetails({
   showVideos = false,
 }: ScenarioDetailsProps) {
   const updateScenarioMutation = useUpdateScenario();
+  const updatePromoVideoMutation = useUpdateScenarioPromoVideo();
   const addScenarioGiftsMutation = useAddScenarioGifts();
   const generateOpeningImageMutation = useGenerateScenarioOpeningImage();
   const updateStageMutation = useUpdateScenarioStage();
@@ -229,6 +235,10 @@ export function ScenarioDetails({
   const [giftToDeleteId, setGiftToDeleteId] = useState<string | null>(null);
   const [liveGenerationStage, setLiveGenerationStage] =
     useState<RoleplayStage | null>(null);
+  const [isPromoVideoDrawerOpen, setIsPromoVideoDrawerOpen] = useState(false);
+  const [promoVideoFile, setPromoVideoFile] = useState<IFile | null>(null);
+  const [promoVideoShowErrors, setPromoVideoShowErrors] = useState(false);
+  const [isPromoVideoDeleteOpen, setIsPromoVideoDeleteOpen] = useState(false);
 
   const selectedStageContent = scenario.stages?.[selectedStage] ?? EMPTY_STAGE;
   const selectedStageLiveGeneration = Boolean(
@@ -311,6 +321,20 @@ export function ScenarioDetails({
       ),
     [stageValues],
   );
+  const promoVideoPreviewUrl = promoVideoFile?.url ?? null;
+  const promoVideoError =
+    promoVideoShowErrors && !promoVideoFile?.id ? 'Upload a video.' : null;
+
+  const openPromoVideoDrawer = () => {
+    setPromoVideoFile(scenario.promoVideo ?? null);
+    setPromoVideoShowErrors(false);
+    setIsPromoVideoDrawerOpen(true);
+  };
+
+  const closePromoVideoDrawer = () => {
+    if (updatePromoVideoMutation.isPending) return;
+    setIsPromoVideoDrawerOpen(false);
+  };
 
   const openStageModal = (stage: RoleplayStage) => {
     const content = scenario.stages?.[stage] ?? EMPTY_STAGE;
@@ -469,6 +493,35 @@ export function ScenarioDetails({
     });
   };
 
+  const handlePromoVideoSave = async () => {
+    if (!characterId || !promoVideoFile?.id) {
+      setPromoVideoShowErrors(true);
+      return;
+    }
+
+    await updatePromoVideoMutation.mutateAsync({
+      characterId,
+      scenarioId: scenario.id,
+      payload: { promoVideoId: promoVideoFile.id },
+    });
+
+    setIsPromoVideoDrawerOpen(false);
+  };
+
+  const handlePromoVideoDelete = async () => {
+    if (!characterId) return;
+
+    await updatePromoVideoMutation.mutateAsync({
+      characterId,
+      scenarioId: scenario.id,
+      payload: { promoVideoId: null },
+    });
+
+    setPromoVideoFile(null);
+    setIsPromoVideoDeleteOpen(false);
+    setIsPromoVideoDrawerOpen(false);
+  };
+
   return (
     <div className={s.detailsCard}>
       <div className={s.detailsHeader}>
@@ -511,6 +564,18 @@ export function ScenarioDetails({
             loading={addScenarioGiftsMutation.isPending}
             disabled={!characterId || addScenarioGiftsMutation.isPending}
           />
+          {isX ? (
+            <IconButton
+              aria-label="Promo video"
+              icon={<UploadIcon />}
+              tooltip="Promo video"
+              variant="ghost"
+              size="sm"
+              onClick={openPromoVideoDrawer}
+              loading={updatePromoVideoMutation.isPending}
+              disabled={!characterId || updatePromoVideoMutation.isPending}
+            />
+          ) : null}
           {allowEdit ? (
             <IconButton
               aria-label="Edit scenario"
@@ -919,22 +984,103 @@ export function ScenarioDetails({
         </div>
         {showVideos ? (
           <>
-            {isX  ? <ScenarioVideosV2Section
-              characterId={characterId}
-              scenarioId={scenario.id}
-              videos={scenario.videos ?? []}
-              formatDate={formatDate}
-            /> : 
-            <ScenarioVideosSection
-              characterId={characterId}
-              scenarioId={scenario.id}
-              videos={scenario.videos ?? []}
-              formatDate={formatDate}
-            />
-}
+            {isX ? (
+              <ScenarioVideosV2Section
+                characterId={characterId}
+                scenarioId={scenario.id}
+                videos={scenario.videos ?? []}
+                formatDate={formatDate}
+              />
+            ) : (
+              <ScenarioVideosSection
+                characterId={characterId}
+                scenarioId={scenario.id}
+                videos={scenario.videos ?? []}
+                formatDate={formatDate}
+              />
+            )}
           </>
         ) : null}
       </Stack>
+
+      <Drawer
+        open={isPromoVideoDrawerOpen}
+        title="Promo video"
+        className={s.scenarioVideoDetailsDrawer}
+        onOpenChange={(open) => {
+          if (!open) {
+            closePromoVideoDrawer();
+          } else {
+            setIsPromoVideoDrawerOpen(true);
+          }
+        }}
+      >
+        <Stack gap="16px">
+          {promoVideoPreviewUrl ? (
+            <video
+              className={s.scenarioVideoDetails}
+              src={promoVideoPreviewUrl}
+              controls
+              playsInline
+              preload="metadata"
+            />
+          ) : (
+            <div className={s.scenarioVideoDetailsPlaceholder}>
+              <Typography variant="caption" tone="muted">
+                No video
+              </Typography>
+            </div>
+          )}
+
+          <FileUpload
+            label="Promo video"
+            folder={FileDir.Public}
+            accept={VIDEO_ACCEPT}
+            value={promoVideoFile}
+            onChange={(file) => {
+              setPromoVideoFile(file);
+              if (file?.id) {
+                setPromoVideoShowErrors(false);
+              }
+            }}
+            onError={(message) =>
+              notifyError(new Error(message), 'Unable to upload video.')
+            }
+          />
+          {promoVideoError ? (
+            <Typography variant="caption" tone="danger">
+              {promoVideoError}
+            </Typography>
+          ) : null}
+
+          <div className={s.modalActions}>
+            {scenario.promoVideo ? (
+              <Button
+                variant="ghost"
+                tone="danger"
+                onClick={() => setIsPromoVideoDeleteOpen(true)}
+                disabled={updatePromoVideoMutation.isPending}
+              >
+                Delete
+              </Button>
+            ) : null}
+            <Button
+              variant="secondary"
+              onClick={closePromoVideoDrawer}
+              disabled={updatePromoVideoMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void handlePromoVideoSave()}
+              loading={updatePromoVideoMutation.isPending}
+              disabled={updatePromoVideoMutation.isPending}
+            >
+              Save
+            </Button>
+          </div>
+        </Stack>
+      </Drawer>
 
       <Drawer
         open={isStageDrawerOpen}
@@ -1272,6 +1418,20 @@ export function ScenarioDetails({
           </div>
         </Stack>
       </Drawer>
+
+      <ConfirmModal
+        open={isPromoVideoDeleteOpen}
+        title="Delete promo video?"
+        description="This will remove the promo video from this scenario."
+        confirmLabel="Delete"
+        tone="danger"
+        isConfirming={updatePromoVideoMutation.isPending}
+        onConfirm={handlePromoVideoDelete}
+        onClose={() => {
+          if (updatePromoVideoMutation.isPending) return;
+          setIsPromoVideoDeleteOpen(false);
+        }}
+      />
 
       <ConfirmModal
         open={Boolean(giftToDeleteId)}

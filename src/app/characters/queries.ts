@@ -38,6 +38,7 @@ import {
   getCharacters,
   reorderCharacterStories,
   type ScenarioCreateDto,
+  type ScenarioPromoVideoUpdateDto,
   type ScenarioUpdateDto,
   type ScenarioVideoCreateDto,
   type ScenarioVideoUpdateDto,
@@ -49,6 +50,7 @@ import {
   updateCharacter,
   updateCharacterStory,
   updateScenario,
+  updateScenarioPromoVideo,
   updateScenarioStage,
   updateScenarioStageGift,
   updateScenarioVideo,
@@ -476,6 +478,38 @@ export function useUpdateScenario() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to update the scenario.');
+    },
+  });
+}
+
+export function useUpdateScenarioPromoVideo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      scenarioId,
+      payload,
+    }: {
+      characterId: string;
+      scenarioId: string;
+      payload: ScenarioPromoVideoUpdateDto;
+    }) => updateScenarioPromoVideo(characterId, scenarioId, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess(
+        variables.payload.promoVideoId
+          ? 'Promo video updated.'
+          : 'Promo video removed.',
+        variables.payload.promoVideoId
+          ? 'Promo video updated.'
+          : 'Promo video removed.',
+      );
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to update the promo video.');
     },
   });
 }

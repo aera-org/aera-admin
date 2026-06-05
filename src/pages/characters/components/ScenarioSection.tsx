@@ -594,6 +594,7 @@ export function ScenarioSection({
         promoImgHorizontalId: showPromoImages
           ? editValues.promoImgHorizontalId || undefined
           : selectedScenario.promoImgHorizontal?.id,
+        promoVideoId: selectedScenario.promoVideo?.id,
         personality: editValues.personality.trim(),
         messagingStyle: editValues.messagingStyle.trim(),
         appearance: editValues.appearance.trim(),

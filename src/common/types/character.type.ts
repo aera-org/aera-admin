@@ -146,6 +146,7 @@ export interface IScenario {
   description: string;
   shortDescription?: string | null;
   promoImg?: IFile | null;
+  promoVideo?: IFile | null;
   promoImgHorizontal?: IFile | null;
   isActive: boolean;
   isNew: boolean;
