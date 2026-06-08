@@ -327,8 +327,8 @@ export function PostUpsertDrawer({
 
   useEffect(() => {
     if (values.isCustomCharacter) {
-      if (!values.scenarioId) return;
-      setValues((prev) => ({ ...prev, scenarioId: '' }));
+      if (!values.characterId && !values.scenarioId) return;
+      setValues((prev) => ({ ...prev, characterId: '', scenarioId: '' }));
       return;
     }
     if (!values.scenarioId) return;
@@ -354,7 +354,10 @@ export function PostUpsertDrawer({
     if (!showErrors) return {};
 
     return {
-      characterId: values.characterId ? undefined : 'Select a character.',
+      characterId:
+        values.isCustomCharacter || values.characterId
+          ? undefined
+          : 'Select a character.',
       scenarioId:
         values.isCustomCharacter || values.scenarioId
           ? undefined
@@ -460,7 +463,7 @@ export function PostUpsertDrawer({
 
   const handleSave = async () => {
     if (
-      !values.characterId ||
+      (!values.isCustomCharacter && !values.characterId) ||
       (!values.isCustomCharacter && !values.scenarioId) ||
       !values.text.trim() ||
       !resolvedMedia
@@ -550,33 +553,35 @@ export function PostUpsertDrawer({
         ) : null}
 
         <FormRow columns={2}>
-          <Field
-            label="Character"
-            labelFor="post-upsert-character"
-            error={errors.characterId}
-          >
-            <SearchSelect
-              id="post-upsert-character"
-              value={values.characterId}
-              valueLabel={characterValueLabel}
-              options={characterOptions}
-              search={characterSearch}
-              onSearchChange={setCharacterSearch}
-              onSelect={(value) =>
-                setValues((prev) => ({
-                  ...prev,
-                  characterId: value,
-                  scenarioId: '',
-                }))
-              }
-              placeholder={
-                isCharactersLoading ? 'Loading characters...' : 'Select character'
-              }
-              loading={isCharactersLoading}
-              invalid={Boolean(errors.characterId)}
-              disabled={isBusy}
-            />
-          </Field>
+          {!values.isCustomCharacter ? (
+            <Field
+              label="Character"
+              labelFor="post-upsert-character"
+              error={errors.characterId}
+            >
+              <SearchSelect
+                id="post-upsert-character"
+                value={values.characterId}
+                valueLabel={characterValueLabel}
+                options={characterOptions}
+                search={characterSearch}
+                onSearchChange={setCharacterSearch}
+                onSelect={(value) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    characterId: value,
+                    scenarioId: '',
+                  }))
+                }
+                placeholder={
+                  isCharactersLoading ? 'Loading characters...' : 'Select character'
+                }
+                loading={isCharactersLoading}
+                invalid={Boolean(errors.characterId)}
+                disabled={isBusy}
+              />
+            </Field>
+          ) : null}
 
           <Field label="Custom character" labelFor="post-upsert-is-custom-character">
             <Switch
@@ -587,6 +592,7 @@ export function PostUpsertDrawer({
                 setValues((prev) => ({
                   ...prev,
                   isCustomCharacter: event.target.checked,
+                  characterId: event.target.checked ? '' : prev.characterId,
                   scenarioId: event.target.checked ? '' : prev.scenarioId,
                 }))
               }
