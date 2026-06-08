@@ -18,7 +18,8 @@ export interface IPost {
     img?: IFile;
     video?: IFile;
     isActive: boolean;
-    scenario: IScenario;
+    isCustomCharacter: boolean;
+    scenario: IScenario | null;
     updatedAt: string;
     createdAt: string;
     localizations: Partial<Record<Language, string>>;

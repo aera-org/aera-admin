@@ -13,17 +13,34 @@ export type PostsListParams = {
 };
 
 type PostBaseDto = {
-  scenarioId: string;
   text: string;
   isActive: boolean;
+  isCustomCharacter: boolean;
+};
+
+type RegularPostDto = PostBaseDto & {
+  isCustomCharacter: false;
+  scenarioId: string;
+};
+
+type CustomCharacterPostDto = PostBaseDto & {
+  isCustomCharacter: true;
 };
 
 export type CreatePostDto =
-  | (PostBaseDto & {
+  | (RegularPostDto & {
       type: PostType.Img;
       imgId: string;
     })
-  | (PostBaseDto & {
+  | (RegularPostDto & {
+      type: PostType.Video;
+      videoId: string;
+    })
+  | (CustomCharacterPostDto & {
+      type: PostType.Img;
+      imgId: string;
+    })
+  | (CustomCharacterPostDto & {
       type: PostType.Video;
       videoId: string;
     });

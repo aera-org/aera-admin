@@ -68,6 +68,7 @@ type UploadItem = {
 type Values = {
   characterId: string;
   scenarioId: string;
+  isCustomCharacter: boolean;
   type: PostType;
   text: string;
   isActive: boolean;
@@ -228,6 +229,7 @@ export function PostUpsertDrawer({
   const [values, setValues] = useState<Values>({
     characterId: '',
     scenarioId: '',
+    isCustomCharacter: false,
     type: PostType.Img,
     text: '',
     isActive: true,
@@ -303,7 +305,8 @@ export function PostUpsertDrawer({
     setCharacterSearch('');
     setValues({
       characterId: initialCharacterId,
-      scenarioId: post ? post.scenario.id : initialScenarioId,
+      scenarioId: post?.scenario?.id ?? initialScenarioId,
+      isCustomCharacter: post?.isCustomCharacter ?? false,
       type: postType,
       text: post?.text ?? '',
       isActive: post?.isActive ?? true,
@@ -323,6 +326,11 @@ export function PostUpsertDrawer({
   }, [open, resetState]);
 
   useEffect(() => {
+    if (values.isCustomCharacter) {
+      if (!values.scenarioId) return;
+      setValues((prev) => ({ ...prev, scenarioId: '' }));
+      return;
+    }
     if (!values.scenarioId) return;
     if (values.characterId && (isScenariosLoading || !selectedCharacterDetails)) {
       return;
@@ -335,6 +343,7 @@ export function PostUpsertDrawer({
     }
   }, [
     isScenariosLoading,
+    values.isCustomCharacter,
     scenarioOptions,
     selectedCharacterDetails,
     values.characterId,
@@ -346,7 +355,10 @@ export function PostUpsertDrawer({
 
     return {
       characterId: values.characterId ? undefined : 'Select a character.',
-      scenarioId: values.scenarioId ? undefined : 'Select a scenario.',
+      scenarioId:
+        values.isCustomCharacter || values.scenarioId
+          ? undefined
+          : 'Select a scenario.',
       text: values.text.trim() ? undefined : 'Enter text.',
       media: resolvedMedia
         ? undefined
@@ -360,6 +372,7 @@ export function PostUpsertDrawer({
     resolvedMedia,
     showErrors,
     values.characterId,
+    values.isCustomCharacter,
     values.scenarioId,
     values.text,
   ]);
@@ -448,7 +461,7 @@ export function PostUpsertDrawer({
   const handleSave = async () => {
     if (
       !values.characterId ||
-      !values.scenarioId ||
+      (!values.isCustomCharacter && !values.scenarioId) ||
       !values.text.trim() ||
       !resolvedMedia
     ) {
@@ -459,20 +472,36 @@ export function PostUpsertDrawer({
     setIsSubmitting(true);
 
     try {
-      const basePayload = {
-        scenarioId: values.scenarioId,
-        text: values.text.trim(),
-        isActive: values.isActive,
-      };
-      const payload: CreatePostDto =
-        values.type === PostType.Video
+      const payload: CreatePostDto = values.isCustomCharacter
+        ? values.type === PostType.Video
           ? {
-              ...basePayload,
+              text: values.text.trim(),
+              isActive: values.isActive,
+              isCustomCharacter: true,
               type: PostType.Video,
               videoId: resolvedMedia.id,
             }
           : {
-              ...basePayload,
+              text: values.text.trim(),
+              isActive: values.isActive,
+              isCustomCharacter: true,
+              type: PostType.Img,
+              imgId: resolvedMedia.id,
+            }
+        : values.type === PostType.Video
+          ? {
+              text: values.text.trim(),
+              isActive: values.isActive,
+              isCustomCharacter: false,
+              scenarioId: values.scenarioId,
+              type: PostType.Video,
+              videoId: resolvedMedia.id,
+            }
+          : {
+              text: values.text.trim(),
+              isActive: values.isActive,
+              isCustomCharacter: false,
+              scenarioId: values.scenarioId,
               type: PostType.Img,
               imgId: resolvedMedia.id,
             };
@@ -549,6 +578,24 @@ export function PostUpsertDrawer({
             />
           </Field>
 
+          <Field label="Custom character" labelFor="post-upsert-is-custom-character">
+            <Switch
+              id="post-upsert-is-custom-character"
+              checked={values.isCustomCharacter}
+              disabled={isBusy}
+              onChange={(event) =>
+                setValues((prev) => ({
+                  ...prev,
+                  isCustomCharacter: event.target.checked,
+                  scenarioId: event.target.checked ? '' : prev.scenarioId,
+                }))
+              }
+              label={values.isCustomCharacter ? 'Enabled' : 'Disabled'}
+            />
+          </Field>
+        </FormRow>
+
+        {!values.isCustomCharacter ? (
           <Field
             label="Scenario"
             labelFor="post-upsert-scenario"
@@ -577,7 +624,7 @@ export function PostUpsertDrawer({
               invalid={Boolean(errors.scenarioId)}
             />
           </Field>
-        </FormRow>
+        ) : null}
 
         <FormRow columns={2}>
           <Field label="Type" labelFor="post-upsert-type">

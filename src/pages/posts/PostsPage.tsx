@@ -368,7 +368,7 @@ export function PostsPage() {
   const rangeStart = total === 0 ? 0 : effectiveSkip + 1;
   const rangeEnd = total === 0 ? 0 : Math.min(effectiveSkip + effectiveTake, total);
 
-  const drawerScenarioId = editingPost?.scenario.id ?? scenarioFilter;
+  const drawerScenarioId = editingPost?.scenario?.id ?? scenarioFilter;
   const drawerScenarioLookup = drawerScenarioId
     ? scenarioOptionData.lookup.get(drawerScenarioId) ?? null
     : null;
@@ -589,7 +589,7 @@ export function PostsPage() {
             ? drawerScenarioLookup?.characterId
             : effectiveCharacterId || drawerScenarioLookup?.characterId
         }
-        initialScenarioId={editingPost ? editingPost.scenario.id : scenarioFilter}
+        initialScenarioId={editingPost?.scenario?.id ?? scenarioFilter}
         onLocalize={setLocalizeTarget}
         isLocalizing={
           localizePostMutation.isPending &&

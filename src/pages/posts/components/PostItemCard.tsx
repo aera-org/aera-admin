@@ -17,7 +17,7 @@ export function PostItemCard({
   onDelete,
   isDeleting = false,
 }: PostItemCardProps) {
-  const scenarioName = item.scenario.name || 'Untitled';
+  const scenarioName = item.scenario?.name || 'Custom character';
   const imageUrl = item.img?.url ?? '';
   const videoUrl = item.video?.url ?? '';
   const textValue = item.text || '—';
