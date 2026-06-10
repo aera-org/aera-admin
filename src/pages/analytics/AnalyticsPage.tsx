@@ -19,7 +19,6 @@ import {
   formatMetricDelta,
   formatMetricValue,
   formatMonthLabel,
-  getCurrentMonthId,
   getLastFullMonthId,
   getMetricDefinition,
   getMetricOptions,
@@ -577,19 +576,17 @@ export function AnalyticsPage() {
     ? 'deeplinks'
     : isValidSection(rawSection)
       ? rawSection
-      : 'main';
+      : 'overview';
+  const isOverviewSection = section === 'overview';
   const isDeeplinksSection = section === 'deeplinks';
   const isDailySection = section === 'daily';
   const isCountriesSection = section === 'countries';
   const isMonthlySection =
-    !isDeeplinksSection && !isDailySection && !isCountriesSection;
-  const usesCurrentMonthDefault = section === 'main' || section === 'payments';
+    section === 'main' || section === 'payments' || section === 'technical';
   const fallbackRange = useMemo(() => {
-    const end = usesCurrentMonthDefault
-      ? getCurrentMonthId()
-      : getLastFullMonthId();
-    return { start: addMonths(end, -11), end };
-  }, [usesCurrentMonthDefault]);
+    const end = getLastFullMonthId();
+    return { start: addMonths(end, -6), end };
+  }, []);
   const {
     start: startMonth,
     end: endMonth,
@@ -602,14 +599,13 @@ export function AnalyticsPage() {
   const selectedMetric = getMetricDefinition(metricKey);
 
   const metricOptions = useMemo(() => getMetricOptions(section), [section]);
-  const defaultKpiMonth = useMemo(
-    () =>
-      usesCurrentMonthDefault ? getCurrentMonthId() : getLastFullMonthId(),
-    [usesCurrentMonthDefault],
-  );
+  const defaultKpiMonth = useMemo(() => getLastFullMonthId(), []);
   const kpiMonth = isValidMonthId(rawKpi) ? rawKpi : defaultKpiMonth;
 
-  const defaultDateEnd = useMemo(() => toUtcDateId(new Date()), []);
+  const defaultDateEnd = useMemo(
+    () => addDaysToDateId(toUtcDateId(new Date()), -1),
+    [],
+  );
   const defaultDeeplinkStart = useMemo(
     () => addDaysToDateId(defaultDateEnd, -(DEFAULT_DEEPLINK_RANGE_DAYS - 1)),
     [defaultDateEnd],
@@ -850,7 +846,7 @@ export function AnalyticsPage() {
       if (metricKey && rawMetric !== metricKey) updates.metric = metricKey;
       if (!metricKey && rawMetric) updates.metric = '';
       if (rawKpi !== kpiMonth) updates.kpi = kpiMonth;
-    } else {
+    } else if (isDeeplinksSection || isDailySection || isCountriesSection) {
       const nextStart =
         isDailySection || isCountriesSection ? dailyStart : deeplinkStart;
       const nextEnd =
@@ -899,6 +895,7 @@ export function AnalyticsPage() {
     isDailySection,
     isCountriesSection,
     isMonthlySection,
+    isOverviewSection,
     dailyStart,
     dailyEnd,
     dailyMetricKey,
@@ -3253,7 +3250,8 @@ export function AnalyticsPage() {
     : isDailySection
       ? isDailyLoading
       : isMainLoading;
-  const canExport = isSectionAvailable && !isActiveSectionLoading;
+  const canExport =
+    isSectionAvailable && !isOverviewSection && !isActiveSectionLoading;
 
   const handleExportCsv = useCallback(() => {
     if (!canExport || isExporting) return;
@@ -3408,6 +3406,11 @@ export function AnalyticsPage() {
             <EmptyState
               title="Section not available yet"
               description="The backend does not provide this section yet."
+            />
+          ) : isOverviewSection ? (
+            <EmptyState
+              title="Choose an analytics section"
+              description="Select a tab above to load analytics data."
             />
           ) : isDeeplinksSection ? (
             <>

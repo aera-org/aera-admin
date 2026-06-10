@@ -1,4 +1,5 @@
 export type AnalyticsSection =
+  | 'overview'
   | 'main'
   | 'payments'
   | 'technical'
@@ -16,10 +17,15 @@ export type AnalyticsMetricKey =
   | 'seenPaywallRate'
   | 'bounceRate'
   | 'retentionRate'
+  | 'customerRetentionRate'
   | 'retentionD1'
   | 'retentionD3'
   | 'retentionD7'
   | 'retentionD30'
+  | 'customerRetentionD1'
+  | 'customerRetentionD3'
+  | 'customerRetentionD7'
+  | 'customerRetentionD30'
   | 'churnRate'
   | 'total'
   | 'opened'
@@ -139,6 +145,14 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
     precision: 1,
   },
   {
+    key: 'chatRecoveryRate',
+    label: 'Recovery rate',
+    description: 'Unblocked events divided by blocked events in the month.',
+    format: 'percent',
+    section: 'main',
+    precision: 1,
+  },
+  {
     key: 'retentionRate',
     label: 'Retention rate',
     description:
@@ -180,6 +194,46 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
     precision: 1,
   },
   {
+    key: 'customerRetentionRate',
+    label: 'Customer retention rate',
+    description: 'Percent of paying users retained in the next month.',
+    format: 'percent',
+    section: 'main',
+    precision: 1,
+  },
+  {
+    key: 'customerRetentionD1',
+    label: 'Customer Retention D1',
+    description: 'Percent of paying users retained on day 1.',
+    format: 'percent',
+    section: 'main',
+    precision: 1,
+  },
+  {
+    key: 'customerRetentionD3',
+    label: 'Customer Retention D3',
+    description: 'Percent of paying users retained on day 3.',
+    format: 'percent',
+    section: 'main',
+    precision: 1,
+  },
+  {
+    key: 'customerRetentionD7',
+    label: 'Customer Retention D7',
+    description: 'Percent of paying users retained on day 7.',
+    format: 'percent',
+    section: 'main',
+    precision: 1,
+  },
+  {
+    key: 'customerRetentionD30',
+    label: 'Customer Retention D30',
+    description: 'Percent of paying users retained on day 30.',
+    format: 'percent',
+    section: 'main',
+    precision: 1,
+  },
+  {
     key: 'churnRate',
     label: 'Churn rate',
     description: 'One minus M1 cohort retention rate.',
@@ -207,14 +261,6 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
     label: 'Avg messages per session',
     description: 'Average number of user messages in a session.',
     format: 'count',
-    section: 'main',
-    precision: 1,
-  },
-  {
-    key: 'chatRecoveryRate',
-    label: 'Recovery rate',
-    description: 'Unblocked events divided by blocked events in the month.',
-    format: 'percent',
     section: 'main',
     precision: 1,
   },
@@ -417,6 +463,13 @@ const TECHNICAL_METRICS: AnalyticsMetricDefinition[] = [
 
 const SECTIONS: AnalyticsSectionConfig[] = [
   {
+    key: 'overview',
+    label: 'Overview',
+    available: true,
+    metrics: [],
+    defaultMetric: null,
+  },
+  {
     key: 'main',
     label: 'Main',
     available: true,
@@ -484,6 +537,7 @@ export function isValidSection(
   value: string | null | undefined,
 ): value is AnalyticsSection {
   return (
+    value === 'overview' ||
     value === 'main' ||
     value === 'payments' ||
     value === 'technical' ||
