@@ -933,10 +933,15 @@ export function AnalyticsPage() {
   );
 
   const kpiRangeStart = addMonths(kpiMonth, -1);
+  const isKpiCoveredByMainRange =
+    isMonthlySection &&
+    isValidMonthId(kpiMonth) &&
+    compareMonthIds(startMonth, kpiRangeStart) <= 0 &&
+    compareMonthIds(kpiMonth, endMonth) <= 0;
   const {
     data: kpiRange,
-    isLoading: isKpiLoading,
-    error: kpiError,
+    isLoading: isKpiRangeLoading,
+    error: kpiRangeError,
   } = useAnalyticsMainRange(
     {
       section,
@@ -945,7 +950,10 @@ export function AnalyticsPage() {
     },
     {
       enabled:
-        isSectionAvailable && isMonthlySection && isValidMonthId(kpiMonth),
+        isSectionAvailable &&
+        isMonthlySection &&
+        isValidMonthId(kpiMonth) &&
+        !isKpiCoveredByMainRange,
     },
   );
 
@@ -971,9 +979,15 @@ export function AnalyticsPage() {
   }, [mainRange]);
 
   const kpiDataByMonth = useMemo(() => {
+    if (isKpiCoveredByMainRange) return dataByMonth;
     const entries = kpiRange?.data ?? [];
     return new Map(entries.map((row) => [row.month, row]));
-  }, [kpiRange]);
+  }, [dataByMonth, isKpiCoveredByMainRange, kpiRange]);
+
+  const isKpiLoading = isKpiCoveredByMainRange
+    ? isMainLoading
+    : isKpiRangeLoading;
+  const kpiError = isKpiCoveredByMainRange ? mainError : kpiRangeError;
 
   const currentRow = kpiDataByMonth.get(kpiMonth);
   const previousRow = kpiDataByMonth.get(addMonths(kpiMonth, -1));
