@@ -1,4 +1,5 @@
 export * from './admin.type';
+export * from './activations.type';
 export * from './batch-img.type';
 export * from './broadcast.type';
 export * from './character.type';

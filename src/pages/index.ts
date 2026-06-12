@@ -1,4 +1,5 @@
 export { AdminsPage } from './admins/AdminsPage';
+export { ActivationsPage } from './activations/ActivationsPage';
 export { AirPurchasesPage } from './air-purchases/AirPurchasesPage';
 export { AnalyticsPage } from './analytics/AnalyticsPage';
 export { AuthCallbackPage } from './auth/AuthCallbackPage';
