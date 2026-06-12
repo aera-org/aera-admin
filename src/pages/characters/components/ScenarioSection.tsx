@@ -41,10 +41,9 @@ import {
   type ICharacterDetails,
   type IFile,
   ScenarioCharacterTrait,
-  type StageDirectives,
   STAGES_IN_ORDER,
 } from '@/common/types';
-import { formatCharacterSelectLabel } from '@/common/utils';
+import { formatCharacterSelectLabel, isStageDirectivesEmpty } from '@/common/utils';
 import { ConfirmModal, Drawer, FileUpload } from '@/components/molecules';
 import { SearchSelect } from '@/components/molecules/search-select/SearchSelect';
 
@@ -118,17 +117,6 @@ const SCENARIO_CHARACTER_TRAIT_OPTIONS = Object.values(
 }));
 const CUSTOM_SCENARIO_TRAITS_MAX = 3;
 const BASE_SCENARIO_LEVEL = 1;
-
-function isStageDirectivesEmpty(stage: StageDirectives) {
-  return (
-    !stage.toneAndBehavior.trim() &&
-    !stage.restrictions.trim() &&
-    !stage.environment.trim() &&
-    !stage.characterLook.trim() &&
-    !stage.goal.trim() &&
-    !stage.escalationTrigger.trim()
-  );
-}
 
 export function ScenarioSection({
   characterId,

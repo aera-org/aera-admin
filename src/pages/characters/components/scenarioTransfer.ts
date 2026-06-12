@@ -3,9 +3,12 @@ import {
   FileStatus,
   type ICharacterDetails,
   type RoleplayStage,
+  type StageAction,
+  StageActionType,
   type StageDirectives,
   STAGES_IN_ORDER,
 } from '@/common/types';
+import { normalizeStageDirectives } from '@/common/utils';
 
 const SCENARIO_TRANSFER_SCHEMA = 'scenario';
 const SCENARIO_TRANSFER_VERSION = 1;
@@ -130,13 +133,29 @@ function sanitizeStageDirectives(
     | ICharacterDetails['scenarios'][number]['stages'][RoleplayStage]
     | undefined,
 ): StageDirectives {
-  return {
+  return normalizeStageDirectives({
     toneAndBehavior: sanitizeString(value?.toneAndBehavior),
     restrictions: sanitizeString(value?.restrictions),
     environment: sanitizeString(value?.environment),
     characterLook: sanitizeString(value?.characterLook),
     goal: sanitizeString(value?.goal),
     escalationTrigger: sanitizeString(value?.escalationTrigger),
+    actions: Array.isArray(value?.actions) ? value.actions : [],
+  });
+}
+
+function parseStageAction(value: unknown, path: string): StageAction {
+  const obj = ensureRecord(value, path);
+  const type = ensureString(obj.type, `${path}.type`);
+  if (!Object.values(StageActionType).includes(type as StageActionType)) {
+    throw new Error(
+      `Invalid import file: "${path}.type" has unsupported value.`,
+    );
+  }
+
+  return {
+    type: type as StageActionType,
+    text: ensureString(obj.text, `${path}.text`),
   };
 }
 
@@ -154,7 +173,14 @@ function hasTransferFileShape(value: unknown): value is ScenarioTransferFile {
 
 function parseStageDirectives(value: unknown, path: string): StageDirectives {
   const obj = ensureRecord(value, path);
-  return {
+  const actionsValue = obj.actions;
+  const actions = Array.isArray(actionsValue)
+    ? actionsValue.map((action, index) =>
+        parseStageAction(action, `${path}.actions[${index}]`),
+      )
+    : [];
+
+  return normalizeStageDirectives({
     toneAndBehavior: ensureString(
       obj.toneAndBehavior,
       `${path}.toneAndBehavior`,
@@ -167,7 +193,8 @@ function parseStageDirectives(value: unknown, path: string): StageDirectives {
       obj.escalationTrigger,
       `${path}.escalationTrigger`,
     ),
-  };
+    actions,
+  });
 }
 
 function parseTransferFile(value: unknown, path: string): ScenarioTransferFile {

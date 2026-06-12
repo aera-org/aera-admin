@@ -12,10 +12,17 @@ export {
   poseOptions,
 } from './posePrompt';
 export {
+  buildStageDirectivesPayload,
+  createEmptyStageDirectives,
   formatRoleplayStage,
   formatRoleplayStages,
+  formatStageActionType,
   isRoleplayStage,
+  isStageDirectivesEmpty,
   normalizeRoleplayStages,
+  normalizeStageActions,
+  normalizeStageDirectives,
+  stageActionTypeOptions,
 } from './stage';
 export {
   formatGenerationRequestMode,

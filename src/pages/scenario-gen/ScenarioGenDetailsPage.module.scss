@@ -64,6 +64,17 @@
   line-height: 1.6;
 }
 
+.stageActionList {
+  display: grid;
+  gap: 8px;
+}
+
+.stageActionItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
 .contextPreview {
   display: -webkit-box;
   overflow: hidden;

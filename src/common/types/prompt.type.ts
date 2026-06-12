@@ -1,20 +1,32 @@
 export enum PromptType {
+  // Chat
   Chat = 'chat',
   Ping = 'ping',
+  BlurredPhoto = 'blurred-photo',
+  TurnCold = 'turn-cold',
   GiftBought = 'gift-bought',
+
+  // Image
   Image = 'image',
   ImageSex = 'image-sex',
   AnimeImage = 'anime-image',
   AnimeImageSex = 'anime-image-sex',
-  ScenarioGen = 'scenario-gen',
-  BlurredPhoto = 'blurred-photo',
-  TurnCold = 'turn-cold',
+
+  // Avatar
   AvatarRealistic = 'avatar-realistic',
   AvatarAnime = 'avatar-anime',
+
+  // Opening Image
   OpeningImageRealistic = 'opening-image-realistic',
   OpeningImageAnime = 'opening-image-anime',
+
+  // Post
   PostLocalization = 'post-localization',
+
+  // Scenario
+  ScenarioGen = 'scenario-gen',
   ScenarioGifts = 'scenario-gifts',
+  ScenarioActions = 'scenario-actions',
 }
 
 export enum ModelProvider {

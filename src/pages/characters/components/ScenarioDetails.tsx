@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import {
+  useAddScenarioActions,
   useAddScenarioGifts,
   useCreateScenarioStageGift,
   useDeleteScenarioStageGift,
@@ -17,15 +18,19 @@ import {
   GiftIcon,
   ImageIcon,
   PencilLineIcon,
+  PlusIcon,
+  SparklesIcon,
   TrashIcon,
   UploadIcon,
 } from '@/assets/icons';
 import {
   Badge,
   Button,
+  ButtonGroup,
   Field,
   FormRow,
   IconButton,
+  Input,
   Select,
   Stack,
   Switch,
@@ -38,9 +43,18 @@ import {
   type ICharacterDetails,
   type IFile,
   RoleplayStage,
+  type StageAction,
+  StageActionType,
   type StageDirectives,
   STAGES_IN_ORDER,
 } from '@/common/types';
+import {
+  buildStageDirectivesPayload,
+  createEmptyStageDirectives,
+  formatStageActionType,
+  normalizeStageDirectives,
+  stageActionTypeOptions,
+} from '@/common/utils';
 import { ConfirmModal, Drawer, FileUpload } from '@/components/molecules';
 
 import s from '../CharacterDetailsPage.module.scss';
@@ -69,15 +83,6 @@ type ScenarioDetailsProps = {
   showVideos?: boolean;
 };
 
-const EMPTY_STAGE: StageDirectives = {
-  toneAndBehavior: '',
-  restrictions: '',
-  environment: '',
-  characterLook: '',
-  goal: '',
-  escalationTrigger: '',
-};
-
 const STAGE_LABELS: Record<RoleplayStage, string> = {
   [RoleplayStage.Acquaintance]: 'Acquaintance',
   [RoleplayStage.Flirting]: 'Flirting',
@@ -88,6 +93,9 @@ const STAGE_LABELS: Record<RoleplayStage, string> = {
   [RoleplayStage.Sex]: 'Sex',
   [RoleplayStage.Aftercare]: 'Aftercare',
 };
+
+const DEFAULT_STAGE_ACTION_TYPE =
+  stageActionTypeOptions[0]?.value ?? StageActionType.Connect;
 
 type StageGiftFormValues = {
   giftId: string;
@@ -122,16 +130,10 @@ function buildStageGiftUpdatePayload(values: StageGiftFormValues) {
   };
 }
 
-function buildStagePayload(
-  stage: StageDirectives,
-) {
+function createEmptyStageAction(): StageAction {
   return {
-    toneAndBehavior: stage.toneAndBehavior?.trim() ?? '',
-    restrictions: stage.restrictions?.trim() ?? '',
-    environment: stage.environment?.trim() ?? '',
-    characterLook: stage.characterLook?.trim() ?? '',
-    goal: stage.goal?.trim() ?? '',
-    escalationTrigger: stage.escalationTrigger?.trim() ?? '',
+    type: DEFAULT_STAGE_ACTION_TYPE,
+    text: '',
   };
 }
 
@@ -202,6 +204,7 @@ export function ScenarioDetails({
 }: ScenarioDetailsProps) {
   const updateScenarioMutation = useUpdateScenario();
   const updatePromoVideoMutation = useUpdateScenarioPromoVideo();
+  const addScenarioActionsMutation = useAddScenarioActions();
   const addScenarioGiftsMutation = useAddScenarioGifts();
   const generateOpeningImageMutation = useGenerateScenarioOpeningImage();
   const updateStageMutation = useUpdateScenarioStage();
@@ -220,7 +223,9 @@ export function ScenarioDetails({
   const [activeStage, setActiveStage] = useState<RoleplayStage | null>(null);
   const [isStageDrawerOpen, setIsStageDrawerOpen] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
-  const [stageValues, setStageValues] = useState<StageDirectives>(EMPTY_STAGE);
+  const [stageValues, setStageValues] = useState<StageDirectives>(() =>
+    createEmptyStageDirectives(),
+  );
   const [isGiftAddDrawerOpen, setIsGiftAddDrawerOpen] = useState(false);
   const [isGiftEditDrawerOpen, setIsGiftEditDrawerOpen] = useState(false);
   const [giftShowErrors, setGiftShowErrors] = useState(false);
@@ -240,7 +245,10 @@ export function ScenarioDetails({
   const [promoVideoShowErrors, setPromoVideoShowErrors] = useState(false);
   const [isPromoVideoDeleteOpen, setIsPromoVideoDeleteOpen] = useState(false);
 
-  const selectedStageContent = scenario.stages?.[selectedStage] ?? EMPTY_STAGE;
+  const selectedStageContent = useMemo(
+    () => normalizeStageDirectives(scenario.stages?.[selectedStage]),
+    [scenario.stages, selectedStage],
+  );
   const selectedStageLiveGeneration = Boolean(
     scenario.liveGenerations?.stages?.[selectedStage],
   );
@@ -337,15 +345,8 @@ export function ScenarioDetails({
   };
 
   const openStageModal = (stage: RoleplayStage) => {
-    const content = scenario.stages?.[stage] ?? EMPTY_STAGE;
-    setStageValues({
-      toneAndBehavior: content.toneAndBehavior ?? '',
-      restrictions: content.restrictions ?? '',
-      environment: content.environment ?? '',
-      characterLook: content.characterLook ?? '',
-      goal: content.goal ?? '',
-      escalationTrigger: content.escalationTrigger ?? '',
-    });
+    const content = normalizeStageDirectives(scenario.stages?.[stage]);
+    setStageValues(content);
     setActiveStage(stage);
     setShowErrors(false);
     setIsStageDrawerOpen(true);
@@ -367,7 +368,7 @@ export function ScenarioDetails({
       characterId,
       scenarioId: scenario.id,
       stage: activeStage,
-      payload: buildStagePayload(stageValues),
+      payload: buildStageDirectivesPayload(stageValues),
     });
 
     setIsStageDrawerOpen(false);
@@ -493,6 +494,47 @@ export function ScenarioDetails({
     });
   };
 
+  const handleAddScenarioActions = async () => {
+    if (!characterId) return;
+
+    await addScenarioActionsMutation.mutateAsync({
+      characterId,
+      scenarioId: scenario.id,
+    });
+  };
+
+  const handleStageActionAdd = () => {
+    setStageValues((prev) => ({
+      ...prev,
+      actions: [...(prev.actions ?? []), createEmptyStageAction()],
+    }));
+  };
+
+  const handleStageActionChange = <K extends keyof StageAction>(
+    index: number,
+    key: K,
+    value: StageAction[K],
+  ) => {
+    setStageValues((prev) => ({
+      ...prev,
+      actions: (prev.actions ?? []).map((action, actionIndex) =>
+        actionIndex === index
+          ? {
+              ...action,
+              [key]: value,
+            }
+          : action,
+      ),
+    }));
+  };
+
+  const handleStageActionRemove = (index: number) => {
+    setStageValues((prev) => ({
+      ...prev,
+      actions: (prev.actions ?? []).filter((_, actionIndex) => actionIndex !== index),
+    }));
+  };
+
   const handlePromoVideoSave = async () => {
     if (!characterId || !promoVideoFile?.id) {
       setPromoVideoShowErrors(true);
@@ -563,6 +605,16 @@ export function ScenarioDetails({
             onClick={() => void handleAddScenarioGifts()}
             loading={addScenarioGiftsMutation.isPending}
             disabled={!characterId || addScenarioGiftsMutation.isPending}
+          />
+          <IconButton
+            aria-label="Add Actions"
+            icon={<SparklesIcon />}
+            tooltip="Add Actions"
+            variant="ghost"
+            size="sm"
+            onClick={() => void handleAddScenarioActions()}
+            loading={addScenarioActionsMutation.isPending}
+            disabled={!characterId || addScenarioActionsMutation.isPending}
           />
           {isX ? (
             <IconButton
@@ -905,6 +957,28 @@ export function ScenarioDetails({
               </div>
               <div className={s.stageSection}>
                 <Typography variant="caption" tone="muted">
+                  Actions
+                </Typography>
+                {selectedStageContent.actions?.length ? (
+                  <div className={s.stageActionList}>
+                    {selectedStageContent.actions.map((action, index) => (
+                      <div
+                        key={`${selectedStage}-${action.type}-${action.text}-${index}`}
+                        className={s.stageActionItem}
+                      >
+                        <Badge outline>{formatStageActionType(action.type)}</Badge>
+                        <Typography variant="body" className={s.multiline}>
+                          {action.text}
+                        </Typography>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <Typography variant="body">-</Typography>
+                )}
+              </div>
+              <div className={s.stageSection}>
+                <Typography variant="caption" tone="muted">
                   Gift
                 </Typography>
                 <div className={s.stageGiftRow}>
@@ -1209,6 +1283,90 @@ export function ScenarioDetails({
               rows={2}
               fullWidth
             />
+          </Field>
+
+          <Field
+            label="Actions"
+            hint="Optional stage-specific actions."
+          >
+            <Stack gap="12px">
+              {stageValues.actions?.length ? (
+                stageValues.actions.map((action, index) => (
+                  <div
+                    key={`stage-action-${index}`}
+                    className={s.stageActionEditorItem}
+                  >
+                    <FormRow columns={2}>
+                      <Field
+                        label={`Type ${index + 1}`}
+                        labelFor={`stage-edit-action-type-${index}`}
+                      >
+                        <Select
+                          id={`stage-edit-action-type-${index}`}
+                          size="sm"
+                          options={stageActionTypeOptions}
+                          value={action.type}
+                          onChange={(value) =>
+                            handleStageActionChange(
+                              index,
+                              'type',
+                              value as StageActionType,
+                            )
+                          }
+                          fullWidth
+                          disabled={updateStageMutation.isPending}
+                        />
+                      </Field>
+                      <Field
+                        label={`Text ${index + 1}`}
+                        labelFor={`stage-edit-action-text-${index}`}
+                      >
+                        <Input
+                          id={`stage-edit-action-text-${index}`}
+                          value={action.text}
+                          onChange={(event) =>
+                            handleStageActionChange(
+                              index,
+                              'text',
+                              event.target.value,
+                            )
+                          }
+                          fullWidth
+                          disabled={updateStageMutation.isPending}
+                        />
+                      </Field>
+                    </FormRow>
+                    <div className={s.stageActionEditorActions}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        tone="danger"
+                        onClick={() => handleStageActionRemove(index)}
+                        disabled={updateStageMutation.isPending}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <Typography variant="caption" tone="muted">
+                  No actions added.
+                </Typography>
+              )}
+
+              <ButtonGroup>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconLeft={<PlusIcon />}
+                  onClick={handleStageActionAdd}
+                  disabled={updateStageMutation.isPending}
+                >
+                  Add action
+                </Button>
+              </ButtonGroup>
+            </Stack>
           </Field>
 
           <div className={s.modalActions}>

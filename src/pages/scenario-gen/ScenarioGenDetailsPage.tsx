@@ -25,9 +25,14 @@ import {
 } from '@/atoms';
 import {
   RoleplayStage,
-  type StageDirectives,
   STAGES_IN_ORDER,
 } from '@/common/types';
+import {
+  createEmptyStageDirectives,
+  formatStageActionType,
+  isStageDirectivesEmpty,
+  normalizeStageDirectives,
+} from '@/common/utils';
 import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
 import { AppShell } from '@/components/templates';
 
@@ -49,31 +54,13 @@ const STAGE_LABELS: Record<RoleplayStage, string> = {
   [RoleplayStage.Aftercare]: 'Aftercare',
 };
 
-const EMPTY_STAGE: StageDirectives = {
-  toneAndBehavior: '',
-  restrictions: '',
-  environment: '',
-  characterLook: '',
-  goal: '',
-  escalationTrigger: '',
-};
+const EMPTY_STAGE = createEmptyStageDirectives();
 
 function formatDate(value: string | null | undefined) {
   if (!value) return '-';
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return '-';
   return dateTimeFormatter.format(parsed);
-}
-
-function isStageEmpty(stage: StageDirectives) {
-  return (
-    !stage.toneAndBehavior.trim() &&
-    !stage.restrictions.trim() &&
-    !stage.environment.trim() &&
-    !stage.characterLook.trim() &&
-    !stage.goal.trim() &&
-    !stage.escalationTrigger.trim()
-  );
 }
 
 export function ScenarioGenDetailsPage() {
@@ -104,7 +91,10 @@ export function ScenarioGenDetailsPage() {
   const characterName =
     scenario?.characterName || characterData?.name || scenario?.characterId || '-';
 
-  const selectedStageData = scenario?.data.stages?.[selectedStage] ?? EMPTY_STAGE;
+  const selectedStageData = useMemo(
+    () => normalizeStageDirectives(scenario?.data.stages?.[selectedStage] ?? EMPTY_STAGE),
+    [scenario?.data.stages, selectedStage],
+  );
   const stageItems = useMemo(
     () =>
       STAGES_IN_ORDER.map((stage) => ({
@@ -368,7 +358,7 @@ export function ScenarioGenDetailsPage() {
                 onChange={(value) => setSelectedStage(value as RoleplayStage)}
               />
 
-              {isStageEmpty(selectedStageData) ? (
+              {isStageDirectivesEmpty(selectedStageData) ? (
                 <div className={s.emptyStage}>
                   <Typography variant="body" tone="muted">
                     No directives were generated for this stage.
@@ -423,6 +413,34 @@ export function ScenarioGenDetailsPage() {
                     <Typography as="div" variant="body" className={s.richText}>
                       {selectedStageData.escalationTrigger || '-'}
                     </Typography>
+                  </div>
+                  <div className={s.stageItem}>
+                    <Typography variant="meta" tone="muted">
+                      Actions
+                    </Typography>
+                    {selectedStageData.actions.length ? (
+                      <div className={s.stageActionList}>
+                        {selectedStageData.actions.map((action, index) => (
+                          <div
+                            key={`${selectedStage}-${action.type}-${action.text}-${index}`}
+                            className={s.stageActionItem}
+                          >
+                            <Badge outline>{formatStageActionType(action.type)}</Badge>
+                            <Typography
+                              as="div"
+                              variant="body"
+                              className={s.richText}
+                            >
+                              {action.text}
+                            </Typography>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <Typography as="div" variant="body">
+                        -
+                      </Typography>
+                    )}
                   </div>
                 </div>
               )}

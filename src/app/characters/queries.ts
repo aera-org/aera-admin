@@ -7,12 +7,16 @@ import {
   type ICharacter,
   type ICharacterDetails,
   type RoleplayStage,
-  type StageDirectives,
   STAGES_IN_ORDER,
 } from '@/common/types';
+import {
+  buildStageDirectivesPayload,
+  isStageDirectivesEmpty,
+} from '@/common/utils';
 
 import type { PaginatedResponse } from '../paginated-response.type.ts';
 import {
+  addScenarioActions,
   addScenarioGifts,
   addScenarioStageGift,
   type CharacterCreateDto,
@@ -65,12 +69,6 @@ const characterKeys = {
 type CharacterCloneAsAnimeError = Error & {
   createdCharacterId?: string;
 };
-
-function isStageDirectivesEmpty(stage: StageDirectives | undefined) {
-  if (!stage) return true;
-
-  return Object.values(stage).every((value) => !value.trim());
-}
 
 function buildAnimeCharacterPayload(
   character: ICharacterDetails,
@@ -199,12 +197,7 @@ async function cloneCharacterScenarios(
       }
 
       await updateScenarioStage(targetCharacterId, createdId, stage, {
-        toneAndBehavior: stagePayload.toneAndBehavior.trim(),
-        restrictions: stagePayload.restrictions.trim(),
-        environment: stagePayload.environment.trim(),
-        characterLook: stagePayload.characterLook.trim(),
-        goal: stagePayload.goal.trim(),
-        escalationTrigger: stagePayload.escalationTrigger.trim(),
+        ...buildStageDirectivesPayload(stagePayload),
       });
     }
 
@@ -258,12 +251,7 @@ async function copyScenarioToCharacter({
       }
 
       await updateScenarioStage(targetCharacterId, createdScenario.id, stage, {
-        toneAndBehavior: stagePayload.toneAndBehavior.trim(),
-        restrictions: stagePayload.restrictions.trim(),
-        environment: stagePayload.environment.trim(),
-        characterLook: stagePayload.characterLook.trim(),
-        goal: stagePayload.goal.trim(),
-        escalationTrigger: stagePayload.escalationTrigger.trim(),
+        ...buildStageDirectivesPayload(stagePayload),
       });
     }
 
@@ -582,6 +570,29 @@ export function useAddScenarioGifts() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to add gifts.');
+    },
+  });
+}
+
+export function useAddScenarioActions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      scenarioId,
+    }: {
+      characterId: string;
+      scenarioId: string;
+    }) => addScenarioActions(characterId, scenarioId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess('Actions added.', 'Actions added.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to add actions.');
     },
   });
 }

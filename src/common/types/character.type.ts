@@ -67,6 +67,18 @@ export const STAGES_IN_ORDER = [
   RoleplayStage.Aftercare,
 ];
 
+export enum StageActionType {
+  // Acquaintance
+  Connect = 'connect',
+  Story = 'story',
+  Flirt = 'flirt',
+}
+
+export interface StageAction {
+  text: string;
+  type: StageActionType;
+}
+
 export interface StageDirectives {
   toneAndBehavior: string;
   restrictions: string;
@@ -74,6 +86,7 @@ export interface StageDirectives {
   characterLook: string;
   goal: string;
   escalationTrigger: string;
+  actions?: StageAction[];
 }
 
 export type StageDirectivesMap = Record<RoleplayStage, StageDirectives>;
