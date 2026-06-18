@@ -31,6 +31,7 @@ import {
   type ActivationScenarioMetadata,
   type ActivationsStats,
 } from '@/common/types';
+import { formatCharacterType } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 
 import s from './ActivationsPage.module.scss';
@@ -263,7 +264,7 @@ function buildScenarioLabel(
   const characterName = metadata.character.name.trim();
   const scenarioName = metadata.name.trim();
   if (!characterName || !scenarioName) return scenarioId;
-  return `${characterName} - ${scenarioName}`;
+  return `${characterName} - ${scenarioName} (${formatCharacterType(metadata.character.type)})`;
 }
 
 function buildPercentWithCount(count: number, denominator: number) {

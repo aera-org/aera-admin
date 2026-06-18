@@ -380,6 +380,13 @@
   gap: var(--space-2);
 }
 
+.scenarioVideoStatusBadges {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 .scenarioVideoHoverActions {
   display: flex;
   align-items: center;

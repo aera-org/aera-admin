@@ -151,12 +151,14 @@ export type ScenarioVideoV2CreateDto = {
   pose?: Pose;
   stage?: RoleplayStage;
   isPaid?: boolean;
+  forFeed?: boolean;
 };
 export type ScenarioVideoV2UpdateDto = {
   isActive: boolean;
   pose?: Pose;
   stage?: RoleplayStage;
   isPaid?: boolean;
+  forFeed?: boolean;
 };
 export type CharacterStoryCreateDto = {
   fileId: string;

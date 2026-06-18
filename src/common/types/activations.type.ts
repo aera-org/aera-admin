@@ -1,4 +1,4 @@
-import type { StageActionType } from './character.type';
+import type { CharacterType, StageActionType } from './character.type';
 
 export interface ActivationsStats {
   total: number;
@@ -24,6 +24,7 @@ export interface ActivationScenarioMetadata {
   character: {
     id: string;
     name: string;
+    type: CharacterType;
   };
 }
 

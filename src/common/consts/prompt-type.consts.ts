@@ -18,9 +18,17 @@ export const PROMPT_TYPE_OPTIONS = [
   { label: 'Avatar Realistic', value: PromptType.AvatarRealistic },
   { label: 'Avatar Anime', value: PromptType.AvatarAnime },
 
+  // Opening Images Legacy
+  { label: 'Opening Image Realistic', value: PromptType.OpeningImageRealisticLegacy },
+  { label: 'Opening Image Anime', value: PromptType.OpeningImageAnimeLegacy },
+
   // Opening Images
-  { label: 'Opening Image Realistic', value: PromptType.OpeningImageRealistic },
-  { label: 'Opening Image Anime', value: PromptType.OpeningImageAnime },
+  { label: 'Opening Image Realistic (v2)', value: PromptType.OpeningImageRealistic },
+  { label: 'Opening Image Anime (v2)', value: PromptType.OpeningImageAnime },
+
+  // Promo Images
+  { label: 'Promo Image Realistic', value: PromptType.PromoImageRealistic },
+  { label: 'Promo Image Anime', value: PromptType.PromoImageAnime },
 
   // Scenarios
   { label: 'Scenario Gen', value: PromptType.ScenarioGen },

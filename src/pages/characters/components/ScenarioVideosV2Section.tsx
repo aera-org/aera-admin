@@ -42,12 +42,14 @@ type CreateVideoValues = {
   pose: Pose | '';
   stage: RoleplayStage | '';
   isPaid: '' | 'true' | 'false';
+  forFeed: boolean;
 };
 
 type EditVideoValues = {
   pose: Pose | '';
   stage: RoleplayStage | '';
   isPaid: '' | 'true' | 'false';
+  forFeed: boolean;
   isActive: boolean;
 };
 
@@ -57,11 +59,13 @@ const EMPTY_CREATE_VALUES: CreateVideoValues = {
   pose: '',
   stage: '',
   isPaid: '',
+  forFeed: false,
 };
 const EMPTY_EDIT_VALUES: EditVideoValues = {
   pose: '',
   stage: '',
   isPaid: '',
+  forFeed: false,
   isActive: false,
 };
 
@@ -170,6 +174,7 @@ export function ScenarioVideosV2Section({
       pose: video.pose ?? '',
       stage: video.stage ?? '',
       isPaid: serializePaidValue(video.isPaid),
+      forFeed: video.forFeed,
       isActive: video.isActive,
     });
   };
@@ -193,6 +198,7 @@ export function ScenarioVideosV2Section({
         pose: createValues.pose || undefined,
         stage: createValues.stage || undefined,
         isPaid: parsePaidValue(createValues.isPaid),
+        forFeed: createValues.forFeed,
       },
     });
 
@@ -219,6 +225,7 @@ export function ScenarioVideosV2Section({
           pose: video.pose ?? undefined,
           stage: video.stage ?? undefined,
           isPaid: video.isPaid ?? undefined,
+          forFeed: video.forFeed,
         },
       });
     } finally {
@@ -238,6 +245,7 @@ export function ScenarioVideosV2Section({
         pose: editValues.pose || undefined,
         stage: editValues.stage || undefined,
         isPaid: parsePaidValue(editValues.isPaid),
+        forFeed: editValues.forFeed,
       },
     });
 
@@ -309,9 +317,12 @@ export function ScenarioVideosV2Section({
                 }}
               >
                 <div className={s.scenarioVideoOverlay}>
-                  <Badge tone={video.isActive ? 'success' : 'warning'}>
-                    {video.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
+                  <div className={s.scenarioVideoStatusBadges}>
+                    <Badge tone={video.isActive ? 'success' : 'warning'}>
+                      {video.isActive ? 'Active' : 'Inactive'}
+                    </Badge>
+                    {video.forFeed ? <Badge>Feed</Badge> : null}
+                  </div>
                   <div className={s.scenarioVideoHoverActions}>
                     <IconButton
                       aria-label="Edit video"
@@ -438,6 +449,18 @@ export function ScenarioVideosV2Section({
             />
           </Field>
 
+          <Switch
+            checked={createValues.forFeed}
+            onChange={(event) =>
+              setCreateValues((prev) => ({
+                ...prev,
+                forFeed: event.target.checked,
+              }))
+            }
+            label="Feed"
+            disabled={createMutation.isPending}
+          />
+
           <div className={s.storyDrawerActions}>
             <Button
               variant="secondary"
@@ -496,6 +519,11 @@ export function ScenarioVideosV2Section({
             <Field label="Payment">
               <Typography variant="body">
                 {formatPayment(detailsTarget.isPaid)}
+              </Typography>
+            </Field>
+            <Field label="Feed">
+              <Typography variant="body">
+                {detailsTarget.forFeed ? 'Yes' : 'No'}
               </Typography>
             </Field>
             <Field label="Status">
@@ -574,6 +602,18 @@ export function ScenarioVideosV2Section({
               fullWidth
             />
           </Field>
+
+          <Switch
+            checked={editValues.forFeed}
+            onChange={(event) =>
+              setEditValues((prev) => ({
+                ...prev,
+                forFeed: event.target.checked,
+              }))
+            }
+            label="Feed"
+            disabled={updateMutation.isPending}
+          />
 
           <Switch
             checked={editValues.isActive}

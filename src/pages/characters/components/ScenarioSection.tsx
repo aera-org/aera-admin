@@ -40,7 +40,6 @@ import {
   FileDir,
   type ICharacterDetails,
   type IFile,
-  ScenarioCharacterTrait,
   STAGES_IN_ORDER,
 } from '@/common/types';
 import { formatCharacterSelectLabel, isStageDirectivesEmpty } from '@/common/utils';
@@ -78,9 +77,6 @@ type ScenarioSectionProps = {
 };
 
 const DEFAULT_CUSTOM_SCENARIO_FORM_VALUES: CreateCustomScenarioDto = {
-  characterTraits: [],
-  clothes: '',
-  lingerie: '',
   description: '',
 };
 
@@ -96,26 +92,6 @@ async function copyScenarioTransferFile(file: ScenarioTransferFile) {
   });
 }
 
-const SCENARIO_CHARACTER_TRAIT_LABELS: Record<ScenarioCharacterTrait, string> = {
-  [ScenarioCharacterTrait.Playful]: 'Playful',
-  [ScenarioCharacterTrait.Caring]: 'Caring',
-  [ScenarioCharacterTrait.Shy]: 'Shy',
-  [ScenarioCharacterTrait.Sassy]: 'Sassy',
-  [ScenarioCharacterTrait.Mysterious]: 'Mysterious',
-  [ScenarioCharacterTrait.Dominant]: 'Dominant',
-  [ScenarioCharacterTrait.Submissive]: 'Submissive',
-  [ScenarioCharacterTrait.Intellectual]: 'Intellectual',
-  [ScenarioCharacterTrait.Hot]: 'Hot',
-  [ScenarioCharacterTrait.Romantic]: 'Romantic',
-};
-
-const SCENARIO_CHARACTER_TRAIT_OPTIONS = Object.values(
-  ScenarioCharacterTrait,
-).map((value) => ({
-  value,
-  label: SCENARIO_CHARACTER_TRAIT_LABELS[value],
-}));
-const CUSTOM_SCENARIO_TRAITS_MAX = 3;
 const BASE_SCENARIO_LEVEL = 1;
 
 export function ScenarioSection({
@@ -287,14 +263,6 @@ export function ScenarioSection({
 
   const getCustomErrors = useCallback((values: CreateCustomScenarioDto) => {
     const errors: Record<string, string> = {};
-    if (values.characterTraits.length === 0) {
-      errors.characterTraits = 'Select at least one trait.';
-    }
-    if (values.characterTraits.length > CUSTOM_SCENARIO_TRAITS_MAX) {
-      errors.characterTraits = `Select up to ${CUSTOM_SCENARIO_TRAITS_MAX} traits.`;
-    }
-    if (!values.clothes.trim()) errors.clothes = 'Enter clothes.';
-    if (!values.lingerie.trim()) errors.lingerie = 'Enter lingerie.';
     if (!values.description.trim()) {
       errors.description = 'Enter a description.';
     }
@@ -531,9 +499,6 @@ export function ScenarioSection({
     const result = await customCreateMutation.mutateAsync({
       characterId,
       payload: {
-        characterTraits: customFormValues.characterTraits,
-        clothes: customFormValues.clothes.trim(),
-        lingerie: customFormValues.lingerie.trim(),
         description: customFormValues.description.trim(),
       },
     });
@@ -1455,88 +1420,6 @@ export function ScenarioSection({
           }}
         >
           <Stack gap="16px">
-            <Field
-              label="Character traits"
-              error={customValidationErrors.characterTraits}
-            >
-              <ButtonGroup className={s.traitButtonGroup}>
-                {SCENARIO_CHARACTER_TRAIT_OPTIONS.map((option) => {
-                  const isChecked = customFormValues.characterTraits.includes(
-                    option.value,
-                  );
-                  const isMaxSelected =
-                    customFormValues.characterTraits.length >=
-                    CUSTOM_SCENARIO_TRAITS_MAX;
-
-                  return (
-                    <Button
-                      key={option.value}
-                      variant={isChecked ? 'primary' : 'secondary'}
-                      size="sm"
-                      aria-pressed={isChecked}
-                      disabled={!isChecked && isMaxSelected}
-                      onClick={() =>
-                        setCustomFormValues((prev) => ({
-                          ...prev,
-                          characterTraits: isChecked
-                            ? prev.characterTraits.filter(
-                                (value) => value !== option.value,
-                              )
-                            : Array.from(
-                                new Set([
-                                  ...prev.characterTraits,
-                                  option.value,
-                                ]),
-                              ).slice(0, CUSTOM_SCENARIO_TRAITS_MAX),
-                        }))
-                      }
-                    >
-                      {option.label}
-                    </Button>
-                  );
-                })}
-              </ButtonGroup>
-            </Field>
-
-            <FormRow columns={2}>
-              <Field
-                label="Clothes"
-                labelFor="custom-scenario-create-clothes"
-                error={customValidationErrors.clothes}
-              >
-                <Textarea
-                  id="custom-scenario-create-clothes"
-                  value={customFormValues.clothes}
-                  onChange={(event) =>
-                    setCustomFormValues((prev) => ({
-                      ...prev,
-                      clothes: event.target.value,
-                    }))
-                  }
-                  rows={3}
-                  fullWidth
-                />
-              </Field>
-              <Field
-                label="Lingerie"
-                labelFor="custom-scenario-create-lingerie"
-                error={customValidationErrors.lingerie}
-              >
-                <Textarea
-                  id="custom-scenario-create-lingerie"
-                  value={customFormValues.lingerie}
-                  onChange={(event) =>
-                    setCustomFormValues((prev) => ({
-                      ...prev,
-                      lingerie: event.target.value,
-                    }))
-                  }
-                  rows={3}
-                  fullWidth
-                />
-              </Field>
-            </FormRow>
-
             <Field
               label="Description"
               labelFor="custom-scenario-create-description"

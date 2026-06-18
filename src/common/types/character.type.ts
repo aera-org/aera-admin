@@ -146,6 +146,7 @@ export interface IScenarioVideo {
   pose?: Pose;
   stage?: RoleplayStage;
   isPaid?: boolean;
+  forFeed: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -252,8 +253,5 @@ export enum ScenarioCharacterTrait {
 }
 
 export interface CreateCustomScenarioDto {
-  characterTraits: ScenarioCharacterTrait[];
-  clothes: string;
-  lingerie: string;
   description: string;
 }

@@ -1,0 +1,130 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-bottom: var(--space-8);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.filterField {
+  min-width: 0;
+}
+
+.filterNote {
+  color: hsl(var(--fg-muted));
+}
+
+.kpiCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 124px;
+}
+
+.metricLabel {
+  color: hsl(var(--fg-muted));
+}
+
+.metricValue {
+  color: hsl(var(--fg));
+}
+
+.metricMeta {
+  color: hsl(var(--fg-muted));
+}
+
+.panel {
+  background: hsl(var(--color-surface));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-base);
+  box-shadow: none;
+}
+
+.sectionControls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.chart {
+  width: 100%;
+  min-height: 260px;
+}
+
+.chartTooltip {
+  background: hsl(var(--color-surface));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tableCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 120px;
+}
+
+.nameCell {
+  min-width: 240px;
+}
+
+.tableMeta {
+  color: hsl(var(--fg-muted));
+}
+
+.breakdownField {
+  min-width: 180px;
+}
+
+.stageActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.toggleGroup {
+  flex-wrap: wrap;
+}
+
+.chart :global(.visx-axis path),
+.chart :global(.visx-axis line) {
+  stroke: hsl(var(--border));
+}
+
+.chart :global(.visx-axis text) {
+  fill: hsl(var(--fg-muted));
+  font-size: 12px;
+  font-family: var(--font-body);
+}
+
+.chart :global(.visx-grid line) {
+  stroke: hsl(var(--border));
+  stroke-dasharray: 2 4;
+}
+
+.chart :global(.visx-line-path) {
+  stroke: hsl(var(--accent));
+  stroke-width: 2px;
+}
+
+.chart :global(.visx-series-point) {
+  fill: hsl(var(--accent));
+  stroke: hsl(var(--accent));
+}

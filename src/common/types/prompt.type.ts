@@ -16,9 +16,17 @@ export enum PromptType {
   AvatarRealistic = 'avatar-realistic',
   AvatarAnime = 'avatar-anime',
 
-  // Opening Image
-  OpeningImageRealistic = 'opening-image-realistic',
-  OpeningImageAnime = 'opening-image-anime',
+  // Opening Image Legacy
+  OpeningImageRealisticLegacy = 'opening-image-realistic',
+  OpeningImageAnimeLegacy = 'opening-image-anime',
+
+  // OpenningImage
+  OpeningImageRealistic = 'opening-image-realistic_v2',
+  OpeningImageAnime = 'opening-image-anime_v2',
+
+  // Promo Image
+  PromoImageRealistic = 'promo-image-realistic',
+  PromoImageAnime = 'promo-image-anime',
 
   // Post
   PostLocalization = 'post-localization',

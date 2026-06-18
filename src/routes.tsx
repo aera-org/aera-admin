@@ -26,6 +26,7 @@ import {
   ChatDetailsPage,
   ChatsPage,
   ConfirmEmailPage,
+  ConversionsPage,
   CustomCharacterCreatePage,
   CustomCharacterDetailsPage,
   CustomCharactersPage,
@@ -128,6 +129,7 @@ export function AppRoutes() {
         <Route path="/users/:id" element={<UserDetailsPage />} />
         <Route path="/user-progress" element={<UserProgressPage />} />
         <Route path="/activations" element={<ActivationsPage />} />
+        <Route path="/conversions" element={<ConversionsPage />} />
         <Route path="/chats" element={<ChatsPage />} />
         <Route path="/chats/:id" element={<ChatDetailsPage />} />
         <Route path="/generations/new" element={<GenerateImagePage />} />
