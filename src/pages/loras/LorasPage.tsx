@@ -644,7 +644,7 @@ export function LorasPage() {
               placeholder="Enter strength"
               step="0.01"
               min="0"
-              max="1"
+              max="4"
               fullWidth
               disabled={isUploading}
             />
@@ -707,7 +707,7 @@ export function LorasPage() {
               onChange={(event) => setStrengthValue(event.target.value)}
               step="0.01"
               min="0"
-              max="1"
+              max="4"
               fullWidth
             />
           </Field>
