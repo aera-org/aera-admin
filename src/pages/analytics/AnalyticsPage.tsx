@@ -262,16 +262,17 @@ function formatDeeplinkPercent(value: number | null | undefined) {
 }
 
 function getDeeplinkActivationRate(
-  item: Pick<DeeplinkAnalyticsItem, 'total' | 'visits'>,
+  item: Pick<DeeplinkAnalyticsItem, 'unique' | 'uniqueAll'>,
 ) {
   if (
-    !Number.isFinite(item.total) ||
-    !Number.isFinite(item.visits) ||
-    item.visits <= 0
+    !Number.isFinite(item.unique) ||
+    !Number.isFinite(item.uniqueAll) ||
+    item.unique <= 0 ||
+    item.uniqueAll <= 0
   ) {
     return null;
   }
-  return (item.total / item.visits) * 100;
+  return (item.unique / item.uniqueAll) * 100;
 }
 
 function normalizeRefList(value: string) {

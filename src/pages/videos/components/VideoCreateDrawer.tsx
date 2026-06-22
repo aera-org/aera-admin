@@ -73,9 +73,9 @@ const MIN_DURATION = 1;
 const MIN_COUNT = 1;
 const EMPTY_VALUES: CreateVideoValues = {
   name: '',
-  quality: VideoQuality.Medium,
-  resolution: VideoResolution.Medium,
-  aspectRatio: VideoAspectRatio.Vertical,
+  quality: VideoQuality.Low,
+  resolution: VideoResolution.Low,
+  aspectRatio: VideoAspectRatio.Square,
   duration: '5',
   count: '1',
   prompt: '',
