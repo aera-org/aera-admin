@@ -114,7 +114,9 @@ export type ScenarioCreateDto = {
   appearance: string;
   situation: string;
   openingMessage: string;
+  startMessage?: string;
   openingImageId?: string;
+  startImgId?: string;
   transitionMessage?: string | null;
   opensAfterId?: string | null;
 };

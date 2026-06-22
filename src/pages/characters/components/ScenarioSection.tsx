@@ -163,13 +163,17 @@ export function ScenarioSection({
     appearance: '',
     situation: '',
     openingMessage: '',
+    startMessage: '',
     openingImageId: '',
+    startImgId: '',
   });
   const [customFormValues, setCustomFormValues] =
     useState<CreateCustomScenarioDto>(DEFAULT_CUSTOM_SCENARIO_FORM_VALUES);
   const [editValues, setEditValues] = useState(formValues);
   const [openingFile, setOpeningFile] = useState<IFile | null>(null);
+  const [startFile, setStartFile] = useState<IFile | null>(null);
   const [editOpeningFile, setEditOpeningFile] = useState<IFile | null>(null);
+  const [editStartFile, setEditStartFile] = useState<IFile | null>(null);
   const [promoFile, setPromoFile] = useState<IFile | null>(null);
   const [editPromoFile, setEditPromoFile] = useState<IFile | null>(null);
   const [promoHorizontalFile, setPromoHorizontalFile] = useState<IFile | null>(
@@ -367,9 +371,12 @@ export function ScenarioSection({
       appearance: '',
       situation: '',
       openingMessage: '',
+      startMessage: '',
       openingImageId: '',
+      startImgId: '',
     });
     setOpeningFile(null);
+    setStartFile(null);
     setPromoFile(null);
     setPromoHorizontalFile(null);
     setShowErrors(false);
@@ -408,9 +415,12 @@ export function ScenarioSection({
       appearance: selectedScenario.appearance ?? '',
       situation: selectedScenario.situation ?? '',
       openingMessage: selectedScenario.openingMessage ?? '',
+      startMessage: selectedScenario.startMessage ?? '',
       openingImageId: selectedScenario.openingImage?.id ?? '',
+      startImgId: selectedScenario.startImg?.id ?? '',
     });
     setEditOpeningFile(selectedScenario.openingImage ?? null);
+    setEditStartFile(selectedScenario.startImg ?? null);
     setEditPromoFile(showPromoImages ? (selectedScenario.promoImg ?? null) : null);
     setEditPromoHorizontalFile(
       showPromoImages ? (selectedScenario.promoImgHorizontal ?? null) : null,
@@ -470,7 +480,9 @@ export function ScenarioSection({
         appearance: formValues.appearance.trim(),
         situation: formValues.situation.trim(),
         openingMessage: formValues.openingMessage.trim(),
+        startMessage: formValues.startMessage.trim() || undefined,
         openingImageId: formValues.openingImageId,
+        startImgId: formValues.startImgId || undefined,
         transitionMessage:
           Number(formValues.level) > BASE_SCENARIO_LEVEL
             ? formValues.transitionMessage.trim() || null
@@ -553,7 +565,9 @@ export function ScenarioSection({
         appearance: editValues.appearance.trim(),
         situation: editValues.situation.trim(),
         openingMessage: editValues.openingMessage.trim(),
+        startMessage: editValues.startMessage.trim() || undefined,
         openingImageId: editValues.openingImageId || undefined,
+        startImgId: editValues.startImgId || undefined,
         transitionMessage:
           levelValue > BASE_SCENARIO_LEVEL
             ? editValues.transitionMessage.trim() || null
@@ -727,6 +741,9 @@ export function ScenarioSection({
       );
 
       await copyScenarioTransferFile(scenarioPayload.openingImage);
+      if (scenarioPayload.startImg) {
+        await copyScenarioTransferFile(scenarioPayload.startImg);
+      }
       if (scenarioPayload.promoImg) {
         await copyScenarioTransferFile(scenarioPayload.promoImg);
       }
@@ -755,7 +772,9 @@ export function ScenarioSection({
         appearance: scenarioPayload.appearance.trim(),
         situation: scenarioPayload.situation.trim(),
         openingMessage: scenarioPayload.openingMessage.trim(),
+        startMessage: scenarioPayload.startMessage.trim() || undefined,
         openingImageId: scenarioPayload.openingImage.id,
+        startImgId: scenarioPayload.startImg?.id,
         transitionMessage:
           scenarioPayload.level > BASE_SCENARIO_LEVEL
             ? scenarioPayload.transitionMessage.trim() || null
@@ -1328,29 +1347,63 @@ export function ScenarioSection({
               fullWidth
             />
           </Field>
-
-          <div>
-            <FileUpload
-              label="Opening image"
-              folder={FileDir.Public}
-              value={openingFile}
-              onChange={(file) => {
-                setOpeningFile(file);
+          <Field
+            label="Start message"
+            labelFor="scenario-create-start-message"
+          >
+            <Textarea
+              id="scenario-create-start-message"
+              value={formValues.startMessage}
+              onChange={(event) =>
                 setFormValues((prev) => ({
                   ...prev,
-                  openingImageId: file?.id ?? '',
+                  startMessage: event.target.value,
+                }))
+              }
+              rows={3}
+              fullWidth
+            />
+          </Field>
+
+          <FormRow columns={2}>
+            <div>
+              <FileUpload
+                label="Opening image"
+                folder={FileDir.Public}
+                value={openingFile}
+                onChange={(file) => {
+                  setOpeningFile(file);
+                  setFormValues((prev) => ({
+                    ...prev,
+                    openingImageId: file?.id ?? '',
+                  }));
+                }}
+                onError={(message) =>
+                  notifyError(new Error(message), 'Unable to upload image.')
+                }
+              />
+              {validationErrors.openingImageId ? (
+                <Typography variant="caption" tone="warning">
+                  {validationErrors.openingImageId}
+                </Typography>
+              ) : null}
+            </div>
+            <FileUpload
+              label="Start image"
+              folder={FileDir.Public}
+              value={startFile}
+              onChange={(file) => {
+                setStartFile(file);
+                setFormValues((prev) => ({
+                  ...prev,
+                  startImgId: file?.id ?? '',
                 }));
               }}
               onError={(message) =>
                 notifyError(new Error(message), 'Unable to upload image.')
               }
             />
-            {validationErrors.openingImageId ? (
-              <Typography variant="caption" tone="warning">
-                {validationErrors.openingImageId}
-              </Typography>
-            ) : null}
-          </div>
+          </FormRow>
           {showPromoImages ? (
             <FormRow columns={2}>
               <FileUpload
@@ -1809,29 +1862,63 @@ export function ScenarioSection({
               fullWidth
             />
           </Field>
-
-          <div>
-            <FileUpload
-              label="Opening image"
-              folder={FileDir.Public}
-              value={editOpeningFile}
-              onChange={(file) => {
-                setEditOpeningFile(file);
+          <Field
+            label="Start message"
+            labelFor="scenario-edit-start-message"
+          >
+            <Textarea
+              id="scenario-edit-start-message"
+              value={editValues.startMessage}
+              onChange={(event) =>
                 setEditValues((prev) => ({
                   ...prev,
-                  openingImageId: file?.id ?? '',
+                  startMessage: event.target.value,
+                }))
+              }
+              rows={3}
+              fullWidth
+            />
+          </Field>
+
+          <FormRow columns={2}>
+            <div>
+              <FileUpload
+                label="Opening image"
+                folder={FileDir.Public}
+                value={editOpeningFile}
+                onChange={(file) => {
+                  setEditOpeningFile(file);
+                  setEditValues((prev) => ({
+                    ...prev,
+                    openingImageId: file?.id ?? '',
+                  }));
+                }}
+                onError={(message) =>
+                  notifyError(new Error(message), 'Unable to upload image.')
+                }
+              />
+              {editValidationErrors.openingImageId ? (
+                <Typography variant="caption" tone="warning">
+                  {editValidationErrors.openingImageId}
+                </Typography>
+              ) : null}
+            </div>
+            <FileUpload
+              label="Start image"
+              folder={FileDir.Public}
+              value={editStartFile}
+              onChange={(file) => {
+                setEditStartFile(file);
+                setEditValues((prev) => ({
+                  ...prev,
+                  startImgId: file?.id ?? '',
                 }));
               }}
               onError={(message) =>
                 notifyError(new Error(message), 'Unable to upload image.')
               }
             />
-            {editValidationErrors.openingImageId ? (
-              <Typography variant="caption" tone="warning">
-                {editValidationErrors.openingImageId}
-              </Typography>
-            ) : null}
-          </div>
+          </FormRow>
           <FormRow columns={2}>
             <FileUpload
               label="Promo image"

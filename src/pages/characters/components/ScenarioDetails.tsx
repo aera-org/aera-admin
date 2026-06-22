@@ -171,10 +171,12 @@ function buildScenarioPayload(
     appearance: scenario.appearance.trim(),
     situation: scenario.situation.trim(),
     openingMessage: scenario.openingMessage.trim(),
+    startMessage: scenario.startMessage?.trim() || undefined,
     transitionMessage:
       scenario.level > 1 ? scenario.transitionMessage?.trim() || null : null,
     opensAfterId: scenario.level > 1 ? scenario.opensAfterId || null : null,
     openingImageId: scenario.openingImage?.id,
+    startImgId: scenario.startImg?.id,
     liveGenerations: {
       stages: nextLiveGenerationStages,
     },
@@ -685,6 +687,25 @@ export function ScenarioDetails({
             </div>
           )}
         </div>
+        <div className={s.detailBlock}>
+          <Typography variant="caption" tone="muted">
+            Start image
+          </Typography>
+          {scenario.startImg?.url ? (
+            <img
+              className={s.stageOpeningImage}
+              src={scenario.startImg.url}
+              alt={`${scenario.name} start`}
+              loading="lazy"
+            />
+          ) : (
+            <div className={s.stageOpeningImagePlaceholder}>
+              <Typography variant="caption" tone="muted">
+                No image
+              </Typography>
+            </div>
+          )}
+        </div>
 
         <div className={s.detailBlock}>
           <Typography variant="caption" tone="muted">
@@ -864,6 +885,14 @@ export function ScenarioDetails({
           </Typography>
           <Typography variant="body" className={s.multiline}>
             {scenario.openingMessage || '-'}
+          </Typography>
+        </div>
+        <div className={s.detailBlock}>
+          <Typography variant="caption" tone="muted">
+            Start message
+          </Typography>
+          <Typography variant="body" className={s.multiline}>
+            {scenario.startMessage || '-'}
           </Typography>
         </div>
 

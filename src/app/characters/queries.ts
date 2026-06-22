@@ -117,6 +117,7 @@ function buildScenarioClonePayload(
     appearance: scenario.appearance.trim(),
     situation: scenario.situation.trim(),
     openingMessage: scenario.openingMessage.trim(),
+    startMessage: scenario.startMessage?.trim() || undefined,
     transitionMessage:
       scenario.level > 1 ? scenario.transitionMessage?.trim() || null : null,
     opensAfterId: null,
@@ -144,6 +145,7 @@ function buildScenarioCopyPayload(
     appearance: scenario.appearance.trim(),
     situation: scenario.situation.trim(),
     openingMessage: scenario.openingMessage.trim(),
+    startMessage: scenario.startMessage?.trim() || undefined,
     transitionMessage:
       scenario.level > 1 ? scenario.transitionMessage?.trim() || null : null,
     opensAfterId: null,

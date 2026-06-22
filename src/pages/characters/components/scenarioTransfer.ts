@@ -53,9 +53,11 @@ type ScenarioTransferScenario = {
   appearance: string;
   situation: string;
   openingMessage: string;
+  startMessage: string;
   transitionMessage: string;
   opensAfterId: string;
   openingImage: ScenarioTransferFile;
+  startImg?: ScenarioTransferFile;
   stages: Record<RoleplayStage, StageDirectives>;
   gifts: ScenarioTransferGift[];
 };
@@ -354,6 +356,7 @@ export function buildScenarioTransferPayload({
       appearance: sanitizeString(scenario.appearance),
       situation: sanitizeString(scenario.situation),
       openingMessage: sanitizeString(scenario.openingMessage),
+      startMessage: sanitizeString(scenario.startMessage),
       transitionMessage:
         scenario.level > 1 ? sanitizeString(scenario.transitionMessage) : '',
       opensAfterId:
@@ -367,6 +370,17 @@ export function buildScenarioTransferPayload({
         mime: openingImage.mime,
         url: openingImage.url ?? undefined,
       },
+      startImg: hasTransferFileShape(scenario.startImg)
+        ? {
+            id: scenario.startImg.id,
+            name: scenario.startImg.name,
+            dir: scenario.startImg.dir,
+            path: scenario.startImg.path,
+            status: scenario.startImg.status,
+            mime: scenario.startImg.mime,
+            url: scenario.startImg.url ?? undefined,
+          }
+        : undefined,
       stages,
       gifts,
     },
@@ -525,6 +539,10 @@ export async function parseScenarioTransferFile(file: File) {
         scenarioObj.openingMessage,
         'scenario.openingMessage',
       ),
+      startMessage: ensureString(
+        scenarioObj.startMessage ?? '',
+        'scenario.startMessage',
+      ),
       transitionMessage: ensureString(
         scenarioObj.transitionMessage ?? '',
         'scenario.transitionMessage',
@@ -537,6 +555,9 @@ export async function parseScenarioTransferFile(file: File) {
         scenarioObj.openingImage,
         'scenario.openingImage',
       ),
+      startImg: scenarioObj.startImg
+        ? parseTransferFile(scenarioObj.startImg, 'scenario.startImg')
+        : undefined,
       stages,
       gifts,
     },

@@ -161,6 +161,8 @@ export interface IScenario {
   shortDescription?: string | null;
   promoImg?: IFile | null;
   promoVideo?: IFile | null;
+  startImg?: IFile;
+  startMessage?: string;
   promoImgHorizontal?: IFile | null;
   isActive: boolean;
   isNew: boolean;
