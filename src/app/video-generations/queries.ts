@@ -15,6 +15,7 @@ import {
   getVideoGenerationDetails,
   getVideoGenerations,
   regenerateVideoGenerationItem,
+  saveVideoGenerationItem,
   updateVideoGeneration,
   type VideoGenerationsListParams,
 } from './videoGenerationsApi';
@@ -146,6 +147,25 @@ type VideoGenerationItemDeleteOptions = {
   id: string;
   itemId: string;
 };
+
+export function useSaveVideoGenerationItem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, itemId }: VideoGenerationItemDeleteOptions) =>
+      saveVideoGenerationItem(id, itemId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['video-generations'] });
+      queryClient.invalidateQueries({
+        queryKey: ['video-generations', 'detail', variables.id],
+      });
+      notifySuccess('Item saved.', 'Video item saved.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to save video item.');
+    },
+  });
+}
 
 export function useRegenerateVideoGenerationItem() {
   const queryClient = useQueryClient();

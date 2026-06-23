@@ -8,10 +8,11 @@ import {
   useDeleteVideoGeneration,
   useDeleteVideoGenerationItem,
   useRegenerateVideoGenerationItem,
+  useSaveVideoGenerationItem,
   useUpdateVideoGeneration,
   useVideoGenerationDetails,
 } from '@/app/video-generations';
-import { PencilLineIcon, TrashIcon } from '@/assets/icons';
+import { PencilLineIcon, SaveIcon, TrashIcon } from '@/assets/icons';
 import {
   Alert,
   Badge,
@@ -149,6 +150,7 @@ export function VideoDetailsPage() {
   const updateMutation = useUpdateVideoGeneration();
   const createItemMutation = useCreateVideoGenerationItem();
   const deleteMutation = useDeleteVideoGeneration();
+  const saveItemMutation = useSaveVideoGenerationItem();
   const regenerateItemMutation = useRegenerateVideoGenerationItem();
   const deleteItemMutation = useDeleteVideoGenerationItem();
 
@@ -165,6 +167,7 @@ export function VideoDetailsPage() {
     pose: '',
   });
   const [editCharacterSearch, setEditCharacterSearch] = useState('');
+  const [savingItemId, setSavingItemId] = useState<string | null>(null);
   const [regeneratingItemId, setRegeneratingItemId] = useState<string | null>(
     null,
   );
@@ -314,6 +317,19 @@ export function VideoDetailsPage() {
       itemId: itemToDelete.id,
     });
     setItemToDelete(null);
+  };
+
+  const handleSaveItem = async (item: IVideoGenerationItem) => {
+    if (!videoId) return;
+    setSavingItemId(item.id);
+    try {
+      await saveItemMutation.mutateAsync({
+        id: videoId,
+        itemId: item.id,
+      });
+    } finally {
+      setSavingItemId((prev) => (prev === item.id ? null : prev));
+    }
   };
 
   const handleRegenerateItem = async (item: IVideoGenerationItem) => {
@@ -541,6 +557,24 @@ export function VideoDetailsPage() {
                         </Typography>
                       )}
                       <div className={s.itemPreviewActions}>
+                        {item.status === VideoGenerationItemStatus.Ready ? (
+                          <IconButton
+                            aria-label="Save item"
+                            tooltip="Save item"
+                            size="sm"
+                            variant="ghost"
+                            icon={<SaveIcon />}
+                            loading={
+                              saveItemMutation.isPending && savingItemId === item.id
+                            }
+                            disabled={
+                              saveItemMutation.isPending ||
+                              regenerateItemMutation.isPending ||
+                              deleteItemMutation.isPending
+                            }
+                            onClick={() => handleSaveItem(item)}
+                          />
+                        ) : null}
                         <IconButton
                           aria-label="Regenerate item"
                           tooltip="Regenerate item"
@@ -552,6 +586,7 @@ export function VideoDetailsPage() {
                             regeneratingItemId === item.id
                           }
                           disabled={
+                            saveItemMutation.isPending ||
                             regenerateItemMutation.isPending ||
                             deleteItemMutation.isPending
                           }
@@ -566,6 +601,7 @@ export function VideoDetailsPage() {
                           icon={<TrashIcon />}
                           onClick={() => setItemToDelete(item)}
                           disabled={
+                            saveItemMutation.isPending ||
                             deleteItemMutation.isPending ||
                             regenerateItemMutation.isPending
                           }

@@ -24,6 +24,7 @@ const createFallbackError = 'Unable to create the video.';
 const updateFallbackError = 'Unable to update the video.';
 const deleteFallbackError = 'Unable to delete the video.';
 const createItemFallbackError = 'Unable to add video item.';
+const saveItemFallbackError = 'Unable to save video item.';
 const regenerateItemFallbackError = 'Unable to regenerate video item.';
 const deleteItemFallbackError = 'Unable to delete video item.';
 
@@ -110,6 +111,16 @@ export async function createVideoGenerationItem(id: string) {
   });
   if (!res.ok) {
     throw await buildApiError(res, createItemFallbackError);
+  }
+  return await parseJsonIfPresent(res);
+}
+
+export async function saveVideoGenerationItem(id: string, itemId: string) {
+  const res = await apiFetch(`/admin/video-generations/${id}/save/${itemId}`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, saveItemFallbackError);
   }
   return await parseJsonIfPresent(res);
 }
