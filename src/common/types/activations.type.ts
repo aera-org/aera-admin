@@ -1,4 +1,5 @@
-import type { CharacterType, StageActionType } from './character.type';
+import type { CharacterType } from './character.type';
+import type { StageActionType } from './scenario.type.ts';
 
 export interface ActivationsStats {
   total: number;

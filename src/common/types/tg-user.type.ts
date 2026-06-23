@@ -1,6 +1,7 @@
-import type { ICharacter, IScenario } from './character.type';
+import type { ICharacter } from './character.type';
 import type { IChat } from './chat.type.ts';
 import type { IGift } from './gift.type.ts';
+import type { IScenario } from './scenario.type.ts';
 
 export type UpdateTgUser = {
   isBlocked?: boolean;

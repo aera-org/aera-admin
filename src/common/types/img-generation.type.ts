@@ -4,11 +4,10 @@ import type { IAdmin } from './admin.type.ts';
 import {
   CharacterType,
   type ICharacter,
-  type IScenario,
-  RoleplayStage,
 } from './character.type.ts';
 import type { IFile } from './file.type.ts';
 import type { ILora } from './lora.type.ts';
+import type { IScenario, RoleplayStage } from './scenario.type.ts';
 
 export enum ImgGenerationStatus {
   Generating = 'generating',

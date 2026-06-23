@@ -1,6 +1,6 @@
-import type { ICharacter, IScenarioVideo } from "./character.type";
-import type { IScenario } from "./character.type";
+import type { ICharacter } from "./character.type";
 import type { IGift } from "./gift.type";
+import type { IScenario, IScenarioVideo } from "./scenario.type";
 import type { ITgUser } from "./tg-user.type";
 
 export enum InAppPurchaseType {

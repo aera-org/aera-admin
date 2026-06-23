@@ -1,6 +1,5 @@
-import type { RoleplayStage } from '@/common/types/character.type.ts';
-
 import type { IFile } from './file.type';
+import type { RoleplayStage } from './scenario.type.ts';
 
 export interface IPosePrompt {
   id: string;

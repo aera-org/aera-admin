@@ -1,4 +1,4 @@
-import type { StageDirectivesMap } from './character.type.ts';
+import type { StageDirectivesMap } from './scenario.type.ts';
 
 export interface ScenarioData {
   personality: string;

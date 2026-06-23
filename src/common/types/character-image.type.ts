@@ -1,11 +1,10 @@
 import {
   type ICharacter,
-  type IScenario,
-  RoleplayStage,
 } from './character.type.ts';
 import type { IFile } from './file.type.ts';
 import type { UserRequest } from './img-generation.type.ts';
 import { Pose } from './pose-prompt.type.ts';
+import type { IScenario, RoleplayStage } from './scenario.type.ts';
 
 export type CreateCharacterImageDto = {
   characterId: string;

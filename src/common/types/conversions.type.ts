@@ -1,4 +1,5 @@
-import type { CharacterType, RoleplayStage } from './character.type';
+import type { CharacterType } from './character.type';
+import type { RoleplayStage } from './scenario.type';
 
 export interface PaywallData {
   seen: number;

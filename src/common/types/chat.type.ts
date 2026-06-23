@@ -1,8 +1,8 @@
 import type { ITgUser } from '@/common/types/tg-user.type.ts';
 
-import type { IScenario } from './character.type.ts';
-import { type ICharacter, RoleplayStage } from './character.type.ts';
+import { type ICharacter } from './character.type.ts';
 import type { Pose } from './pose-prompt.type.ts';
+import type { IScenario, RoleplayStage } from './scenario.type.ts';
 
 export interface IChat {
   id: string;

@@ -1,5 +1,5 @@
-import type { IScenario } from './character.type';
 import type { IFile } from './file.type';
+import type { IScenario } from './scenario.type';
 
 export enum PostType {
     Img = 'img',

@@ -1,5 +1,5 @@
-import type { RoleplayStage } from './character.type.ts';
 import type { IFile } from './file.type.ts';
+import type { RoleplayStage } from './scenario.type.ts';
 
 export interface IGift {
   id: string;
