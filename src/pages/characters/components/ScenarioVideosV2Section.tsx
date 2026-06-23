@@ -137,6 +137,7 @@ export function ScenarioVideosV2Section({
   const [createValues, setCreateValues] =
     useState<CreateVideoValues>(EMPTY_CREATE_VALUES);
   const [createFile, setCreateFile] = useState<IFile | null>(null);
+  const [createStartFrame, setCreateStartFrame] = useState<IFile | null>(null);
   const [createShowErrors, setCreateShowErrors] = useState(false);
   const [detailsTarget, setDetailsTarget] = useState<IScenarioVideo | null>(
     null,
@@ -144,6 +145,7 @@ export function ScenarioVideosV2Section({
   const [editTarget, setEditTarget] = useState<IScenarioVideo | null>(null);
   const [editValues, setEditValues] =
     useState<EditVideoValues>(EMPTY_EDIT_VALUES);
+  const [editStartFrame, setEditStartFrame] = useState<IFile | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IScenarioVideo | null>(null);
   const [updatingVideoId, setUpdatingVideoId] = useState<string | null>(null);
 
@@ -159,6 +161,7 @@ export function ScenarioVideosV2Section({
   const openCreateDrawer = () => {
     setCreateValues(EMPTY_CREATE_VALUES);
     setCreateFile(null);
+    setCreateStartFrame(null);
     setCreateShowErrors(false);
     setIsCreateOpen(true);
   };
@@ -170,6 +173,7 @@ export function ScenarioVideosV2Section({
 
   const openEditDrawer = (video: IScenarioVideo) => {
     setEditTarget(video);
+    setEditStartFrame(video.startFrame ?? null);
     setEditValues({
       pose: video.pose ?? '',
       stage: video.stage ?? '',
@@ -182,6 +186,7 @@ export function ScenarioVideosV2Section({
   const closeEditDrawer = () => {
     if (updateMutation.isPending) return;
     setEditTarget(null);
+    setEditStartFrame(null);
   };
 
   const handleCreate = async () => {
@@ -195,6 +200,7 @@ export function ScenarioVideosV2Section({
       scenarioId,
       payload: {
         videoId: createFile.id,
+        startFrameId: createStartFrame?.id || undefined,
         pose: createValues.pose || undefined,
         stage: createValues.stage || undefined,
         isPaid: parsePaidValue(createValues.isPaid),
@@ -204,6 +210,7 @@ export function ScenarioVideosV2Section({
 
     setIsCreateOpen(false);
     setCreateFile(null);
+    setCreateStartFrame(null);
     setCreateValues(EMPTY_CREATE_VALUES);
     setCreateShowErrors(false);
   };
@@ -222,6 +229,7 @@ export function ScenarioVideosV2Section({
         id: video.id,
         payload: {
           isActive,
+          startFrameId: video.startFrame?.id ?? null,
           pose: video.pose ?? undefined,
           stage: video.stage ?? undefined,
           isPaid: video.isPaid ?? undefined,
@@ -242,6 +250,7 @@ export function ScenarioVideosV2Section({
       id: editTarget.id,
       payload: {
         isActive: editValues.isActive,
+        startFrameId: editStartFrame?.id ?? null,
         pose: editValues.pose || undefined,
         stage: editValues.stage || undefined,
         isPaid: parsePaidValue(editValues.isPaid),
@@ -404,6 +413,16 @@ export function ScenarioVideosV2Section({
             </Typography>
           ) : null}
 
+          <FileUpload
+            label="Start frame"
+            folder={FileDir.Public}
+            value={createStartFrame}
+            onChange={setCreateStartFrame}
+            onError={(message) =>
+              notifyError(new Error(message), 'Unable to upload start frame.')
+            }
+          />
+
           <Field label="Pose" labelFor="scenario-video-v2-create-pose">
             <Select
               id="scenario-video-v2-create-pose"
@@ -521,6 +540,17 @@ export function ScenarioVideosV2Section({
                 {formatPayment(detailsTarget.isPaid)}
               </Typography>
             </Field>
+            <Field label="Start frame">
+              {detailsTarget.startFrame?.url ? (
+                <img
+                  className={s.scenarioVideoStartFrame}
+                  src={detailsTarget.startFrame.url}
+                  alt={detailsTarget.startFrame.name}
+                />
+              ) : (
+                <Typography variant="body">-</Typography>
+              )}
+            </Field>
             <Field label="Feed">
               <Typography variant="body">
                 {detailsTarget.forFeed ? 'Yes' : 'No'}
@@ -557,6 +587,16 @@ export function ScenarioVideosV2Section({
           <Typography variant="body" tone="muted">
             The video file is fixed after creation. Update the metadata here.
           </Typography>
+
+          <FileUpload
+            label="Start frame"
+            folder={FileDir.Public}
+            value={editStartFrame}
+            onChange={setEditStartFrame}
+            onError={(message) =>
+              notifyError(new Error(message), 'Unable to upload start frame.')
+            }
+          />
 
           <Field label="Pose" labelFor="scenario-video-v2-edit-pose">
             <Select

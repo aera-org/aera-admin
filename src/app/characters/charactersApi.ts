@@ -150,6 +150,7 @@ export type ScenarioVideoUpdateDto = {
 };
 export type ScenarioVideoV2CreateDto = {
   videoId: string;
+  startFrameId?: string;
   pose?: Pose;
   stage?: RoleplayStage;
   isPaid?: boolean;
@@ -157,6 +158,7 @@ export type ScenarioVideoV2CreateDto = {
 };
 export type ScenarioVideoV2UpdateDto = {
   isActive: boolean;
+  startFrameId?: string | null;
   pose?: Pose;
   stage?: RoleplayStage;
   isPaid?: boolean;
