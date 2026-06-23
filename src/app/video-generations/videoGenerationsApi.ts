@@ -5,12 +5,15 @@ import type {
   IVideoGenerationSet,
   IVideoGenerationSetDetails,
   IVideoGenerationUpdateDto,
+  Pose,
 } from '@/common/types';
 
 import type { PaginatedResponse } from '../paginated-response.type';
 
 export type VideoGenerationsListParams = {
   search?: string;
+  scenarioId?: string;
+  pose?: Pose;
   order?: string;
   skip?: number;
   take?: number;
@@ -33,6 +36,8 @@ async function parseJsonIfPresent(res: Response) {
 export async function getVideoGenerations(params: VideoGenerationsListParams) {
   const query = new URLSearchParams();
   if (params.search) query.set('search', params.search);
+  if (params.scenarioId) query.set('scenarioId', params.scenarioId);
+  if (params.pose) query.set('pose', params.pose);
   if (params.order) query.set('order', params.order);
   if (typeof params.skip === 'number') query.set('skip', String(params.skip));
   if (typeof params.take === 'number') query.set('take', String(params.take));

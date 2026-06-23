@@ -1,5 +1,7 @@
+import type { CharacterType } from './character.type.ts';
 import type { IFile } from './file.type.ts';
 import type { ILora } from './lora.type.ts';
+import type { Pose } from './pose-prompt.type.ts';
 
 export enum VideoQuality {
   Low = '24',
@@ -24,6 +26,16 @@ export interface IVideoGenerationSet {
   id: string;
   name: string;
   quality: VideoQuality;
+  scenario?: {
+    id: string;
+    name: string;
+    character: {
+      id: string;
+      name: string;
+      type: CharacterType;
+    }
+  } | null;
+  pose?: Pose;
   resolution: VideoResolution;
   aspectRatio: VideoAspectRatio;
   duration: number;
@@ -57,6 +69,8 @@ export interface IVideoGenerationItem {
 
 export type IVideoGenerationCreateDto = {
   name: string;
+  scenarioId: string;
+  pose?: Pose;
   quality: VideoQuality;
   resolution: VideoResolution;
   aspectRatio: VideoAspectRatio;
@@ -70,4 +84,6 @@ export type IVideoGenerationCreateDto = {
 
 export type IVideoGenerationUpdateDto = {
   name: string;
+  scenarioId?: string;
+  pose?: Pose | null;
 };

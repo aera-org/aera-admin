@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
+import { useCharacterDetails, useCharacters } from '@/app/characters';
 import { useLoras } from '@/app/loras';
 import { notifyError } from '@/app/toast';
 import { useCreateVideoGeneration } from '@/app/video-generations';
@@ -16,11 +17,17 @@ import {
 import {
   FileDir,
   type IFile,
+  type Pose,
   VideoAspectRatio,
   VideoQuality,
   VideoResolution,
 } from '@/common/types';
+import {
+  formatCharacterSelectLabel,
+  poseOptions,
+} from '@/common/utils';
 import { Drawer, FileUpload, LoraSelect } from '@/components/molecules';
+import { SearchSelect } from '@/pages/generations/components/SearchSelect';
 
 import s from './VideoCreateDrawer.module.scss';
 
@@ -31,6 +38,9 @@ type VideoCreateDrawerProps = {
 
 type CreateVideoValues = {
   name: string;
+  characterId: string;
+  scenarioId: string;
+  pose: Pose | '';
   quality: VideoQuality;
   resolution: VideoResolution;
   aspectRatio: VideoAspectRatio;
@@ -73,6 +83,9 @@ const MIN_DURATION = 1;
 const MIN_COUNT = 1;
 const EMPTY_VALUES: CreateVideoValues = {
   name: '',
+  characterId: '',
+  scenarioId: '',
+  pose: '',
   quality: VideoQuality.Low,
   resolution: VideoResolution.Low,
   aspectRatio: VideoAspectRatio.Square,
@@ -131,6 +144,7 @@ export function VideoCreateDrawer({
   const [startFrame, setStartFrame] = useState<IFile | null>(null);
   const [highLoraSearch, setHighLoraSearch] = useState('');
   const [lowLoraSearch, setLowLoraSearch] = useState('');
+  const [characterSearch, setCharacterSearch] = useState('');
   const [selectedHighLoraOption, setSelectedHighLoraOption] =
     useState<LoraOption | null>(null);
   const [selectedLowLoraOption, setSelectedLowLoraOption] =
@@ -145,6 +159,7 @@ export function VideoCreateDrawer({
     lowLoraSearch,
     LORA_SEARCH_DEBOUNCE_MS,
   );
+  const debouncedCharacterSearch = useDebouncedValue(characterSearch, 300);
 
   const { data: highLoraData, isLoading: isHighLoraLoading } = useLoras({
     search: debouncedHighLoraSearch.trim() || undefined,
@@ -158,6 +173,14 @@ export function VideoCreateDrawer({
     skip: 0,
     take: 20,
   });
+  const { data: characterData, isLoading: isCharactersLoading } = useCharacters({
+    search: debouncedCharacterSearch.trim() || undefined,
+    order: 'ASC',
+    skip: 0,
+    take: 20,
+  });
+  const { data: selectedCharacterDetails, isLoading: isScenariosLoading } =
+    useCharacterDetails(values.characterId || null);
 
   const parsedDuration = parsePositiveInteger(values.duration);
   const parsedCount = parsePositiveInteger(values.count);
@@ -167,6 +190,7 @@ export function VideoCreateDrawer({
 
     return {
       name: values.name.trim() ? undefined : 'Enter a name.',
+      scenarioId: values.scenarioId ? undefined : 'Select a scenario.',
       quality: isVideoQuality(values.quality) ? undefined : 'Select quality.',
       resolution: isVideoResolution(values.resolution)
         ? undefined
@@ -195,21 +219,23 @@ export function VideoCreateDrawer({
     values.prompt,
     values.quality,
     values.resolution,
+    values.scenarioId,
   ]);
 
   const isValid = useMemo(
     () =>
       Boolean(
         values.name.trim() &&
-        values.prompt.trim() &&
-        startFrame?.id &&
-        isVideoQuality(values.quality) &&
-        isVideoResolution(values.resolution) &&
-        isVideoAspectRatio(values.aspectRatio) &&
-        parsedDuration !== null &&
-        parsedDuration >= MIN_DURATION &&
-        parsedCount !== null &&
-        parsedCount >= MIN_COUNT,
+          values.scenarioId &&
+          values.prompt.trim() &&
+          startFrame?.id &&
+          isVideoQuality(values.quality) &&
+          isVideoResolution(values.resolution) &&
+          isVideoAspectRatio(values.aspectRatio) &&
+          parsedDuration !== null &&
+          parsedDuration >= MIN_DURATION &&
+          parsedCount !== null &&
+          parsedCount >= MIN_COUNT,
       ),
     [
       parsedCount,
@@ -220,16 +246,35 @@ export function VideoCreateDrawer({
       values.prompt,
       values.quality,
       values.resolution,
+      values.scenarioId,
     ],
   );
 
   const highLoraOptions = useMemo(
-    () => mergeSelectedLoraOption(highLoraData?.data ?? [], selectedHighLoraOption),
+    () =>
+      mergeSelectedLoraOption(highLoraData?.data ?? [], selectedHighLoraOption),
     [highLoraData?.data, selectedHighLoraOption],
   );
   const lowLoraOptions = useMemo(
     () => mergeSelectedLoraOption(lowLoraData?.data ?? [], selectedLowLoraOption),
     [lowLoraData?.data, selectedLowLoraOption],
+  );
+  const characterOptions = useMemo(
+    () =>
+      (characterData?.data ?? []).map((character) => ({
+        id: character.id,
+        label: formatCharacterSelectLabel(character.name, character.type),
+        meta: character.id,
+      })),
+    [characterData?.data],
+  );
+  const scenarioOptions = useMemo(
+    () =>
+      (selectedCharacterDetails?.scenarios ?? []).map((scenario) => ({
+        label: scenario.name,
+        value: scenario.id,
+      })),
+    [selectedCharacterDetails?.scenarios],
   );
 
   useEffect(() => {
@@ -275,6 +320,8 @@ export function VideoCreateDrawer({
 
     const result = await createMutation.mutateAsync({
       name: values.name.trim(),
+      scenarioId: values.scenarioId,
+      pose: values.pose || undefined,
       quality: values.quality,
       resolution: values.resolution,
       aspectRatio: values.aspectRatio,
@@ -320,6 +367,62 @@ export function VideoCreateDrawer({
             fullWidth
           />
         </Field>
+
+        <FormRow columns={2}>
+          <Field
+            label="Character"
+            labelFor="video-create-character"
+          >
+            <SearchSelect
+              id="video-create-character"
+              value={values.characterId}
+              options={characterOptions}
+              search={characterSearch}
+              onSearchChange={setCharacterSearch}
+              onSelect={(value) =>
+                setValues((prev) => ({
+                  ...prev,
+                  characterId: value,
+                  scenarioId: '',
+                }))
+              }
+              placeholder={
+                isCharactersLoading ? 'Loading characters...' : 'Select character'
+              }
+              loading={isCharactersLoading}
+              disabled={createMutation.isPending}
+            />
+          </Field>
+          <Field
+            label="Scenario"
+            labelFor="video-create-scenario"
+            error={validationErrors.scenarioId}
+          >
+            <Select
+              id="video-create-scenario"
+              size="sm"
+              options={scenarioOptions}
+              value={values.scenarioId}
+              onChange={(value) =>
+                setValues((prev) => ({ ...prev, scenarioId: value }))
+              }
+              placeholder={
+                values.characterId
+                  ? isScenariosLoading
+                    ? 'Loading scenarios...'
+                    : 'Select scenario'
+                  : 'Select character first'
+              }
+              fullWidth
+              disabled={
+                !values.characterId ||
+                isScenariosLoading ||
+                createMutation.isPending
+              }
+              invalid={Boolean(validationErrors.scenarioId)}
+            />
+          </Field>
+        </FormRow>
 
         <FormRow columns={2}>
           <Field
@@ -402,24 +505,39 @@ export function VideoCreateDrawer({
           </Field>
         </FormRow>
 
-        <Field
-          label="Count"
-          labelFor="video-create-count"
-          error={validationErrors.count}
-        >
-          <Input
-            id="video-create-count"
-            type="number"
-            min={MIN_COUNT}
-            size="sm"
-            value={values.count}
-            onChange={(event) =>
-              setValues((prev) => ({ ...prev, count: event.target.value }))
-            }
-            placeholder={String(MIN_COUNT)}
-            fullWidth
-          />
-        </Field>
+        <FormRow columns={2}>
+          <Field
+            label="Count"
+            labelFor="video-create-count"
+            error={validationErrors.count}
+          >
+            <Input
+              id="video-create-count"
+              type="number"
+              min={MIN_COUNT}
+              size="sm"
+              value={values.count}
+              onChange={(event) =>
+                setValues((prev) => ({ ...prev, count: event.target.value }))
+              }
+              placeholder={String(MIN_COUNT)}
+              fullWidth
+            />
+          </Field>
+          <Field label="Pose" labelFor="video-create-pose">
+            <Select
+              id="video-create-pose"
+              size="sm"
+              options={[{ label: 'No pose', value: '' }, ...poseOptions]}
+              value={values.pose}
+              onChange={(value) =>
+                setValues((prev) => ({ ...prev, pose: value as Pose | '' }))
+              }
+              placeholder="Select pose"
+              fullWidth
+            />
+          </Field>
+        </FormRow>
 
         <Field
           label="Prompt"

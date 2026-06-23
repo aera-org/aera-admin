@@ -1,7 +1,8 @@
 import { ReloadIcon } from '@radix-ui/react-icons';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { useCharacterDetails, useCharacters } from '@/app/characters';
 import {
   useCreateVideoGenerationItem,
   useDeleteVideoGeneration,
@@ -18,23 +19,46 @@ import {
   Container,
   EmptyState,
   Field,
+  FormRow,
   IconButton,
   Input,
   Modal,
+  Select,
   Skeleton,
   Stack,
   Typography,
 } from '@/atoms';
 import {
   type IVideoGenerationItem,
+  type Pose,
   VideoAspectRatio,
   VideoGenerationItemStatus,
   VideoQuality,
 } from '@/common/types';
+import {
+  formatCharacterSelectLabel,
+  formatCharacterType,
+  formatPose,
+  poseOptions,
+} from '@/common/utils';
 import { ConfirmModal } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
+import { SearchSelect } from '@/pages/generations/components/SearchSelect';
 
 import s from './VideoDetailsPage.module.scss';
+
+type EditVideoValues = {
+  name: string;
+  characterId: string;
+  scenarioId: string;
+  pose: Pose | '';
+};
+
+type SelectOption = {
+  id: string;
+  label: string;
+  meta?: string;
+};
 
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -61,6 +85,24 @@ function formatAspectRatio(value: VideoAspectRatio) {
   return 'Vertical';
 }
 
+function formatScenarioLabel(
+  scenario:
+    | {
+        id: string;
+        name: string;
+        character: {
+          id: string;
+          name: string;
+          type: Parameters<typeof formatCharacterType>[0];
+        };
+      }
+    | null
+    | undefined,
+) {
+  if (!scenario) return '-';
+  return `${scenario.character.name} - ${scenario.name} (${formatCharacterType(scenario.character.type)})`;
+}
+
 function getStatusTone(status: VideoGenerationItemStatus) {
   if (status === VideoGenerationItemStatus.Ready) return 'success';
   if (status === VideoGenerationItemStatus.Failed) return 'danger';
@@ -73,6 +115,15 @@ function getStatusLabel(status: VideoGenerationItemStatus) {
   if (status === VideoGenerationItemStatus.Ready) return 'Ready';
   if (status === VideoGenerationItemStatus.Failed) return 'Failed';
   return 'Pending';
+}
+
+function mergeSelectedOption<T extends SelectOption>(
+  options: T[],
+  selected?: T,
+) {
+  if (!selected) return options;
+  if (options.some((option) => option.id === selected.id)) return options;
+  return [selected, ...options];
 }
 
 export function VideoDetailsPage() {
@@ -107,16 +158,51 @@ export function VideoDetailsPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [editShowErrors, setEditShowErrors] = useState(false);
-  const [editName, setEditName] = useState('');
+  const [editValues, setEditValues] = useState<EditVideoValues>({
+    name: '',
+    characterId: '',
+    scenarioId: '',
+    pose: '',
+  });
+  const [editCharacterSearch, setEditCharacterSearch] = useState('');
   const [regeneratingItemId, setRegeneratingItemId] = useState<string | null>(
     null,
   );
 
-  const editValidationError = useMemo(() => {
-    if (!editShowErrors) return undefined;
-    if (!editName.trim()) return 'Enter a name.';
-    return undefined;
-  }, [editName, editShowErrors]);
+  const { data: editCharacterData, isLoading: isEditCharactersLoading } =
+    useCharacters(
+      {
+        search: editCharacterSearch.trim() || undefined,
+        order: 'ASC',
+        skip: 0,
+        take: 20,
+      },
+      { enabled: isEditOpen },
+    );
+  const { data: editCharacterDetails, isLoading: isEditScenariosLoading } =
+    useCharacterDetails(editValues.characterId || null);
+
+  useEffect(() => {
+    if (!editValues.scenarioId || !editCharacterDetails) return;
+    const exists = editCharacterDetails.scenarios.some(
+      (scenario) => scenario.id === editValues.scenarioId,
+    );
+    if (!exists) {
+      setEditValues((prev) => ({ ...prev, scenarioId: '' }));
+    }
+  }, [editCharacterDetails, editValues.scenarioId]);
+
+  const editValidationErrors = useMemo(() => {
+    if (!editShowErrors) return {};
+
+    return {
+      name: editValues.name.trim() ? undefined : 'Enter a name.',
+      scenarioId:
+        editValues.characterId && !editValues.scenarioId
+          ? 'Select a scenario.'
+          : undefined,
+    };
+  }, [editShowErrors, editValues.characterId, editValues.name, editValues.scenarioId]);
 
   const items =
     data?.items.sort((a, b) => {
@@ -129,9 +215,57 @@ export function VideoDetailsPage() {
   const showSkeleton = isLoading && !data;
   const showEmpty = !showSkeleton && !error && !data;
 
+  const editCharacterOptions = useMemo(
+    () =>
+      mergeSelectedOption(
+        (editCharacterData?.data ?? []).map((character) => ({
+          id: character.id,
+          label: formatCharacterSelectLabel(character.name, character.type),
+          meta: character.id,
+        })),
+        data?.scenario?.character
+          ? {
+              id: data.scenario.character.id,
+              label: formatCharacterSelectLabel(
+                data.scenario.character.name,
+                data.scenario.character.type,
+              ),
+              meta: data.scenario.character.id,
+            }
+          : undefined,
+      ),
+    [data?.scenario?.character, editCharacterData?.data],
+  );
+
+  const editScenarioOptions = useMemo(() => {
+    const options = (editCharacterDetails?.scenarios ?? []).map((scenario) => ({
+      label: scenario.name,
+      value: scenario.id,
+    }));
+
+    if (
+      data?.scenario &&
+      data.scenario.character.id === editValues.characterId &&
+      !options.some((option) => option.value === data.scenario?.id)
+    ) {
+      options.unshift({
+        label: data.scenario.name,
+        value: data.scenario.id,
+      });
+    }
+
+    return options;
+  }, [data?.scenario, editCharacterDetails?.scenarios, editValues.characterId]);
+
   const openEditModal = () => {
     if (!data) return;
-    setEditName(data.name ?? '');
+    setEditValues({
+      name: data.name ?? '',
+      characterId: data.scenario?.character.id ?? '',
+      scenarioId: data.scenario?.id ?? '',
+      pose: data.pose ?? '',
+    });
+    setEditCharacterSearch('');
     setEditShowErrors(false);
     setIsEditOpen(true);
   };
@@ -143,14 +277,21 @@ export function VideoDetailsPage() {
 
   const handleEdit = async () => {
     if (!videoId) return;
-    if (!editName.trim()) {
+    if (
+      !editValues.name.trim() ||
+      (editValues.characterId && !editValues.scenarioId)
+    ) {
       setEditShowErrors(true);
       return;
     }
 
     await updateMutation.mutateAsync({
       id: videoId,
-      payload: { name: editName.trim() },
+      payload: {
+        name: editValues.name.trim(),
+        scenarioId: editValues.scenarioId || undefined,
+        pose: editValues.pose || null,
+      },
     });
     setIsEditOpen(false);
   };
@@ -266,6 +407,8 @@ export function VideoDetailsPage() {
                   <Skeleton width={180} height={16} />
                   <Skeleton width={120} height={12} />
                   <Skeleton width={200} height={16} />
+                  <Skeleton width={140} height={12} />
+                  <Skeleton width={200} height={16} />
                 </div>
                 <Skeleton height={120} />
               </div>
@@ -286,6 +429,16 @@ export function VideoDetailsPage() {
                 <div className={s.detailsGrid}>
                   <Field label="Name">
                     <Typography variant="body">{data.name}</Typography>
+                  </Field>
+                  <Field label="Scenario">
+                    <Typography variant="body" tone="muted">
+                      {formatScenarioLabel(data.scenario)}
+                    </Typography>
+                  </Field>
+                  <Field label="Pose">
+                    <Typography variant="body" tone="muted">
+                      {formatPose(data.pose)}
+                    </Typography>
                   </Field>
                   <Field label="Quality">
                     <Typography variant="body" tone="muted">
@@ -471,27 +624,111 @@ export function VideoDetailsPage() {
             <Button
               onClick={handleEdit}
               loading={updateMutation.isPending}
-              disabled={!editName.trim() || updateMutation.isPending}
+              disabled={!editValues.name.trim() || updateMutation.isPending}
             >
               Save
             </Button>
           </div>
         }
       >
-        <Field
-          label="Name"
-          labelFor="video-edit-name"
-          error={editValidationError}
-        >
-          <Input
-            id="video-edit-name"
-            size="sm"
-            value={editName}
-            onChange={(event) => setEditName(event.target.value)}
-            placeholder="Video name"
-            fullWidth
-          />
-        </Field>
+        <Stack gap="16px">
+          <Field
+            label="Name"
+            labelFor="video-edit-name"
+            error={editValidationErrors.name}
+          >
+            <Input
+              id="video-edit-name"
+              size="sm"
+              value={editValues.name}
+              onChange={(event) =>
+                setEditValues((prev) => ({
+                  ...prev,
+                  name: event.target.value,
+                }))
+              }
+              placeholder="Video name"
+              fullWidth
+            />
+          </Field>
+
+          <FormRow columns={2}>
+            <Field label="Character" labelFor="video-edit-character">
+              <SearchSelect
+                id="video-edit-character"
+                value={editValues.characterId}
+                options={editCharacterOptions}
+                search={editCharacterSearch}
+                onSearchChange={setEditCharacterSearch}
+                onSelect={(value) =>
+                  setEditValues((prev) => ({
+                    ...prev,
+                    characterId: value,
+                    scenarioId: '',
+                  }))
+                }
+                placeholder={
+                  isEditCharactersLoading
+                    ? 'Loading characters...'
+                    : 'Select character'
+                }
+                loading={isEditCharactersLoading}
+                disabled={updateMutation.isPending}
+              />
+            </Field>
+
+            <Field
+              label="Scenario"
+              labelFor="video-edit-scenario"
+              error={editValidationErrors.scenarioId}
+            >
+              <Select
+                id="video-edit-scenario"
+                size="sm"
+                options={editScenarioOptions}
+                value={editValues.scenarioId}
+                onChange={(value) =>
+                  setEditValues((prev) => ({
+                    ...prev,
+                    scenarioId: value,
+                  }))
+                }
+                placeholder={
+                  editValues.characterId
+                    ? isEditScenariosLoading
+                      ? 'Loading scenarios...'
+                      : 'Select scenario'
+                    : 'Select character first'
+                }
+                fullWidth
+                disabled={
+                  !editValues.characterId ||
+                  isEditScenariosLoading ||
+                  updateMutation.isPending
+                }
+                invalid={Boolean(editValidationErrors.scenarioId)}
+              />
+            </Field>
+          </FormRow>
+
+          <Field label="Pose" labelFor="video-edit-pose">
+            <Select
+              id="video-edit-pose"
+              size="sm"
+              options={[{ label: 'No pose', value: '' }, ...poseOptions]}
+              value={editValues.pose}
+              onChange={(value) =>
+                setEditValues((prev) => ({
+                  ...prev,
+                  pose: value as Pose | '',
+                }))
+              }
+              placeholder="Select pose"
+              fullWidth
+              disabled={updateMutation.isPending}
+            />
+          </Field>
+        </Stack>
       </Modal>
 
       <ConfirmModal

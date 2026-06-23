@@ -14,6 +14,7 @@ type SearchSelectOption = {
 type SearchSelectProps = {
   id?: string;
   value: string;
+  valueLabel?: string;
   options: SearchSelectOption[];
   search: string;
   onSearchChange: (value: string) => void;
@@ -29,6 +30,7 @@ type SearchSelectProps = {
 export function SearchSelect({
   id,
   value,
+  valueLabel,
   options,
   search,
   onSearchChange,
@@ -59,7 +61,8 @@ export function SearchSelect({
     }
   }, [open, onSearchChange]);
 
-  const inputValue = open ? search : selectedLabel || selected?.label || '';
+  const inputValue =
+    open ? search : selectedLabel || selected?.label || valueLabel || '';
 
   return (
     <Popover
