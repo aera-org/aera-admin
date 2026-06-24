@@ -107,11 +107,13 @@ type DailyMetricKey =
   | 'openedAppRate'
   | 'seenPaywallRate'
   | 'unique'
+  | 'uniqueAll'
   | 'customers'
   | 'revenue'
   | 'conversion'
   | 'arpu'
   | 'arpuu'
+  | 'arpuuAll'
   | 'arpc';
 
 type CountryMetricKey = Exclude<
@@ -125,6 +127,8 @@ type CountryMetricKey = Exclude<
   | 'activationRate'
   | 'openedAppRate'
   | 'seenPaywallRate'
+  | 'uniqueAll'
+  | 'arpuuAll'
 >;
 
 type CountryOrder = 'asc' | 'desc';
@@ -162,6 +166,10 @@ const COUNTRY_LIMIT_OPTIONS = [20, 50, 100] as const;
 const DAILY_USER_VISITS_METRIC = getMetricDefinition('visits');
 const DAILY_TOTAL_ACTIVE_USERS_METRIC = getMetricDefinition('total');
 const DAILY_UNIQUE_ACTIVE_USERS_METRIC = getMetricDefinition('unique');
+const DAILY_UNIQUE_ALL_METRIC = getMetricDefinition('uniqueAll');
+const DAILY_ARPUU_ALL_METRIC = getMetricDefinition(
+  'averageRevenuePerUniqueUserAll',
+);
 const DAILY_ORGANIC_ACTIVE_USERS_METRIC = getMetricDefinition('totalOrganic');
 const DAILY_TOTAL_DEEPLINK_CLICKS_METRIC =
   getMetricDefinition('deeplinkEvents');
@@ -355,11 +363,13 @@ function isValidDailyMetric(
     value === 'openedAppRate' ||
     value === 'seenPaywallRate' ||
     value === 'unique' ||
+    value === 'uniqueAll' ||
     value === 'customers' ||
     value === 'revenue' ||
     value === 'conversion' ||
     value === 'arpu' ||
     value === 'arpuu' ||
+    value === 'arpuuAll' ||
     value === 'arpc'
   );
 }
@@ -416,6 +426,11 @@ const DAILY_METRIC_OPTIONS: Array<{
       DAILY_UNIQUE_ACTIVE_USERS_METRIC?.label ??
       'Total uniqie active users',
     description: 'Distinct active users with at least one chat session in the day.',
+  },
+  {
+    value: 'uniqueAll',
+    label: DAILY_UNIQUE_ALL_METRIC?.label ?? 'Unique All',
+    description: 'Users registered in the day.',
   },
   {
     value: 'totalOrganic',
@@ -487,6 +502,11 @@ const DAILY_METRIC_OPTIONS: Array<{
     value: 'arpuu',
     label: 'ARPUU',
     description: 'Revenue divided by unique users.',
+  },
+  {
+    value: 'arpuuAll',
+    label: DAILY_ARPUU_ALL_METRIC?.label ?? 'ARPUU All',
+    description: 'Revenue divided by registered users.',
   },
   {
     value: 'arpc',
@@ -2110,6 +2130,7 @@ export function AnalyticsPage() {
           acc.seenPaywallRateCount += 1;
         }
         acc.unique += Number.isFinite(item.unique) ? item.unique : 0;
+        acc.uniqueAll += Number.isFinite(item.uniqueAll) ? item.uniqueAll : 0;
         acc.customers += Number.isFinite(item.customers) ? item.customers : 0;
         acc.revenue += Number.isFinite(item.revenue) ? item.revenue : 0;
         if (visits > 0) {
@@ -2133,6 +2154,7 @@ export function AnalyticsPage() {
         seenPaywallRateSum: 0,
         seenPaywallRateCount: 0,
         unique: 0,
+        uniqueAll: 0,
         customers: 0,
         revenue: 0,
         activationRateVisits: 0,
@@ -2156,6 +2178,8 @@ export function AnalyticsPage() {
       totals.total > 0 ? totals.customers / totals.total : null;
     const arpu = totals.total > 0 ? totals.revenue / totals.total : null;
     const arpuu = totals.unique > 0 ? totals.revenue / totals.unique : null;
+    const arpuuAll =
+      totals.uniqueAll > 0 ? totals.revenue / totals.uniqueAll : null;
     const arpc =
       totals.customers > 0 ? totals.revenue / totals.customers : null;
 
@@ -2177,6 +2201,7 @@ export function AnalyticsPage() {
       conversion,
       arpu,
       arpuu,
+      arpuuAll,
       arpc,
     };
   }, [dailyData]);
@@ -2242,6 +2267,21 @@ export function AnalyticsPage() {
             >
               {DAILY_UNIQUE_ACTIVE_USERS_METRIC?.label ??
                 'Total uniqie active users'}
+            </Typography>
+          </Tooltip>
+        ),
+      },
+      {
+        key: 'uniqueAll',
+        label: (
+          <Tooltip content="Users registered in the day.">
+            <Typography
+              variant="meta"
+              as="span"
+              tone="muted"
+              className={cn(s.tableHeader, [s.alignRight])}
+            >
+              {DAILY_UNIQUE_ALL_METRIC?.label ?? 'Unique All'}
             </Typography>
           </Tooltip>
         ),
@@ -2447,6 +2487,21 @@ export function AnalyticsPage() {
         ),
       },
       {
+        key: 'arpuuAll',
+        label: (
+          <Tooltip content="Revenue divided by registered users.">
+            <Typography
+              variant="meta"
+              as="span"
+              tone="muted"
+              className={cn(s.tableHeader, [s.alignRight])}
+            >
+              {DAILY_ARPUU_ALL_METRIC?.label ?? 'ARPUU All'}
+            </Typography>
+          </Tooltip>
+        ),
+      },
+      {
         key: 'arpc',
         label: (
           <Tooltip content="Revenue divided by customers.">
@@ -2503,6 +2558,16 @@ export function AnalyticsPage() {
             style={{ fontSize: 14 }}
           >
             {Number.isFinite(item.unique) ? formatCount(item.unique) : '—'}
+          </Typography>
+        ),
+        uniqueAll: (
+          <Typography
+            variant="body"
+            as="span"
+            className={s.alignRight}
+            style={{ fontSize: 14 }}
+          >
+            {Number.isFinite(item.uniqueAll) ? formatCount(item.uniqueAll) : '—'}
           </Typography>
         ),
         totalOrganic: (
@@ -2655,6 +2720,18 @@ export function AnalyticsPage() {
               : '—'}
           </Typography>
         ),
+        arpuuAll: (
+          <Typography
+            variant="body"
+            as="span"
+            className={s.alignRight}
+            style={{ fontSize: 14 }}
+          >
+            {dailyArpuuAllMetric && Number.isFinite(item.arpuuAll)
+              ? formatMetricValue(dailyArpuuAllMetric, item.arpuuAll, 'table')
+              : '—'}
+          </Typography>
+        ),
         arpc: (
           <Typography
             variant="body"
@@ -2674,6 +2751,7 @@ export function AnalyticsPage() {
     dailyRevenueMetric,
     dailyArpuMetric,
     dailyArpuuMetric,
+    dailyArpuuAllMetric,
     dailyArpcMetric,
   ]);
 
@@ -3146,6 +3224,10 @@ export function AnalyticsPage() {
           return dailyArpuuMetric
             ? formatMetricValue(dailyArpuuMetric, value, variant)
             : formatCount(value, 2);
+        case 'arpuuAll':
+          return dailyArpuuAllMetric
+            ? formatMetricValue(dailyArpuuAllMetric, value, variant)
+            : formatCount(value, 2);
         case 'arpc':
           return dailyArpcMetric
             ? formatMetricValue(dailyArpcMetric, value, variant)
@@ -3162,6 +3244,7 @@ export function AnalyticsPage() {
       conversionMetric,
       dailyArpuMetric,
       dailyArpuuMetric,
+      dailyArpuuAllMetric,
       dailyArpcMetric,
     ],
   );
@@ -3213,6 +3296,7 @@ export function AnalyticsPage() {
         Number.isFinite(item.opened) ? item.opened : null,
         Number.isFinite(item.total) ? item.total : null,
         Number.isFinite(item.unique) ? item.unique : null,
+        Number.isFinite(item.uniqueAll) ? item.uniqueAll : null,
         Number.isFinite(item.totalOrganic) ? item.totalOrganic : null,
         Number.isFinite(item.deeplinkEvents) ? item.deeplinkEvents : null,
         Number.isFinite(item.totalPaid) ? item.totalPaid : null,
@@ -3225,6 +3309,7 @@ export function AnalyticsPage() {
         Number.isFinite(item.conversion) ? item.conversion : null,
         Number.isFinite(item.arpu) ? item.arpu : null,
         Number.isFinite(item.arpuu) ? item.arpuu : null,
+        Number.isFinite(item.arpuuAll) ? item.arpuuAll : null,
         Number.isFinite(item.arpc) ? item.arpc : null,
       ]);
   }, [dailyData]);
@@ -3313,6 +3398,7 @@ export function AnalyticsPage() {
               DAILY_TOTAL_ACTIVE_USERS_METRIC?.label ?? 'Total active users',
               DAILY_UNIQUE_ACTIVE_USERS_METRIC?.label ??
                 'Total uniqie active users',
+              DAILY_UNIQUE_ALL_METRIC?.label ?? 'Unique All',
               DAILY_ORGANIC_ACTIVE_USERS_METRIC?.label ??
                 'Organic active users',
               DAILY_TOTAL_DEEPLINK_CLICKS_METRIC?.label ??
@@ -3329,6 +3415,7 @@ export function AnalyticsPage() {
               'Conversion rate',
               'ARPU (USD)',
               'ARPUU (USD)',
+              'ARPUU All (USD)',
               'ARPC (USD)',
             ],
             rows: dailyExportRows,
@@ -3772,7 +3859,7 @@ export function AnalyticsPage() {
               <Section title="Totals">
                 {isDailyLoading ? (
                   <Grid columns={6} gap={16}>
-                    {Array.from({ length: 14 }).map((_, index) => (
+                    {Array.from({ length: 18 }).map((_, index) => (
                       <Skeleton key={index} height={88} />
                     ))}
                   </Grid>
@@ -3803,6 +3890,14 @@ export function AnalyticsPage() {
                         </Typography>
                         <Typography variant="h3">
                           {dailyTotals ? formatCount(dailyTotals.unique) : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          {DAILY_UNIQUE_ALL_METRIC?.label ?? 'Unique All'}
+                        </Typography>
+                        <Typography variant="h3">
+                          {dailyTotals ? formatCount(dailyTotals.uniqueAll) : '—'}
                         </Typography>
                       </Card>
                       <Card className={s.kpiCard} padding="md">
@@ -3948,6 +4043,20 @@ export function AnalyticsPage() {
                             ? formatMetricValue(
                                 dailyArpuuMetric,
                                 dailyTotals.arpuu,
+                                'card',
+                              )
+                            : '—'}
+                        </Typography>
+                      </Card>
+                      <Card className={s.kpiCard} padding="md">
+                        <Typography variant="meta" tone="muted">
+                          {DAILY_ARPUU_ALL_METRIC?.label ?? 'ARPUU All'}
+                        </Typography>
+                        <Typography variant="h3">
+                          {dailyTotals && dailyArpuuAllMetric
+                            ? formatMetricValue(
+                                dailyArpuuAllMetric,
+                                dailyTotals.arpuuAll,
                                 'card',
                               )
                             : '—'}

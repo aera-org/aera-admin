@@ -33,6 +33,7 @@ export type DailyAnalyticsItem = {
   opened: number;
   deeplinkEvents: number;
   unique: number;
+  uniqueAll: number;
   total: number;
   totalOrganic: number;
   totalPaid: number;
@@ -45,6 +46,7 @@ export type DailyAnalyticsItem = {
   conversion: number;
   arpu: number;
   arpuu: number;
+  arpuuAll: number;
   arpc: number;
 };
 
