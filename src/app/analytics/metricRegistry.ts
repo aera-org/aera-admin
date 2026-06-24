@@ -22,10 +22,14 @@ export type AnalyticsMetricKey =
   | 'retentionD3'
   | 'retentionD7'
   | 'retentionD30'
+  | 'retentionD60'
+  | 'retentionD90'
   | 'customerRetentionD1'
   | 'customerRetentionD3'
   | 'customerRetentionD7'
   | 'customerRetentionD30'
+  | 'customerRetentionD60'
+  | 'customerRetentionD90'
   | 'churnRate'
   | 'total'
   | 'opened'
@@ -194,6 +198,22 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
     precision: 1,
   },
   {
+    key: 'retentionD60',
+    label: 'Retention D60',
+    description: 'Percent of users retained on day 60.',
+    format: 'percent',
+    section: 'main',
+    precision: 1,
+  },
+  {
+    key: 'retentionD90',
+    label: 'Retention D90',
+    description: 'Percent of users retained on day 90.',
+    format: 'percent',
+    section: 'main',
+    precision: 1,
+  },
+  {
     key: 'customerRetentionRate',
     label: 'Customer retention rate',
     description: 'Percent of paying users retained in the next month.',
@@ -229,6 +249,22 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
     key: 'customerRetentionD30',
     label: 'Customer Retention D30',
     description: 'Percent of paying users retained on day 30.',
+    format: 'percent',
+    section: 'main',
+    precision: 1,
+  },
+  {
+    key: 'customerRetentionD60',
+    label: 'Customer Retention D60',
+    description: 'Percent of paying users retained on day 60.',
+    format: 'percent',
+    section: 'main',
+    precision: 1,
+  },
+  {
+    key: 'customerRetentionD90',
+    label: 'Customer Retention D90',
+    description: 'Percent of paying users retained on day 90.',
     format: 'percent',
     section: 'main',
     precision: 1,
