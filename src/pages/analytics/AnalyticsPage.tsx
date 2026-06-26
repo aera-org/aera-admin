@@ -64,6 +64,7 @@ import {
   Tooltip,
   Typography,
 } from '@/atoms';
+import { isX } from '@/common/is-x';
 import { UserRole } from '@/common/types';
 import { cn } from '@/common/utils';
 import { AppShell } from '@/components/templates';
@@ -1256,7 +1257,7 @@ export function AnalyticsPage() {
 
   const sectionOptions = useMemo(() => {
     const options = getSectionOptions();
-    if (!isTargetUser) return options;
+    if (!isTargetUser || isX) return options;
     return options.filter((option) => option.value === 'deeplinks');
   }, [isTargetUser]);
   const conversionMetric = useMemo(
