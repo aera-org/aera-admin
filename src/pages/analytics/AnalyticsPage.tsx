@@ -594,7 +594,7 @@ export function AnalyticsPage() {
     rawExclude ?? '',
   );
   const isTargetUser = user?.role === UserRole.Target;
-  const section = isTargetUser
+  const section = isTargetUser && !isX
     ? 'deeplinks'
     : isValidSection(rawSection)
       ? rawSection
