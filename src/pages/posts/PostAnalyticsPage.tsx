@@ -61,7 +61,7 @@ type AnalyticsRow = {
 
 const CHARACTER_LIST_LIMIT = 1000;
 const SCENARIO_STALE_TIME = 15 * 60 * 1000;
-const MIN_START_DATE = '2026-05-25';
+const MIN_START_DATE = '2026-03-01';
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const DEFAULT_SORT: SortKey = 'opened';
 const TABLE_MIN_WIDTH = 760;
