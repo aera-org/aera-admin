@@ -1,7 +1,7 @@
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { useQueries } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { useCharacters } from '@/app/characters';
 import { getCharacterDetails } from '@/app/characters/charactersApi';
@@ -421,6 +421,9 @@ export function PostsPage() {
             </Typography>
           </div>
           <div className={s.headerActions}>
+            <Button as={Link} to="/posts/analytics" variant="secondary">
+              Analytics
+            </Button>
             <Button
               variant="secondary"
               onClick={() => setIsLocalizeAllOpen(true)}

@@ -1,6 +1,12 @@
 import { apiFetch } from '@/app/api';
 import { buildApiError } from '@/app/api/apiErrors';
-import { type IPost, Language, PostType } from '@/common/types';
+import {
+  type IPost,
+  Language,
+  type PostAnalytics,
+  type PostAnalyticsQuery,
+  PostType,
+} from '@/common/types';
 
 import type { PaginatedResponse } from '../paginated-response.type';
 
@@ -59,6 +65,7 @@ const updateFallbackError = 'Unable to update the post.';
 const deleteFallbackError = 'Unable to delete the post.';
 const localizeFallbackError = 'Unable to localize the post.';
 const localizeAllFallbackError = 'Unable to localize posts.';
+const analyticsFallbackError = 'Unable to load post analytics.';
 
 function buildListQuery(params: PostsListParams) {
   const query = new URLSearchParams();
@@ -73,6 +80,16 @@ function buildListQuery(params: PostsListParams) {
 
   const suffix = query.toString();
   return suffix ? `?${suffix}` : '';
+}
+
+function buildAnalyticsQuery(params: PostAnalyticsQuery) {
+  const query = new URLSearchParams();
+
+  query.set('start', params.start);
+  query.set('end', params.end);
+  if (params.scenarioId) query.set('scenarioId', params.scenarioId);
+
+  return `?${query.toString()}`;
 }
 
 function normalizePaginatedResponse<T>(value: unknown): PaginatedResponse<T> {
@@ -116,6 +133,17 @@ export async function getPosts(params: PostsListParams) {
   }
 
   return normalizePaginatedResponse<IPost>(await res.json());
+}
+
+export async function getPostAnalytics(params: PostAnalyticsQuery) {
+  const res = await apiFetch(
+    `/admin/posts/analytics${buildAnalyticsQuery(params)}`,
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, analyticsFallbackError);
+  }
+
+  return (await res.json()) as PostAnalytics;
 }
 
 export async function createPost(payload: CreatePostDto) {

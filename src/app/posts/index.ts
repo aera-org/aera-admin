@@ -10,6 +10,7 @@ export {
   useDeletePost,
   useLocalizeAllPosts,
   useLocalizePost,
+  usePostAnalytics,
   usePosts,
   useUpdatePost,
 } from './queries';

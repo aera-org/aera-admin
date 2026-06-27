@@ -8,8 +8,8 @@ import {
 
 import { AuthGuard } from '@/app/auth';
 import {
-  AdminsPage,
   ActivationsPage,
+  AdminsPage,
   AirPurchasesPage,
   AnalyticsPage,
   AuthCallbackPage,
@@ -44,6 +44,7 @@ import {
   PoseCreatePage,
   PosesPage,
   PoseUpdatePage,
+  PostAnalyticsPage,
   PostsPage,
   ProfilePage,
   PromptCreatePage,
@@ -146,6 +147,7 @@ export function AppRoutes() {
         <Route path="/poses" element={<PosesPage />} />
         <Route path="/poses/new" element={<PoseCreatePage />} />
         <Route path="/poses/:id" element={<PoseUpdatePage />} />
+        <Route path="/posts/analytics" element={<PostAnalyticsPage />} />
         <Route path="/posts" element={<PostsPage />} />
         <Route path="/prompts" element={<PromptsPage />} />
         <Route path="/prompts/new" element={<PromptCreatePage />} />

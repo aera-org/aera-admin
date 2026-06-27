@@ -24,3 +24,21 @@ export interface IPost {
     createdAt: string;
     localizations: Partial<Record<Language, string>>;
 }
+
+export interface PostsStats {
+    opened: number;
+    started: number;
+    bought: number;
+  }
+
+
+export type PostAnalytics = {
+    data: Record<string, PostsStats>;
+    posts: IPost[];
+}
+
+export type PostAnalyticsQuery = { 
+    start: string; // min 2026-06-25; label: "Post created from"
+    end: string; // max today; label: "Post created to"
+    scenarioId?: string;
+};

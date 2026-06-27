@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { notifyError, notifySuccess } from '@/app/toast';
-import type { IPost } from '@/common/types';
+import type { IPost, PostAnalytics, PostAnalyticsQuery } from '@/common/types';
 
 import type { PaginatedResponse } from '../paginated-response.type';
 import {
   createPost,
   type CreatePostDto,
   deletePost,
+  getPostAnalytics,
   getPosts,
   localizeAllPosts,
   type LocalizeAllPostsDto,
@@ -20,6 +21,8 @@ import {
 
 const postKeys = {
   posts: (params: PostsListParams) => ['posts', 'items', params] as const,
+  analytics: (params: PostAnalyticsQuery) =>
+    ['posts', 'analytics', params] as const,
 };
 
 type PostsQueryOptions<T> = {
@@ -45,6 +48,19 @@ export function usePosts(
     queryKey: postKeys.posts(params),
     queryFn: () => getPosts(params),
     ...buildQueryOptions(options),
+  });
+}
+
+export function usePostAnalytics(
+  params: PostAnalyticsQuery,
+  options: PostsQueryOptions<PostAnalytics> = {},
+) {
+  return useQuery({
+    queryKey: postKeys.analytics(params),
+    queryFn: () => getPostAnalytics(params),
+    placeholderData: options.placeholderData ?? ((previousData) => previousData),
+    enabled: options.enabled ?? true,
+    staleTime: DEFAULT_STALE_TIME,
   });
 }
 
