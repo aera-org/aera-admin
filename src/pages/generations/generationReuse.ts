@@ -2,6 +2,7 @@ import type { RoleplayStage, UserRequest } from '@/common/types';
 import type { GenerationRequestMode } from '@/common/utils';
 
 export type GenerateImagePrefillState = {
+  isCustom?: boolean;
   characterId: string;
   characterName: string;
   scenarioId: string;

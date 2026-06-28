@@ -23,6 +23,7 @@ import {
   Select,
   Skeleton,
   Stack,
+  Switch,
   Textarea,
   Typography,
 } from '@/atoms';
@@ -84,6 +85,7 @@ const BATCH_OPTIONS = Array.from({ length: MAX_BATCH_SIZE }, (_, index) => {
 });
 
 type GenerationFormValues = {
+  isCustom: boolean;
   characterId: string;
   scenarioId: string;
   stage: RoleplayStage | '';
@@ -152,6 +154,7 @@ function buildInitialValues(
   );
 
   return {
+    isCustom: prefill?.isCustom ?? false,
     characterId: prefill?.characterId ?? '',
     scenarioId: prefill?.scenarioId ?? '',
     stage,
@@ -275,6 +278,7 @@ export function GenerateImagePage() {
     isLoading: isCharactersLoading,
   } = useCharacters({
     search: debouncedCharacterSearch || undefined,
+    isCustom: values.isCustom,
     order: 'ASC',
     skip: 0,
     take: PAGE_SIZE,
@@ -361,9 +365,6 @@ export function GenerateImagePage() {
     if (!values.characterId) result.characterId = 'Select a character.';
     if (!values.scenarioId) result.scenarioId = 'Select a scenario.';
     if (!values.stage) result.stage = 'Select a stage.';
-    if (values.secondLoraId && !values.mainLoraId) {
-      result.secondLoraId = 'Select main LoRA first.';
-    }
     if (
       values.mainLoraId &&
       values.secondLoraId &&
@@ -389,7 +390,6 @@ export function GenerateImagePage() {
         values.characterId &&
         values.scenarioId &&
         values.stage &&
-        (!values.secondLoraId || values.mainLoraId) &&
         (!values.secondLoraId || values.mainLoraId !== values.secondLoraId) &&
         (usesPosePromptFlow
           ? values.posePromptId
@@ -752,6 +752,16 @@ export function GenerateImagePage() {
     setValues((prev) => ({ ...prev, posePromptId: value }));
   };
 
+  const handleCustomCharacterToggle = (checked: boolean) => {
+    setCharacterSearch('');
+    setValues((prev) => ({
+      ...prev,
+      isCustom: checked,
+      characterId: '',
+      scenarioId: '',
+    }));
+  };
+
   const updateUserRequestField = (
     fieldKey: UserRequestFieldKey,
     value: string,
@@ -903,6 +913,68 @@ export function GenerateImagePage() {
                 invalid={Boolean(errors.scenarioId)}
               />
             </Field>
+            <Field label="Custom character" labelFor="generation-is-custom">
+              <Switch
+                id="generation-is-custom"
+                checked={values.isCustom}
+                disabled={isSubmitting}
+                onChange={(event) =>
+                  handleCustomCharacterToggle(event.target.checked)
+                }
+                label={values.isCustom ? 'Enabled' : 'Disabled'}
+              />
+            </Field>
+          </FormRow>
+
+          <FormRow columns={2}>
+            <Field
+              label="Main LoRA"
+              labelFor="generation-main-lora"
+              error={errors.mainLoraId}
+            >
+              <SearchSelect
+                id="generation-main-lora"
+                options={mainLoraOptions}
+                value={values.mainLoraId}
+                search={mainLoraSearch}
+                onSearchChange={setMainLoraSearch}
+                onSelect={(value) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    mainLoraId: value,
+                    secondLoraId:
+                      prev.secondLoraId === value ? '' : prev.secondLoraId,
+                  }))
+                }
+                placeholder="Select main LoRA"
+                disabled={isSubmitting}
+                loading={isMainLorasLoading}
+                invalid={Boolean(errors.mainLoraId)}
+              />
+            </Field>
+            <Field
+              label="Secondary LoRA"
+              labelFor="generation-secondary-lora"
+              error={errors.secondLoraId}
+            >
+              <SearchSelect
+                id="generation-secondary-lora"
+                options={secondLoraOptions}
+                value={values.secondLoraId}
+                search={secondLoraSearch}
+                onSearchChange={setSecondLoraSearch}
+                onSelect={(value) =>
+                  setValues((prev) => ({ ...prev, secondLoraId: value }))
+                }
+                placeholder="Select secondary LoRA"
+                disabled={isSubmitting}
+                loading={isSecondLorasLoading}
+                invalid={Boolean(errors.secondLoraId)}
+              />
+            </Field>
+          </FormRow>
+
+          <FormRow columns={3}>
             <Field
               label="Stage"
               labelFor="generation-stage"
@@ -929,63 +1001,6 @@ export function GenerateImagePage() {
                 invalid={Boolean(errors.stage)}
               />
             </Field>
-          </FormRow>
-
-          <FormRow columns={2}>
-            <Field
-              label="Main LoRA"
-              labelFor="generation-main-lora"
-              error={errors.mainLoraId}
-            >
-              <SearchSelect
-                id="generation-main-lora"
-                options={mainLoraOptions}
-                value={values.mainLoraId}
-                search={mainLoraSearch}
-                onSearchChange={setMainLoraSearch}
-                onSelect={(value) =>
-                  setValues((prev) => ({
-                    ...prev,
-                    mainLoraId: value,
-                    secondLoraId:
-                      !value || prev.secondLoraId === value
-                        ? ''
-                        : prev.secondLoraId,
-                  }))
-                }
-                placeholder="Select main LoRA"
-                disabled={isSubmitting}
-                loading={isMainLorasLoading}
-                invalid={Boolean(errors.mainLoraId)}
-              />
-            </Field>
-            <Field
-              label="Secondary LoRA"
-              labelFor="generation-secondary-lora"
-              error={errors.secondLoraId}
-            >
-              <SearchSelect
-                id="generation-secondary-lora"
-                options={secondLoraOptions}
-                value={values.secondLoraId}
-                search={secondLoraSearch}
-                onSearchChange={setSecondLoraSearch}
-                onSelect={(value) =>
-                  setValues((prev) => ({ ...prev, secondLoraId: value }))
-                }
-                placeholder={
-                  values.mainLoraId
-                    ? 'Select secondary LoRA'
-                    : 'Select main LoRA first'
-                }
-                disabled={!values.mainLoraId || isSubmitting}
-                loading={isSecondLorasLoading}
-                invalid={Boolean(errors.secondLoraId)}
-              />
-            </Field>
-          </FormRow>
-
-          <FormRow columns={3}>
             <Field label="Batch" labelFor="generation-batch">
               <Select
                 id="generation-batch"

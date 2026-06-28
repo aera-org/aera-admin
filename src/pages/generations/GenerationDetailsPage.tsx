@@ -98,6 +98,7 @@ export function GenerationDetailsPage() {
     if (!data) return;
 
     const prefill: GenerateImagePrefillState = {
+      isCustom: data.character.isCustom,
       characterId: data.character.id,
       characterName: data.character.name,
       scenarioId: data.scenario.id,
