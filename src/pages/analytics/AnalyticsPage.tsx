@@ -2108,7 +2108,6 @@ export function AnalyticsPage() {
     if (!entries.length) return null;
     const totals = entries.reduce(
       (acc, item) => {
-        const visits = Number.isFinite(item.visits) ? item.visits : 0;
         acc.visits += Number.isFinite(item.visits) ? item.visits : 0;
         acc.opened += Number.isFinite(item.opened) ? item.opened : 0;
         acc.deeplinkEvents += Number.isFinite(item.deeplinkEvents)
@@ -2122,6 +2121,10 @@ export function AnalyticsPage() {
         acc.totalPaidUnique += Number.isFinite(item.totalPaidUnique)
           ? item.totalPaidUnique
           : 0;
+        if (Number.isFinite(item.activationRate)) {
+          acc.activationRateSum += item.activationRate;
+          acc.activationRateCount += 1;
+        }
         if (Number.isFinite(item.openedAppRate)) {
           acc.openedAppRateSum += item.openedAppRate;
           acc.openedAppRateCount += 1;
@@ -2134,12 +2137,6 @@ export function AnalyticsPage() {
         acc.uniqueAll += Number.isFinite(item.uniqueAll) ? item.uniqueAll : 0;
         acc.customers += Number.isFinite(item.customers) ? item.customers : 0;
         acc.revenue += Number.isFinite(item.revenue) ? item.revenue : 0;
-        if (visits > 0) {
-          acc.activationRateVisits += visits;
-          acc.activationRateTotal += Number.isFinite(item.total)
-            ? item.total
-            : 0;
-        }
         return acc;
       },
       {
@@ -2150,6 +2147,8 @@ export function AnalyticsPage() {
         totalOrganic: 0,
         totalPaid: 0,
         totalPaidUnique: 0,
+        activationRateSum: 0,
+        activationRateCount: 0,
         openedAppRateSum: 0,
         openedAppRateCount: 0,
         seenPaywallRateSum: 0,
@@ -2158,14 +2157,12 @@ export function AnalyticsPage() {
         uniqueAll: 0,
         customers: 0,
         revenue: 0,
-        activationRateVisits: 0,
-        activationRateTotal: 0,
       },
     );
 
     const activationRate =
-      totals.activationRateVisits > 0
-        ? (totals.activationRateTotal / totals.activationRateVisits) * 100
+      totals.activationRateCount > 0
+        ? totals.activationRateSum / totals.activationRateCount
         : null;
     const openedAppRate =
       totals.openedAppRateCount > 0
@@ -2185,8 +2182,8 @@ export function AnalyticsPage() {
       totals.customers > 0 ? totals.revenue / totals.customers : null;
 
     const {
-      activationRateVisits: _activationRateVisits,
-      activationRateTotal: _activationRateTotal,
+      activationRateSum: _activationRateSum,
+      activationRateCount: _activationRateCount,
       openedAppRateSum: _openedAppRateSum,
       openedAppRateCount: _openedAppRateCount,
       seenPaywallRateSum: _seenPaywallRateSum,
