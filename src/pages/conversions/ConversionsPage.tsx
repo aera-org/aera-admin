@@ -47,7 +47,7 @@ const DAILY_STAGE_ALL = 'all';
 const SCENARIO_STAGE_TOTALS = 'totals';
 const STAGE_MATRIX_SCENARIO_TOTALS = 'totals';
 const CORE_TABLE_MIN_WIDTH = 960;
-const PAYWALL_TABLE_MIN_WIDTH = 1560;
+const PAYWALL_TABLE_MIN_WIDTH = 1780;
 
 type QueryUpdate = {
   start?: string;
@@ -61,6 +61,7 @@ type ScenarioStageKey = typeof SCENARIO_STAGE_TOTALS | RoleplayStage;
 type CoreMetricKey = 'total' | 'left' | 'messagesPerChat';
 type PaywallMetricKey =
   | 'seenPerChat'
+  | 'openedPerChat'
   | 'boughtPerChat'
   | 'avgSeenBeforeBought'
   | 'avgSeenBeforeLeft'
@@ -75,6 +76,7 @@ type CoreSortKey =
 type PaywallSortKey =
   | 'bought'
   | 'seen'
+  | 'opened'
   | 'leftAfterSeen'
   | 'leftOnceSeen'
   | 'avgSeenBeforeBought'
@@ -218,6 +220,7 @@ function normalizeDateRange(
 function createEmptyPaywallData(): PaywallData {
   return {
     seen: 0,
+    opened: 0,
     bought: 0,
     seenTimesBeforeBought: 0,
     seenTimesBeforeLeft: 0,
@@ -264,6 +267,7 @@ function addPaywallData(target: PaywallData, source?: PaywallData) {
   if (!source) return target;
 
   target.seen += source.seen ?? 0;
+  target.opened = (target.opened ?? 0) + (source.opened ?? 0);
   target.bought += source.bought ?? 0;
   target.seenTimesBeforeBought += source.seenTimesBeforeBought ?? 0;
   target.seenTimesBeforeLeft += source.seenTimesBeforeLeft ?? 0;
@@ -316,6 +320,10 @@ function buildRatio(numerator: number, denominator: number) {
 function buildPercent(count: number, denominator: number) {
   if (denominator <= 0) return 0;
   return (count / denominator) * 100;
+}
+
+function getPaywallOpened(paywall: PaywallData) {
+  return paywall.opened ?? 0;
 }
 
 function getMessagesAverageDenominator(stats: ChatStageStats) {
@@ -417,6 +425,12 @@ const PAYWALL_METRIC_DEFINITIONS: PaywallMetricDefinition[] = [
       createPercentPresentation(paywall.seen, stats.total, 'seen'),
   },
   {
+    key: 'openedPerChat',
+    label: 'Opened/chat',
+    getPresentation: (stats, paywall) =>
+      createPercentPresentation(getPaywallOpened(paywall), stats.total, 'opened'),
+  },
+  {
     key: 'boughtPerChat',
     label: 'Bought/chat',
     getPresentation: (stats, paywall) =>
@@ -467,6 +481,7 @@ const CORE_SORT_OPTIONS: { value: CoreSortKey; label: string }[] = [
 const PAYWALL_SORT_OPTIONS: { value: PaywallSortKey; label: string }[] = [
   { value: 'bought', label: 'Bought count' },
   { value: 'seen', label: 'Seen count' },
+  { value: 'opened', label: 'Opened count' },
   { value: 'leftOnceSeen', label: 'Left once seen count' },
   { value: 'leftAfterSeen', label: 'Left after seen count' },
   { value: 'avgSeenBeforeBought', label: 'Avg seen before bought' },
@@ -610,6 +625,20 @@ function sortPaywallRows(
       return compareScenarioNames(left.label, right.label);
     case 'seen':
       return (
+        compareNumbersDesc(left.paywall.seen, right.paywall.seen) ||
+        compareNumbersDesc(
+          getPaywallOpened(left.paywall),
+          getPaywallOpened(right.paywall),
+        ) ||
+        compareNumbersDesc(left.paywall.bought, right.paywall.bought) ||
+        compareScenarioNames(left.label, right.label)
+      );
+    case 'opened':
+      return (
+        compareNumbersDesc(
+          getPaywallOpened(left.paywall),
+          getPaywallOpened(right.paywall),
+        ) ||
         compareNumbersDesc(left.paywall.seen, right.paywall.seen) ||
         compareNumbersDesc(left.paywall.bought, right.paywall.bought) ||
         compareScenarioNames(left.label, right.label)

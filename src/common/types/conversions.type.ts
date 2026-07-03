@@ -3,6 +3,7 @@ import type { RoleplayStage } from './scenario.type';
 
 export interface PaywallData {
   seen: number;
+  opened?: number;
   bought: number;
   seenTimesBeforeBought: number;
   seenTimesBeforeLeft: number;
