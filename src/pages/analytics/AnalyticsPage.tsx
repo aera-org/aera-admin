@@ -1685,7 +1685,7 @@ export function AnalyticsPage() {
     );
 
     const conversion =
-      totals.total > 0 ? (totals.customers / totals.total) * 100 : null;
+      totals.unique > 0 ? (totals.customers / totals.unique) * 100 : null;
     const arpu = totals.total > 0 ? totals.revenue / totals.total : null;
     const arpuu = totals.unique > 0 ? totals.revenue / totals.unique : null;
     const arpuuAll =
