@@ -1,11 +1,12 @@
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo, useState } from 'react';
 
-import { useCreateBroadcast } from '@/app/broadcast';
+import { useBroadcastCount, useCreateBroadcast } from '@/app/broadcast';
 import { notifyError } from '@/app/toast';
 import { useUsers } from '@/app/users';
 import { SendIcon } from '@/assets/icons';
 import {
+  Alert,
   Button,
   Checkbox,
   Container,
@@ -121,6 +122,7 @@ function isHttpUrl(value: string) {
 
 export function BroadcastPage() {
   const createMutation = useCreateBroadcast();
+  const countMutation = useBroadcastCount();
 
   const [audienceMode, setAudienceMode] = useState<AudienceMode>('all');
   const [subscriptionFilter, setSubscriptionFilter] =
@@ -297,6 +299,7 @@ export function BroadcastPage() {
     setShowErrors(false);
     setIsConfirmOpen(false);
     setAllUsersConfirmed(false);
+    countMutation.reset();
   };
 
   const addSelectedUser = (user: ITgUser) => {
@@ -335,13 +338,6 @@ export function BroadcastPage() {
     setSelectedUserIds((prev) => prev.filter((userId) => userId !== id));
   };
 
-  const openConfirmModal = () => {
-    setShowErrors(true);
-    if (!isValid) return;
-    setAllUsersConfirmed(false);
-    setIsConfirmOpen(true);
-  };
-
   const buildFilters = (): BroadcastFilters => {
     if (audienceMode === 'all') {
       return {};
@@ -371,32 +367,62 @@ export function BroadcastPage() {
     return filters;
   };
 
+  const buildPayload = (): BroadcastDto => ({
+    message: {
+      text: messageText.trim(),
+      imgId: imageFile?.id || undefined,
+      videoId: videoFile?.id || undefined,
+      action: isActionEnabled
+        ? {
+            text: actionText.trim(),
+            value: actionValue.trim(),
+            type: actionType,
+          }
+        : undefined,
+    },
+    filters: buildFilters(),
+  });
+
+  const openConfirmModal = () => {
+    setShowErrors(true);
+    if (!isValid) return;
+
+    setAllUsersConfirmed(false);
+    countMutation.reset();
+    setIsConfirmOpen(true);
+    void countMutation.mutateAsync(buildPayload()).catch(() => {
+      // Errors are surfaced by the mutation toast and modal alert.
+    });
+  };
+
   const sendBroadcast = async () => {
     if (audienceMode === 'all' && !allUsersConfirmed) return;
-
-    const payload: BroadcastDto = {
-      message: {
-        text: messageText.trim(),
-        imgId: imageFile?.id || undefined,
-        videoId: videoFile?.id || undefined,
-        action: isActionEnabled
-          ? {
-              text: actionText.trim(),
-              value: actionValue.trim(),
-              type: actionType,
-            }
-          : undefined,
-      },
-      filters: buildFilters(),
-    };
+    if (
+      countMutation.isPending ||
+      countMutation.isError ||
+      !countMutation.data
+    ) {
+      return;
+    }
 
     try {
-      await createMutation.mutateAsync(payload);
+      await createMutation.mutateAsync(buildPayload());
       resetForm();
     } catch {
       // Errors are handled in mutation callbacks.
     }
   };
+
+  const countErrorMessage =
+    countMutation.error instanceof Error
+      ? countMutation.error.message
+      : 'Unable to count broadcast users.';
+  const isSendDisabled =
+    createMutation.isPending ||
+    countMutation.isPending ||
+    countMutation.isError ||
+    !countMutation.data ||
+    (audienceMode === 'all' && !allUsersConfirmed);
 
   return (
     <AppShell>
@@ -748,10 +774,7 @@ export function BroadcastPage() {
               iconLeft={<SendIcon />}
               onClick={sendBroadcast}
               loading={createMutation.isPending}
-              disabled={
-                createMutation.isPending ||
-                (audienceMode === 'all' && !allUsersConfirmed)
-              }
+              disabled={isSendDisabled}
             >
               Send broadcast
             </Button>
@@ -762,6 +785,27 @@ export function BroadcastPage() {
           <Typography variant="body">
             This action sends the broadcast immediately and cannot be undone.
           </Typography>
+          {countMutation.isPending ? (
+            <Typography variant="body" tone="muted">
+              Counting users...
+            </Typography>
+          ) : null}
+          {countMutation.data ? (
+            <Typography variant="body">
+              Will be sent to{' '}
+              {new Intl.NumberFormat('en-US').format(
+                countMutation.data.count,
+              )}{' '}
+              users
+            </Typography>
+          ) : null}
+          {countMutation.isError ? (
+            <Alert
+              tone="danger"
+              title="Unable to count broadcast users."
+              description={countErrorMessage}
+            />
+          ) : null}
           {audienceMode === 'all' ? (
             <Checkbox
               checked={allUsersConfirmed}

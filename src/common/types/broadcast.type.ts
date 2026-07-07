@@ -26,3 +26,7 @@ export interface BroadcastDto {
   message: BroadcastMessage;
   filters: BroadcastFilters;
 }
+
+export interface BroadcastCountResponse {
+  count: number;
+}
