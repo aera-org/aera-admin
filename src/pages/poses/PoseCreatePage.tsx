@@ -26,6 +26,7 @@ function getInitialValues(): PosePromptFormValues {
     pose: '',
     angle: '',
     prompt: '',
+    videoPrompt: '',
   };
 }
 
@@ -130,6 +131,7 @@ export function PoseCreatePage() {
       pose: values.pose as CreatePosePromptDto['pose'],
       angle: values.angle as CreatePosePromptDto['angle'],
       prompt: values.prompt.trim(),
+      videoPrompt: values.videoPrompt.trim() || undefined,
     });
     navigate('/poses');
   };

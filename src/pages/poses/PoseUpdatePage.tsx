@@ -45,6 +45,7 @@ function getInitialValues(): PosePromptFormValues {
     pose: '',
     angle: '',
     prompt: '',
+    videoPrompt: '',
   };
 }
 
@@ -144,6 +145,7 @@ export function PoseUpdatePage() {
       pose: data.pose,
       angle: data.angle,
       prompt: data.prompt ?? '',
+      videoPrompt: data.videoPrompt ?? '',
     };
   }, [data, draft]);
 
@@ -219,6 +221,7 @@ export function PoseUpdatePage() {
         pose: values.pose as UpdatePosePromptDto['pose'],
         angle: values.angle as UpdatePosePromptDto['angle'],
         prompt: values.prompt.trim(),
+        videoPrompt: values.videoPrompt.trim() || undefined,
       },
     });
     setDraft(null);

@@ -17,6 +17,7 @@ export type PoseTransferItem = {
   angle: PhotoAngle;
   pose: Pose;
   prompt: string;
+  videoPrompt?: string;
 };
 
 export type PosesTransferPayload = {
@@ -126,6 +127,7 @@ function parseTransferPose(value: unknown, path: string): PoseTransferItem {
     ),
     pose: ensureEnumValue(obj.pose, `${path}.pose`, Object.values(Pose)),
     prompt: ensureNonEmptyString(obj.prompt, `${path}.prompt`),
+    videoPrompt: ensureOptionalString(obj.videoPrompt, `${path}.videoPrompt`),
   } satisfies PoseTransferItem;
 
   if (parsed.isAnal && !parsed.stages.includes(RoleplayStage.Sex)) {
@@ -195,6 +197,7 @@ export function buildPosesTransferPayload(poses: IPosePromptDetails[]) {
       angle: pose.angle,
       pose: pose.pose,
       prompt: pose.prompt.trim(),
+      videoPrompt: pose.videoPrompt?.trim() || undefined,
     } satisfies PoseTransferItem;
   });
 

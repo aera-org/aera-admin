@@ -51,6 +51,7 @@ export interface IPosePromptDetails extends IPosePrompt {
   angle: PhotoAngle;
   pose: Pose;
   prompt: string;
+  videoPrompt?: string;
   referenceImg?: IFile | null;
   referenceDepthImg?: IFile | null;
 }
@@ -63,6 +64,7 @@ export type CreatePosePromptDto = {
   angle: PhotoAngle;
   pose: Pose;
   prompt: string;
+  videoPrompt?: string;
 };
 
 export type UpdatePosePromptDto = {
@@ -73,4 +75,5 @@ export type UpdatePosePromptDto = {
   angle: PhotoAngle;
   pose: Pose;
   prompt: string;
+  videoPrompt?: string;
 };

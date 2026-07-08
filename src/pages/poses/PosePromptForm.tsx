@@ -36,6 +36,7 @@ export type PosePromptFormValues = {
   pose: Pose | '';
   angle: PhotoAngle | '';
   prompt: string;
+  videoPrompt: string;
 };
 
 export type PosePromptFormErrors = Partial<
@@ -161,6 +162,22 @@ export function PosePromptForm({
           onChange={(event) => onChange('prompt', event.target.value)}
           rows={10}
           disabled={disabled}
+          spellCheck={false}
+          autoCorrect="off"
+          autoCapitalize="off"
+          fullWidth
+        />
+      </Field>
+
+      <Field label="Video prompt" labelFor="pose-video-prompt">
+        <Textarea
+          id="pose-video-prompt"
+          size="sm"
+          value={values.videoPrompt}
+          onChange={(event) => onChange('videoPrompt', event.target.value)}
+          rows={10}
+          disabled={disabled}
+          placeholder="Optional"
           spellCheck={false}
           autoCorrect="off"
           autoCapitalize="off"

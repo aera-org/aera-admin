@@ -314,6 +314,7 @@ export function PosesPage() {
           pose: pose.pose,
           angle: pose.angle,
           prompt: pose.prompt,
+          videoPrompt: pose.videoPrompt,
         };
 
         const existingPose = existingByIdx.get(pose.idx);
