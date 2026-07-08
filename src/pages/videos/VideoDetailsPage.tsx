@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useCharacterDetails, useCharacters } from '@/app/characters';
+import { usePosePrompts } from '@/app/pose-prompts';
 import {
   useCreateVideoGenerationItem,
   useDeleteVideoGeneration,
@@ -27,32 +28,32 @@ import {
   Select,
   Skeleton,
   Stack,
+  Textarea,
   Typography,
 } from '@/atoms';
 import {
   type IVideoGenerationItem,
-  type Pose,
   VideoAspectRatio,
   VideoGenerationItemStatus,
   VideoQuality,
 } from '@/common/types';
-import {
-  formatCharacterSelectLabel,
-  formatCharacterType,
-  formatPose,
-  poseOptions,
-} from '@/common/utils';
+import { formatCharacterSelectLabel, formatCharacterType } from '@/common/utils';
 import { ConfirmModal } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 import { SearchSelect } from '@/pages/generations/components/SearchSelect';
 
+import {
+  VideoCreateDrawer,
+  type VideoCreateInitialValues,
+} from './components/VideoCreateDrawer';
 import s from './VideoDetailsPage.module.scss';
 
 type EditVideoValues = {
   name: string;
+  prompt: string;
   characterId: string;
   scenarioId: string;
-  pose: Pose | '';
+  posePromptId: string;
 };
 
 type SelectOption = {
@@ -157,16 +158,19 @@ export function VideoDetailsPage() {
   const [itemToDelete, setItemToDelete] = useState<IVideoGenerationItem | null>(
     null,
   );
+  const [isReuseOpen, setIsReuseOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [editShowErrors, setEditShowErrors] = useState(false);
   const [editValues, setEditValues] = useState<EditVideoValues>({
     name: '',
+    prompt: '',
     characterId: '',
     scenarioId: '',
-    pose: '',
+    posePromptId: '',
   });
   const [editCharacterSearch, setEditCharacterSearch] = useState('');
+  const [editPosePromptSearch, setEditPosePromptSearch] = useState('');
   const [savingItemId, setSavingItemId] = useState<string | null>(null);
   const [regeneratingItemId, setRegeneratingItemId] = useState<string | null>(
     null,
@@ -184,6 +188,12 @@ export function VideoDetailsPage() {
     );
   const { data: editCharacterDetails, isLoading: isEditScenariosLoading } =
     useCharacterDetails(editValues.characterId || null);
+  const { data: editPosePromptData, isLoading: isEditPosePromptsLoading } =
+    usePosePrompts({
+      search: editPosePromptSearch.trim() || undefined,
+      skip: 0,
+      take: 20,
+    });
 
   useEffect(() => {
     if (!editValues.scenarioId || !editCharacterDetails) return;
@@ -191,7 +201,11 @@ export function VideoDetailsPage() {
       (scenario) => scenario.id === editValues.scenarioId,
     );
     if (!exists) {
-      setEditValues((prev) => ({ ...prev, scenarioId: '' }));
+      setEditValues((prev) => ({
+        ...prev,
+        scenarioId: '',
+        posePromptId: '',
+      }));
     }
   }, [editCharacterDetails, editValues.scenarioId]);
 
@@ -200,12 +214,9 @@ export function VideoDetailsPage() {
 
     return {
       name: editValues.name.trim() ? undefined : 'Enter a name.',
-      scenarioId:
-        editValues.characterId && !editValues.scenarioId
-          ? 'Select a scenario.'
-          : undefined,
+      prompt: editValues.prompt.trim() ? undefined : 'Enter a prompt.',
     };
-  }, [editShowErrors, editValues.characterId, editValues.name, editValues.scenarioId]);
+  }, [editShowErrors, editValues.name, editValues.prompt]);
 
   const items =
     data?.items.sort((a, b) => {
@@ -217,6 +228,47 @@ export function VideoDetailsPage() {
 
   const showSkeleton = isLoading && !data;
   const showEmpty = !showSkeleton && !error && !data;
+
+  const reuseInitialValues = useMemo<VideoCreateInitialValues | undefined>(() => {
+    if (!data) return undefined;
+
+    const scenario = data.scenario ?? null;
+    return {
+      name: data.name ?? '',
+      prompt: data.prompt ?? '',
+      characterId: scenario?.character.id ?? '',
+      scenarioId: scenario?.id ?? '',
+      posePromptId: scenario && data.posePrompt?.id ? data.posePrompt.id : '',
+      quality: data.quality,
+      resolution: data.resolution,
+      aspectRatio: data.aspectRatio,
+      duration: String(data.duration),
+      startFrame: data.startFrame ?? null,
+      characterOption: scenario
+        ? {
+            id: scenario.character.id,
+            label: formatCharacterSelectLabel(
+              scenario.character.name,
+              scenario.character.type,
+            ),
+            meta: scenario.character.id,
+          }
+        : undefined,
+      scenarioOption: scenario
+        ? {
+            label: scenario.name,
+            value: scenario.id,
+          }
+        : undefined,
+      posePromptOption: data.posePrompt
+        ? {
+            id: data.posePrompt.id,
+            label: data.posePrompt.name,
+            meta: data.posePrompt.id,
+          }
+        : undefined,
+    };
+  }, [data]);
 
   const editCharacterOptions = useMemo(
     () =>
@@ -241,10 +293,13 @@ export function VideoDetailsPage() {
   );
 
   const editScenarioOptions = useMemo(() => {
-    const options = (editCharacterDetails?.scenarios ?? []).map((scenario) => ({
-      label: scenario.name,
-      value: scenario.id,
-    }));
+    const options = [
+      { label: 'No scenario', value: '' },
+      ...(editCharacterDetails?.scenarios ?? []).map((scenario) => ({
+        label: scenario.name,
+        value: scenario.id,
+      })),
+    ];
 
     if (
       data?.scenario &&
@@ -260,15 +315,41 @@ export function VideoDetailsPage() {
     return options;
   }, [data?.scenario, editCharacterDetails?.scenarios, editValues.characterId]);
 
+  const editPosePromptOptions = useMemo(() => {
+    const options = [
+      { id: '', label: 'No pose prompt' },
+      ...(editPosePromptData?.data ?? []).map((posePrompt) => ({
+        id: posePrompt.id,
+        label: posePrompt.name,
+        meta: posePrompt.id,
+      })),
+    ];
+
+    if (
+      data?.posePrompt &&
+      !options.some((option) => option.id === data.posePrompt?.id)
+    ) {
+      options.push({
+        id: data.posePrompt.id,
+        label: data.posePrompt.name,
+        meta: data.posePrompt.id,
+      });
+    }
+
+    return options;
+  }, [data?.posePrompt, editPosePromptData?.data]);
+
   const openEditModal = () => {
     if (!data) return;
     setEditValues({
       name: data.name ?? '',
+      prompt: data.prompt ?? '',
       characterId: data.scenario?.character.id ?? '',
       scenarioId: data.scenario?.id ?? '',
-      pose: data.pose ?? '',
+      posePromptId: data.posePrompt?.id ?? '',
     });
     setEditCharacterSearch('');
+    setEditPosePromptSearch('');
     setEditShowErrors(false);
     setIsEditOpen(true);
   };
@@ -278,12 +359,14 @@ export function VideoDetailsPage() {
     setIsEditOpen(false);
   };
 
+  const handleReuse = () => {
+    if (!reuseInitialValues) return;
+    setIsReuseOpen(true);
+  };
+
   const handleEdit = async () => {
     if (!videoId) return;
-    if (
-      !editValues.name.trim() ||
-      (editValues.characterId && !editValues.scenarioId)
-    ) {
+    if (!editValues.name.trim() || !editValues.prompt.trim()) {
       setEditShowErrors(true);
       return;
     }
@@ -292,8 +375,12 @@ export function VideoDetailsPage() {
       id: videoId,
       payload: {
         name: editValues.name.trim(),
+        prompt: editValues.prompt.trim(),
         scenarioId: editValues.scenarioId || undefined,
-        pose: editValues.pose || null,
+        posePromptId:
+          editValues.scenarioId && editValues.posePromptId
+            ? editValues.posePromptId
+            : undefined,
       },
     });
     setIsEditOpen(false);
@@ -358,6 +445,13 @@ export function VideoDetailsPage() {
             ) : null}
           </div>
           <div className={s.headerActions}>
+            <Button
+              variant="secondary"
+              onClick={handleReuse}
+              disabled={!reuseInitialValues}
+            >
+              Reuse
+            </Button>
             <Button
               variant="outline"
               onClick={handleAddItem}
@@ -451,9 +545,9 @@ export function VideoDetailsPage() {
                       {formatScenarioLabel(data.scenario)}
                     </Typography>
                   </Field>
-                  <Field label="Pose">
+                  <Field label="Pose prompt">
                     <Typography variant="body" tone="muted">
-                      {formatPose(data.pose)}
+                      {data.posePrompt?.name || data.posePrompt?.id || '-'}
                     </Typography>
                   </Field>
                   <Field label="Quality">
@@ -473,21 +567,6 @@ export function VideoDetailsPage() {
                   </Field>
                   <Field label="Duration">
                     <Typography variant="body">{data.duration}s</Typography>
-                  </Field>
-                  <Field label="Count">
-                    <Typography variant="body">
-                      {data.count.toLocaleString()}
-                    </Typography>
-                  </Field>
-                  <Field label="High LoRA">
-                    <Typography variant="body" tone="muted">
-                      {data.highLora?.fileName || '-'}
-                    </Typography>
-                  </Field>
-                  <Field label="Low LoRA">
-                    <Typography variant="body" tone="muted">
-                      {data.lowLora?.fileName || '-'}
-                    </Typography>
                   </Field>
                   <Field label="Updated">
                     <Typography variant="body">
@@ -660,7 +739,11 @@ export function VideoDetailsPage() {
             <Button
               onClick={handleEdit}
               loading={updateMutation.isPending}
-              disabled={!editValues.name.trim() || updateMutation.isPending}
+              disabled={
+                !editValues.name.trim() ||
+                !editValues.prompt.trim() ||
+                updateMutation.isPending
+              }
             >
               Save
             </Button>
@@ -688,6 +771,28 @@ export function VideoDetailsPage() {
             />
           </Field>
 
+          <Field
+            label="Prompt"
+            labelFor="video-edit-prompt"
+            error={editValidationErrors.prompt}
+          >
+            <Textarea
+              id="video-edit-prompt"
+              size="sm"
+              value={editValues.prompt}
+              onChange={(event) =>
+                setEditValues((prev) => ({
+                  ...prev,
+                  prompt: event.target.value,
+                }))
+              }
+              rows={6}
+              placeholder="Describe the video to generate"
+              fullWidth
+              disabled={updateMutation.isPending}
+            />
+          </Field>
+
           <FormRow columns={2}>
             <Field label="Character" labelFor="video-edit-character">
               <SearchSelect
@@ -701,6 +806,7 @@ export function VideoDetailsPage() {
                     ...prev,
                     characterId: value,
                     scenarioId: '',
+                    posePromptId: '',
                   }))
                 }
                 placeholder={
@@ -716,7 +822,6 @@ export function VideoDetailsPage() {
             <Field
               label="Scenario"
               labelFor="video-edit-scenario"
-              error={editValidationErrors.scenarioId}
             >
               <Select
                 id="video-edit-scenario"
@@ -727,6 +832,7 @@ export function VideoDetailsPage() {
                   setEditValues((prev) => ({
                     ...prev,
                     scenarioId: value,
+                    posePromptId: value ? prev.posePromptId : '',
                   }))
                 }
                 placeholder={
@@ -742,26 +848,32 @@ export function VideoDetailsPage() {
                   isEditScenariosLoading ||
                   updateMutation.isPending
                 }
-                invalid={Boolean(editValidationErrors.scenarioId)}
               />
             </Field>
           </FormRow>
 
-          <Field label="Pose" labelFor="video-edit-pose">
-            <Select
-              id="video-edit-pose"
-              size="sm"
-              options={[{ label: 'No pose', value: '' }, ...poseOptions]}
-              value={editValues.pose}
-              onChange={(value) =>
-                setEditValues((prev) => ({
-                  ...prev,
-                  pose: value as Pose | '',
-                }))
+          <Field label="Pose prompt" labelFor="video-edit-pose-prompt">
+            <SearchSelect
+              id="video-edit-pose-prompt"
+              value={editValues.scenarioId ? editValues.posePromptId : ''}
+              valueLabel={data?.posePrompt?.name}
+              options={editPosePromptOptions}
+              search={editPosePromptSearch}
+              onSearchChange={setEditPosePromptSearch}
+              onSelect={(value) =>
+                setEditValues((prev) => ({ ...prev, posePromptId: value }))
               }
-              placeholder="Select pose"
-              fullWidth
-              disabled={updateMutation.isPending}
+              placeholder={
+                editValues.scenarioId
+                  ? isEditPosePromptsLoading
+                    ? 'Loading pose prompts...'
+                    : 'Select pose prompt'
+                  : 'Select scenario first'
+              }
+              loading={isEditPosePromptsLoading}
+              loadingLabel="Loading pose prompts..."
+              emptyLabel="No pose prompts found."
+              disabled={!editValues.scenarioId || updateMutation.isPending}
             />
           </Field>
         </Stack>
@@ -780,6 +892,17 @@ export function VideoDetailsPage() {
           setIsDeleteOpen(false);
         }}
       />
+
+      {isReuseOpen && reuseInitialValues ? (
+        <VideoCreateDrawer
+          initialValues={reuseInitialValues}
+          onClose={() => setIsReuseOpen(false)}
+          onSuccess={(createdId) => {
+            setIsReuseOpen(false);
+            navigate(`/videos/${createdId}`);
+          }}
+        />
+      ) : null}
 
       <ConfirmModal
         open={Boolean(itemToDelete)}

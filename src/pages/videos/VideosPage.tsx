@@ -19,9 +19,8 @@ import {
   Table,
   Typography,
 } from '@/atoms';
-import type { IVideoGenerationSet, Pose } from '@/common/types';
+import type { IVideoGenerationSet } from '@/common/types';
 import {
-  Pose as PoseEnum,
   VideoAspectRatio,
   VideoQuality,
   VideoResolution,
@@ -29,8 +28,6 @@ import {
 import {
   formatCharacterSelectLabel,
   formatCharacterType,
-  formatPose,
-  poseOptions,
 } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 import { SearchSelect } from '@/pages/generations/components/SearchSelect';
@@ -45,7 +42,6 @@ type QueryUpdate = {
   pageSize?: number;
   characterId?: string;
   scenarioId?: string;
-  pose?: string;
 };
 
 type SelectOption = {
@@ -63,16 +59,7 @@ const ORDER_VALUES = new Set(ORDER_OPTIONS.map((option) => option.value));
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
 const DEFAULT_ORDER = 'DESC';
 const DEFAULT_PAGE_SIZE = 20;
-const DEFAULT_POSE_FILTER = 'all';
 const SEARCH_DEBOUNCE_MS = 400;
-const POSE_VALUES = new Set(Object.values(PoseEnum));
-const POSE_FILTER_OPTIONS = [
-  { label: 'All poses', value: DEFAULT_POSE_FILTER },
-  ...poseOptions.map((option) => ({
-    label: option.label,
-    value: option.value,
-  })),
-];
 
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -107,12 +94,6 @@ function parsePositiveNumber(value: string | null, fallback: number) {
 function parsePageSize(value: string | null) {
   const parsed = parsePositiveNumber(value, DEFAULT_PAGE_SIZE);
   return PAGE_SIZE_OPTIONS.includes(parsed) ? parsed : DEFAULT_PAGE_SIZE;
-}
-
-function resolvePoseFilter(value: string | null) {
-  if (!value || value === DEFAULT_POSE_FILTER) return DEFAULT_POSE_FILTER;
-  if (POSE_VALUES.has(value as Pose)) return value;
-  return DEFAULT_POSE_FILTER;
 }
 
 function formatQuality(value: VideoQuality) {
@@ -155,7 +136,6 @@ export function VideosPage() {
   const rawPageSize = searchParams.get('pageSize');
   const rawCharacterId = searchParams.get('characterId') ?? '';
   const rawScenarioId = searchParams.get('scenarioId') ?? '';
-  const rawPose = searchParams.get('pose');
 
   const [searchInput, setSearchInput] = useState(rawSearch);
   const debouncedSearch = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
@@ -169,7 +149,6 @@ export function VideosPage() {
   const pageSize = parsePageSize(rawPageSize);
   const characterFilter = rawCharacterId.trim();
   const scenarioFilter = rawScenarioId.trim();
-  const poseFilter = resolvePoseFilter(rawPose);
 
   const updateSearchParams = useCallback(
     (update: QueryUpdate, replace = false) => {
@@ -221,14 +200,6 @@ export function VideosPage() {
           next.set('scenarioId', update.scenarioId);
         } else {
           next.delete('scenarioId');
-        }
-      }
-
-      if (update.pose !== undefined) {
-        if (update.pose && update.pose !== DEFAULT_POSE_FILTER) {
-          next.set('pose', update.pose);
-        } else {
-          next.delete('pose');
         }
       }
 
@@ -286,15 +257,11 @@ export function VideosPage() {
     () => ({
       search: normalizedSearch || undefined,
       scenarioId: scenarioFilter || undefined,
-      pose:
-        poseFilter === DEFAULT_POSE_FILTER
-          ? undefined
-          : (poseFilter as Pose),
       order,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    [normalizedSearch, order, page, pageSize, poseFilter, scenarioFilter],
+    [normalizedSearch, order, page, pageSize, scenarioFilter],
   );
 
   const { data, error, isLoading, refetch } = useVideoGenerations(queryParams);
@@ -345,12 +312,11 @@ export function VideosPage() {
     () => [
       { key: 'name', label: 'Video' },
       { key: 'scenario', label: 'Scenario' },
-      { key: 'pose', label: 'Pose' },
+      { key: 'posePrompt', label: 'Pose prompt' },
       { key: 'quality', label: 'Quality' },
       { key: 'resolution', label: 'Resolution' },
       { key: 'aspectRatio', label: 'Aspect ratio' },
       { key: 'duration', label: <span className={s.alignRight}>Duration</span> },
-      { key: 'count', label: <span className={s.alignRight}>Count</span> },
       { key: 'updated', label: <span className={s.alignRight}>Updated</span> },
     ],
     [],
@@ -372,9 +338,9 @@ export function VideosPage() {
             {formatScenarioLabel(video.scenario)}
           </Typography>
         ),
-        pose: (
+        posePrompt: (
           <Typography variant="body" tone="muted">
-            {formatPose(video.pose)}
+            {video.posePrompt?.name || video.posePrompt?.id || '-'}
           </Typography>
         ),
         quality: (
@@ -397,11 +363,6 @@ export function VideosPage() {
             {video.duration}s
           </Typography>
         ),
-        count: (
-          <Typography variant="caption" tone="muted" className={s.alignRight}>
-            {video.count.toLocaleString()}
-          </Typography>
-        ),
         updated: (
           <Typography variant="caption" tone="muted" className={s.alignRight}>
             {formatDate(video.updatedAt)}
@@ -421,16 +382,11 @@ export function VideosPage() {
           </div>
         ),
         scenario: <Skeleton width={180} height={12} />,
-        pose: <Skeleton width={90} height={12} />,
+        posePrompt: <Skeleton width={120} height={12} />,
         quality: <Skeleton width={80} height={12} />,
         resolution: <Skeleton width={80} height={12} />,
         aspectRatio: <Skeleton width={90} height={12} />,
         duration: (
-          <div className={s.alignRight}>
-            <Skeleton width={48} height={12} />
-          </div>
-        ),
-        count: (
           <div className={s.alignRight}>
             <Skeleton width={48} height={12} />
           </div>
@@ -517,18 +473,6 @@ export function VideosPage() {
                   updateSearchParams({ scenarioId: value, page: 1 })
                 }
                 disabled={!characterFilter || isFilterCharacterLoading}
-                fullWidth
-              />
-            </Field>
-            <Field label="Pose" labelFor="videos-pose">
-              <Select
-                id="videos-pose"
-                options={POSE_FILTER_OPTIONS}
-                value={poseFilter}
-                size="sm"
-                onChange={(value) =>
-                  updateSearchParams({ pose: value, page: 1 })
-                }
                 fullWidth
               />
             </Field>

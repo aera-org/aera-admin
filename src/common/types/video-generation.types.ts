@@ -1,7 +1,6 @@
 import type { CharacterType } from './character.type.ts';
 import type { IFile } from './file.type.ts';
-import type { ILora } from './lora.type.ts';
-import type { Pose } from './pose-prompt.type.ts';
+import type { IPosePrompt } from './pose-prompt.type.ts';
 
 export enum VideoQuality {
   Low = '24',
@@ -35,11 +34,10 @@ export interface IVideoGenerationSet {
       type: CharacterType;
     }
   } | null;
-  pose?: Pose;
+  posePrompt?: IPosePrompt | null;
   resolution: VideoResolution;
   aspectRatio: VideoAspectRatio;
   duration: number;
-  count: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -47,8 +45,6 @@ export interface IVideoGenerationSet {
 export interface IVideoGenerationSetDetails extends IVideoGenerationSet {
   prompt: string;
   startFrame: IFile;
-  highLora?: ILora;
-  lowLora?: ILora;
   items: IVideoGenerationItem[];
 }
 
@@ -69,21 +65,19 @@ export interface IVideoGenerationItem {
 
 export type IVideoGenerationCreateDto = {
   name: string;
-  scenarioId: string;
-  pose?: Pose;
+  scenarioId?: string;
+  posePromptId?: string;
   quality: VideoQuality;
   resolution: VideoResolution;
   aspectRatio: VideoAspectRatio;
   duration: number;
-  prompt: string;
+  prompt?: string;
   startFrameId: string;
-  highLoraId?: string;
-  lowLoraId?: string;
-  count: number;
 };
 
 export type IVideoGenerationUpdateDto = {
   name: string;
+  prompt: string;
   scenarioId?: string;
-  pose?: Pose | null;
+  posePromptId?: string;
 };

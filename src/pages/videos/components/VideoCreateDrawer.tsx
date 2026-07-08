@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { useCharacterDetails, useCharacters } from '@/app/characters';
-import { useLoras } from '@/app/loras';
+import { usePosePrompts } from '@/app/pose-prompts';
 import { notifyError } from '@/app/toast';
 import { useCreateVideoGeneration } from '@/app/video-generations';
 import {
@@ -17,16 +17,13 @@ import {
 import {
   FileDir,
   type IFile,
-  type Pose,
+  type IVideoGenerationCreateDto,
   VideoAspectRatio,
   VideoQuality,
   VideoResolution,
 } from '@/common/types';
-import {
-  formatCharacterSelectLabel,
-  poseOptions,
-} from '@/common/utils';
-import { Drawer, FileUpload, LoraSelect } from '@/components/molecules';
+import { formatCharacterSelectLabel } from '@/common/utils';
+import { Drawer, FileUpload } from '@/components/molecules';
 import { SearchSelect } from '@/pages/generations/components/SearchSelect';
 
 import s from './VideoCreateDrawer.module.scss';
@@ -34,26 +31,37 @@ import s from './VideoCreateDrawer.module.scss';
 type VideoCreateDrawerProps = {
   onClose: () => void;
   onSuccess: (id: string) => void;
+  initialValues?: VideoCreateInitialValues;
 };
 
 type CreateVideoValues = {
   name: string;
   characterId: string;
   scenarioId: string;
-  pose: Pose | '';
+  posePromptId: string;
   quality: VideoQuality;
   resolution: VideoResolution;
   aspectRatio: VideoAspectRatio;
   duration: string;
-  count: string;
   prompt: string;
-  highLoraId: string;
-  lowLoraId: string;
 };
 
-type LoraOption = {
+type SelectOption = {
   id: string;
-  fileName: string;
+  label: string;
+  meta?: string;
+};
+
+type ScenarioOption = {
+  label: string;
+  value: string;
+};
+
+export type VideoCreateInitialValues = Partial<CreateVideoValues> & {
+  startFrame?: IFile | null;
+  characterOption?: SelectOption;
+  scenarioOption?: ScenarioOption;
+  posePromptOption?: SelectOption;
 };
 
 const QUALITY_OPTIONS = [
@@ -78,22 +86,17 @@ const ASPECT_RATIO_OPTIONS = [
 const VIDEO_QUALITY_VALUES = new Set(Object.values(VideoQuality));
 const VIDEO_RESOLUTION_VALUES = new Set(Object.values(VideoResolution));
 const VIDEO_ASPECT_RATIO_VALUES = new Set(Object.values(VideoAspectRatio));
-const LORA_SEARCH_DEBOUNCE_MS = 300;
 const MIN_DURATION = 1;
-const MIN_COUNT = 1;
 const EMPTY_VALUES: CreateVideoValues = {
   name: '',
   characterId: '',
   scenarioId: '',
-  pose: '',
+  posePromptId: '',
   quality: VideoQuality.Low,
   resolution: VideoResolution.Medium,
   aspectRatio: VideoAspectRatio.Square,
   duration: '10',
-  count: '1',
   prompt: '',
-  highLoraId: '',
-  lowLoraId: '',
 };
 
 function useDebouncedValue<T>(value: T, delay: number) {
@@ -126,71 +129,76 @@ function isVideoAspectRatio(value: string): value is VideoAspectRatio {
   return VIDEO_ASPECT_RATIO_VALUES.has(value as VideoAspectRatio);
 }
 
-function mergeSelectedLoraOption(
-  options: LoraOption[],
-  selected: LoraOption | null,
+function mergeSelectedOption<T extends { id: string }>(
+  options: T[],
+  selected?: T,
 ) {
   if (!selected) return options;
   if (options.some((option) => option.id === selected.id)) return options;
   return [selected, ...options];
 }
 
+function buildInitialValues(initialValues?: VideoCreateInitialValues) {
+  return {
+    name: initialValues?.name ?? EMPTY_VALUES.name,
+    characterId: initialValues?.characterId ?? EMPTY_VALUES.characterId,
+    scenarioId: initialValues?.scenarioId ?? EMPTY_VALUES.scenarioId,
+    posePromptId: initialValues?.posePromptId ?? EMPTY_VALUES.posePromptId,
+    quality: initialValues?.quality ?? EMPTY_VALUES.quality,
+    resolution: initialValues?.resolution ?? EMPTY_VALUES.resolution,
+    aspectRatio: initialValues?.aspectRatio ?? EMPTY_VALUES.aspectRatio,
+    duration: initialValues?.duration ?? EMPTY_VALUES.duration,
+    prompt: initialValues?.prompt ?? EMPTY_VALUES.prompt,
+  };
+}
+
 export function VideoCreateDrawer({
+  initialValues,
   onClose,
   onSuccess,
 }: VideoCreateDrawerProps) {
-  const [values, setValues] = useState<CreateVideoValues>(EMPTY_VALUES);
+  const [values, setValues] = useState<CreateVideoValues>(() =>
+    buildInitialValues(initialValues),
+  );
   const [showErrors, setShowErrors] = useState(false);
-  const [startFrame, setStartFrame] = useState<IFile | null>(null);
-  const [highLoraSearch, setHighLoraSearch] = useState('');
-  const [lowLoraSearch, setLowLoraSearch] = useState('');
+  const [startFrame, setStartFrame] = useState<IFile | null>(
+    () => initialValues?.startFrame ?? null,
+  );
   const [characterSearch, setCharacterSearch] = useState('');
-  const [selectedHighLoraOption, setSelectedHighLoraOption] =
-    useState<LoraOption | null>(null);
-  const [selectedLowLoraOption, setSelectedLowLoraOption] =
-    useState<LoraOption | null>(null);
+  const [posePromptSearch, setPosePromptSearch] = useState('');
 
   const createMutation = useCreateVideoGeneration();
-  const debouncedHighLoraSearch = useDebouncedValue(
-    highLoraSearch,
-    LORA_SEARCH_DEBOUNCE_MS,
-  );
-  const debouncedLowLoraSearch = useDebouncedValue(
-    lowLoraSearch,
-    LORA_SEARCH_DEBOUNCE_MS,
-  );
   const debouncedCharacterSearch = useDebouncedValue(characterSearch, 300);
+  const debouncedPosePromptSearch = useDebouncedValue(posePromptSearch, 300);
 
-  const { data: highLoraData, isLoading: isHighLoraLoading } = useLoras({
-    search: debouncedHighLoraSearch.trim() || undefined,
-    order: 'DESC',
-    skip: 0,
-    take: 20,
-  });
-  const { data: lowLoraData, isLoading: isLowLoraLoading } = useLoras({
-    search: debouncedLowLoraSearch.trim() || undefined,
-    order: 'DESC',
-    skip: 0,
-    take: 20,
-  });
   const { data: characterData, isLoading: isCharactersLoading } = useCharacters({
     search: debouncedCharacterSearch.trim() || undefined,
     order: 'ASC',
     skip: 0,
     take: 20,
   });
+  const { data: posePromptData, isLoading: isPosePromptsLoading } =
+    usePosePrompts({
+      search: debouncedPosePromptSearch.trim() || undefined,
+      skip: 0,
+      take: 20,
+    });
   const { data: selectedCharacterDetails, isLoading: isScenariosLoading } =
     useCharacterDetails(values.characterId || null);
 
+  const initialCharacterOption = initialValues?.characterOption;
+  const initialScenarioOption = initialValues?.scenarioOption;
+  const initialPosePromptOption = initialValues?.posePromptOption;
   const parsedDuration = parsePositiveInteger(values.duration);
-  const parsedCount = parsePositiveInteger(values.count);
+  const selectedPosePromptId =
+    values.scenarioId && values.posePromptId ? values.posePromptId : '';
+  const requiresPrompt = !selectedPosePromptId;
 
   const validationErrors = useMemo(() => {
     if (!showErrors) return {};
 
     return {
       name: values.name.trim() ? undefined : 'Enter a name.',
-      scenarioId: values.scenarioId ? undefined : 'Select a scenario.',
       quality: isVideoQuality(values.quality) ? undefined : 'Select quality.',
       resolution: isVideoResolution(values.resolution)
         ? undefined
@@ -202,15 +210,11 @@ export function VideoCreateDrawer({
         parsedDuration !== null && parsedDuration >= MIN_DURATION
           ? undefined
           : `Enter a value of ${MIN_DURATION} or more.`,
-      count:
-        parsedCount !== null && parsedCount >= MIN_COUNT
-          ? undefined
-          : `Enter a value of ${MIN_COUNT} or more.`,
-      prompt: values.prompt.trim() ? undefined : 'Enter a prompt.',
+      prompt:
+        !requiresPrompt || values.prompt.trim() ? undefined : 'Enter a prompt.',
       startFrame: startFrame?.id ? undefined : 'Upload a start frame.',
     };
   }, [
-    parsedCount,
     parsedDuration,
     showErrors,
     startFrame?.id,
@@ -219,26 +223,22 @@ export function VideoCreateDrawer({
     values.prompt,
     values.quality,
     values.resolution,
-    values.scenarioId,
+    requiresPrompt,
   ]);
 
   const isValid = useMemo(
     () =>
       Boolean(
         values.name.trim() &&
-          values.scenarioId &&
-          values.prompt.trim() &&
+          (!requiresPrompt || values.prompt.trim()) &&
           startFrame?.id &&
           isVideoQuality(values.quality) &&
           isVideoResolution(values.resolution) &&
           isVideoAspectRatio(values.aspectRatio) &&
           parsedDuration !== null &&
-          parsedDuration >= MIN_DURATION &&
-          parsedCount !== null &&
-          parsedCount >= MIN_COUNT,
+          parsedDuration >= MIN_DURATION,
       ),
     [
-      parsedCount,
       parsedDuration,
       startFrame?.id,
       values.aspectRatio,
@@ -246,66 +246,57 @@ export function VideoCreateDrawer({
       values.prompt,
       values.quality,
       values.resolution,
-      values.scenarioId,
+      requiresPrompt,
     ],
   );
 
-  const highLoraOptions = useMemo(
-    () =>
-      mergeSelectedLoraOption(highLoraData?.data ?? [], selectedHighLoraOption),
-    [highLoraData?.data, selectedHighLoraOption],
-  );
-  const lowLoraOptions = useMemo(
-    () => mergeSelectedLoraOption(lowLoraData?.data ?? [], selectedLowLoraOption),
-    [lowLoraData?.data, selectedLowLoraOption],
-  );
   const characterOptions = useMemo(
     () =>
-      (characterData?.data ?? []).map((character) => ({
-        id: character.id,
-        label: formatCharacterSelectLabel(character.name, character.type),
-        meta: character.id,
-      })),
-    [characterData?.data],
+      mergeSelectedOption(
+        (characterData?.data ?? []).map((character) => ({
+          id: character.id,
+          label: formatCharacterSelectLabel(character.name, character.type),
+          meta: character.id,
+        })),
+        initialCharacterOption,
+      ),
+    [characterData?.data, initialCharacterOption],
   );
-  const scenarioOptions = useMemo(
-    () =>
-      (selectedCharacterDetails?.scenarios ?? []).map((scenario) => ({
+  const scenarioOptions = useMemo(() => {
+    const options = [
+      { label: 'No scenario', value: '' },
+      ...(selectedCharacterDetails?.scenarios ?? []).map((scenario) => ({
         label: scenario.name,
         value: scenario.id,
       })),
-    [selectedCharacterDetails?.scenarios],
+    ];
+
+    if (
+      initialScenarioOption &&
+      !options.some(
+        (option) => option.value === initialScenarioOption.value,
+      )
+    ) {
+      options.push(initialScenarioOption);
+    }
+
+    return options;
+  }, [initialScenarioOption, selectedCharacterDetails?.scenarios]);
+  const posePromptOptions = useMemo(
+    () =>
+      mergeSelectedOption(
+        [
+          { id: '', label: 'No pose prompt' },
+          ...(posePromptData?.data ?? []).map((posePrompt) => ({
+            id: posePrompt.id,
+            label: posePrompt.name,
+            meta: posePrompt.id,
+          })),
+        ],
+        initialPosePromptOption,
+      ),
+    [initialPosePromptOption, posePromptData?.data],
   );
-
-  useEffect(() => {
-    if (!values.highLoraId) {
-      setSelectedHighLoraOption(null);
-      return;
-    }
-
-    const selectedOption =
-      (highLoraData?.data ?? []).find((lora) => lora.id === values.highLoraId) ??
-      selectedHighLoraOption;
-
-    if (selectedOption && selectedOption.id !== selectedHighLoraOption?.id) {
-      setSelectedHighLoraOption(selectedOption);
-    }
-  }, [highLoraData?.data, selectedHighLoraOption, values.highLoraId]);
-
-  useEffect(() => {
-    if (!values.lowLoraId) {
-      setSelectedLowLoraOption(null);
-      return;
-    }
-
-    const selectedOption =
-      (lowLoraData?.data ?? []).find((lora) => lora.id === values.lowLoraId) ??
-      selectedLowLoraOption;
-
-    if (selectedOption && selectedOption.id !== selectedLowLoraOption?.id) {
-      setSelectedLowLoraOption(selectedOption);
-    }
-  }, [lowLoraData?.data, selectedLowLoraOption, values.lowLoraId]);
 
   const handleClose = () => {
     if (createMutation.isPending) return;
@@ -318,20 +309,22 @@ export function VideoCreateDrawer({
       return;
     }
 
-    const result = await createMutation.mutateAsync({
+    const payload: IVideoGenerationCreateDto = {
       name: values.name.trim(),
-      scenarioId: values.scenarioId,
-      pose: values.pose || undefined,
+      scenarioId: values.scenarioId || undefined,
+      posePromptId: selectedPosePromptId || undefined,
       quality: values.quality,
       resolution: values.resolution,
       aspectRatio: values.aspectRatio,
       duration: parsedDuration!,
-      count: parsedCount!,
-      prompt: values.prompt.trim(),
       startFrameId: startFrame!.id,
-      highLoraId: values.highLoraId || undefined,
-      lowLoraId: values.lowLoraId || undefined,
-    });
+    };
+
+    if (!selectedPosePromptId) {
+      payload.prompt = values.prompt.trim();
+    }
+
+    const result = await createMutation.mutateAsync(payload);
 
     onClose();
     if (result?.id) {
@@ -376,6 +369,7 @@ export function VideoCreateDrawer({
             <SearchSelect
               id="video-create-character"
               value={values.characterId}
+              valueLabel={initialCharacterOption?.label}
               options={characterOptions}
               search={characterSearch}
               onSearchChange={setCharacterSearch}
@@ -384,6 +378,7 @@ export function VideoCreateDrawer({
                   ...prev,
                   characterId: value,
                   scenarioId: '',
+                  posePromptId: '',
                 }))
               }
               placeholder={
@@ -396,7 +391,6 @@ export function VideoCreateDrawer({
           <Field
             label="Scenario"
             labelFor="video-create-scenario"
-            error={validationErrors.scenarioId}
           >
             <Select
               id="video-create-scenario"
@@ -404,7 +398,11 @@ export function VideoCreateDrawer({
               options={scenarioOptions}
               value={values.scenarioId}
               onChange={(value) =>
-                setValues((prev) => ({ ...prev, scenarioId: value }))
+                setValues((prev) => ({
+                  ...prev,
+                  scenarioId: value,
+                  posePromptId: value ? prev.posePromptId : '',
+                }))
               }
               placeholder={
                 values.characterId
@@ -419,7 +417,6 @@ export function VideoCreateDrawer({
                 isScenariosLoading ||
                 createMutation.isPending
               }
-              invalid={Boolean(validationErrors.scenarioId)}
             />
           </Field>
         </FormRow>
@@ -505,39 +502,30 @@ export function VideoCreateDrawer({
           </Field>
         </FormRow>
 
-        <FormRow columns={2}>
-          <Field
-            label="Count"
-            labelFor="video-create-count"
-            error={validationErrors.count}
-          >
-            <Input
-              id="video-create-count"
-              type="number"
-              min={MIN_COUNT}
-              size="sm"
-              value={values.count}
-              onChange={(event) =>
-                setValues((prev) => ({ ...prev, count: event.target.value }))
-              }
-              placeholder={String(MIN_COUNT)}
-              fullWidth
-            />
-          </Field>
-          <Field label="Pose" labelFor="video-create-pose">
-            <Select
-              id="video-create-pose"
-              size="sm"
-              options={[{ label: 'No pose', value: '' }, ...poseOptions]}
-              value={values.pose}
-              onChange={(value) =>
-                setValues((prev) => ({ ...prev, pose: value as Pose | '' }))
-              }
-              placeholder="Select pose"
-              fullWidth
-            />
-          </Field>
-        </FormRow>
+        <Field label="Pose prompt" labelFor="video-create-pose-prompt">
+          <SearchSelect
+            id="video-create-pose-prompt"
+            value={values.scenarioId ? values.posePromptId : ''}
+            valueLabel={initialPosePromptOption?.label}
+            options={posePromptOptions}
+            search={posePromptSearch}
+            onSearchChange={setPosePromptSearch}
+            onSelect={(value) =>
+              setValues((prev) => ({ ...prev, posePromptId: value }))
+            }
+            placeholder={
+              values.scenarioId
+                ? isPosePromptsLoading
+                  ? 'Loading pose prompts...'
+                  : 'Select pose prompt'
+                : 'Select scenario first'
+            }
+            loading={isPosePromptsLoading}
+            loadingLabel="Loading pose prompts..."
+            emptyLabel="No pose prompts found."
+            disabled={!values.scenarioId || createMutation.isPending}
+          />
+        </Field>
 
         <Field
           label="Prompt"
@@ -571,55 +559,6 @@ export function VideoCreateDrawer({
             {validationErrors.startFrame}
           </Typography>
         ) : null}
-
-        <FormRow columns={2}>
-          <Field label="High LoRA" labelFor="video-create-high-lora">
-            <LoraSelect
-              id="video-create-high-lora"
-              value={values.highLoraId}
-              options={highLoraOptions.map((lora) => ({
-                id: lora.id,
-                fileName: lora.fileName,
-              }))}
-              search={highLoraSearch}
-              onSearchChange={setHighLoraSearch}
-              onSelect={(value) => {
-                const selectedOption =
-                  highLoraOptions.find((lora) => lora.id === value) ?? null;
-                setSelectedHighLoraOption(selectedOption);
-                setValues((prev) => ({ ...prev, highLoraId: value }));
-              }}
-              placeholder={
-                isHighLoraLoading ? 'Loading LoRAs...' : 'Select LoRA'
-              }
-              disabled={isHighLoraLoading}
-              loading={isHighLoraLoading}
-            />
-          </Field>
-          <Field label="Low LoRA" labelFor="video-create-low-lora">
-            <LoraSelect
-              id="video-create-low-lora"
-              value={values.lowLoraId}
-              options={lowLoraOptions.map((lora) => ({
-                id: lora.id,
-                fileName: lora.fileName,
-              }))}
-              search={lowLoraSearch}
-              onSearchChange={setLowLoraSearch}
-              onSelect={(value) => {
-                const selectedOption =
-                  lowLoraOptions.find((lora) => lora.id === value) ?? null;
-                setSelectedLowLoraOption(selectedOption);
-                setValues((prev) => ({ ...prev, lowLoraId: value }));
-              }}
-              placeholder={
-                isLowLoraLoading ? 'Loading LoRAs...' : 'Select LoRA'
-              }
-              disabled={isLowLoraLoading}
-              loading={isLowLoraLoading}
-            />
-          </Field>
-        </FormRow>
 
         <div className={s.actions}>
           <Button

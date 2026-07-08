@@ -15,6 +15,7 @@ export type CreateCharacterImageDto = {
   isPromotional: boolean;
   fileId: string;
   blurredFileId?: string;
+  posePromptId?: string;
 };
 
 export type UpdateCharacterImageDto = {
