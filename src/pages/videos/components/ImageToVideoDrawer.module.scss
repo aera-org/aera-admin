@@ -1,0 +1,9 @@
+.drawer {
+  width: min(92vw, 560px);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}

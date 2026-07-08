@@ -25,6 +25,7 @@ import {
   getCharacters,
 } from '@/app/characters/charactersApi';
 import { copyFile, markFileUploaded, signUpload } from '@/app/files/filesApi';
+import { usePosePromptDetails, usePosePrompts } from '@/app/pose-prompts';
 import { notifyError, notifySuccess } from '@/app/toast';
 import { DownloadIcon, PlusIcon, UploadIcon } from '@/assets/icons';
 import {
@@ -47,10 +48,11 @@ import {
   FileStatus,
   type ICharacterDetails,
   type IFile,
+  Pose,
   RoleplayStage,
   STAGES_IN_ORDER,
 } from '@/common/types';
-import { formatCharacterSelectLabel } from '@/common/utils';
+import { formatCharacterSelectLabel, poseOptions } from '@/common/utils';
 import { Drawer } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
 import { SearchSelect } from '@/pages/generations/components/SearchSelect';
@@ -75,6 +77,8 @@ type QueryUpdate = {
   characterId?: string;
   scenarioId?: string;
   stage?: string;
+  pose?: string;
+  posePromptId?: string;
   imageId?: string;
 };
 
@@ -93,6 +97,7 @@ const ORDER_OPTIONS = [
 ];
 
 const ORDER_VALUES = new Set(ORDER_OPTIONS.map((option) => option.value));
+const POSE_VALUES = new Set(Object.values(Pose));
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
 const DEFAULT_ORDER = 'DESC';
 const DEFAULT_PAGE_SIZE = 20;
@@ -171,6 +176,12 @@ function resolveStageFilter(value: string | null) {
     return value;
   }
   return DEFAULT_STAGE_FILTER;
+}
+
+function resolvePoseFilter(value: string | null) {
+  if (!value) return '';
+  if (POSE_VALUES.has(value as Pose)) return value as Pose;
+  return '';
 }
 
 function formatStage(value: RoleplayStage | null | undefined) {
@@ -268,6 +279,8 @@ export function CharacterImagesPage() {
   const rawCharacterId = searchParams.get('characterId') ?? '';
   const rawScenarioId = searchParams.get('scenarioId') ?? '';
   const rawStage = searchParams.get('stage');
+  const rawPose = searchParams.get('pose');
+  const rawPosePromptId = searchParams.get('posePromptId') ?? '';
   const rawImageId = searchParams.get('imageId') ?? '';
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -292,6 +305,8 @@ export function CharacterImagesPage() {
   const characterFilter = rawCharacterId;
   const scenarioFilter = rawScenarioId;
   const stageFilter = resolveStageFilter(rawStage);
+  const poseFilter = resolvePoseFilter(rawPose);
+  const posePromptFilter = rawPosePromptId.trim();
   const selectedImageId = rawImageId.trim() || null;
 
   const updateSearchParams = useCallback(
@@ -374,6 +389,22 @@ export function CharacterImagesPage() {
         }
       }
 
+      if (update.pose !== undefined) {
+        if (update.pose) {
+          next.set('pose', update.pose);
+        } else {
+          next.delete('pose');
+        }
+      }
+
+      if (update.posePromptId !== undefined) {
+        if (update.posePromptId) {
+          next.set('posePromptId', update.posePromptId);
+        } else {
+          next.delete('posePromptId');
+        }
+      }
+
       if (update.imageId !== undefined) {
         if (update.imageId) {
           next.set('imageId', update.imageId);
@@ -400,6 +431,11 @@ export function CharacterImagesPage() {
     if (rawIsPregenerated !== null) return;
     updateSearchParams({ isPregenerated: DEFAULT_PREG_FILTER }, true);
   }, [rawIsPregenerated, updateSearchParams]);
+
+  useEffect(() => {
+    if (!rawPose || poseFilter) return;
+    updateSearchParams({ pose: '', page: 1 }, true);
+  }, [poseFilter, rawPose, updateSearchParams]);
 
   const { data: filterCharacterDetails, isLoading: isFilterCharacterLoading } =
     useCharacterDetails(characterFilter || null);
@@ -441,6 +477,8 @@ export function CharacterImagesPage() {
       characterId: characterFilter || undefined,
       scenarioId: scenarioFilter || undefined,
       stage: stage as RoleplayStage | undefined,
+      pose: poseFilter || undefined,
+      posePromptId: posePromptFilter || undefined,
     };
   }, [
     characterFilter,
@@ -450,6 +488,8 @@ export function CharacterImagesPage() {
     pageSize,
     pregFilter,
     promoFilter,
+    poseFilter,
+    posePromptFilter,
     scenarioFilter,
     stageFilter,
   ]);
@@ -471,6 +511,8 @@ export function CharacterImagesPage() {
 
   const [characterSearch, setCharacterSearch] = useState('');
   const debouncedCharacterSearch = useDebouncedValue(characterSearch, 300);
+  const [posePromptSearch, setPosePromptSearch] = useState('');
+  const debouncedPosePromptSearch = useDebouncedValue(posePromptSearch, 300);
   const [drawerCharacterSearch, setDrawerCharacterSearch] = useState('');
   const debouncedDrawerSearch = useDebouncedValue(drawerCharacterSearch, 300);
 
@@ -496,6 +538,15 @@ export function CharacterImagesPage() {
 
   const { data: characterData, isLoading: isCharactersLoading } =
     useCharacters(characterQueryParams);
+  const { data: posePromptData, isLoading: isPosePromptsLoading } =
+    usePosePrompts({
+      search: debouncedPosePromptSearch.trim() || undefined,
+      skip: 0,
+      take: 20,
+    });
+  const { data: selectedPosePromptDetails } = usePosePromptDetails(
+    posePromptFilter || null,
+  );
   const { data: drawerCharacterData, isLoading: isDrawerCharactersLoading } =
     useCharacters(drawerCharacterQueryParams);
 
@@ -523,6 +574,31 @@ export function CharacterImagesPage() {
     () => [{ id: '', label: 'All characters' }, ...characterOptions],
     [characterOptions],
   );
+
+  const filterPosePromptOptions = useMemo(() => {
+    const options = [
+      { id: '', label: 'All pose prompts' },
+      ...(posePromptData?.data ?? []).map((posePrompt) => ({
+        id: posePrompt.id,
+        label: posePrompt.name,
+        meta: posePrompt.id,
+      })),
+    ];
+
+    if (
+      selectedPosePromptDetails &&
+      posePromptFilter &&
+      !options.some((option) => option.id === posePromptFilter)
+    ) {
+      options.push({
+        id: selectedPosePromptDetails.id,
+        label: selectedPosePromptDetails.name,
+        meta: selectedPosePromptDetails.id,
+      });
+    }
+
+    return options;
+  }, [posePromptData?.data, posePromptFilter, selectedPosePromptDetails]);
 
   const filterScenarioOptions = useMemo(
     () => [
@@ -1268,6 +1344,45 @@ export function CharacterImagesPage() {
                 onChange={(value) =>
                   updateSearchParams({ stage: value, page: 1 })
                 }
+              />
+            </Field>
+            <Field label="Pose" labelFor="images-pose">
+              <Select
+                id="images-pose"
+                options={[
+                  { label: 'Any pose', value: '' },
+                  ...poseOptions.map((option) => ({
+                    label: option.label,
+                    value: option.value,
+                  })),
+                ]}
+                value={poseFilter}
+                size="sm"
+                variant="ghost"
+                onChange={(value) =>
+                  updateSearchParams({ pose: value, page: 1 })
+                }
+              />
+            </Field>
+            <Field label="Pose prompt" labelFor="images-pose-prompt">
+              <SearchSelect
+                id="images-pose-prompt"
+                value={posePromptFilter}
+                valueLabel={selectedPosePromptDetails?.name}
+                options={filterPosePromptOptions}
+                search={posePromptSearch}
+                onSearchChange={setPosePromptSearch}
+                onSelect={(value) =>
+                  updateSearchParams({ posePromptId: value, page: 1 })
+                }
+                placeholder={
+                  isPosePromptsLoading
+                    ? 'Loading pose prompts...'
+                    : 'All pose prompts'
+                }
+                loading={isPosePromptsLoading}
+                loadingLabel="Loading pose prompts..."
+                emptyLabel="No pose prompts found."
               />
             </Field>
             <Field label="Promotional" labelFor="images-promotional">

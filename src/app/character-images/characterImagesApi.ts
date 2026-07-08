@@ -5,6 +5,7 @@ import type {
   CreateCharacterImageDto,
   ICharacterImage,
   ICharacterImageDetails,
+  Pose,
   RoleplayStage,
   UpdateCharacterImageDto,
 } from '@/common/types';
@@ -21,6 +22,8 @@ export type CharacterImagesListParams = {
   characterId?: string;
   scenarioId?: string;
   stage?: RoleplayStage;
+  pose?: Pose;
+  posePromptId?: string;
 };
 
 const fallbackError = 'Unable to load images.';
@@ -51,6 +54,8 @@ export async function getCharacterImages(params: CharacterImagesListParams) {
   if (params.characterId) query.set('characterId', params.characterId);
   if (params.scenarioId) query.set('scenarioId', params.scenarioId);
   if (params.stage) query.set('stage', params.stage);
+  if (params.pose) query.set('pose', params.pose);
+  if (params.posePromptId) query.set('posePromptId', params.posePromptId);
 
   const suffix = query.toString();
   const res = await apiFetch(

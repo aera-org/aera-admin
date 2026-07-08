@@ -24,3 +24,4 @@ export { default as UploadIcon } from './upload.svg?react';
 export { default as UserIcon } from './user.svg?react';
 export { default as UserCogIcon } from './user-cog.svg?react';
 export { default as UsersRoundIcon } from './users-round.svg?react';
+export { default as VideoIcon } from './video.svg?react';

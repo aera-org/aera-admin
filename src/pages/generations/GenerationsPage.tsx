@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useCharacterDetails, useCharacters } from '@/app/characters';
 import { useImgGenerations } from '@/app/img-generations';
+import { VideoIcon } from '@/assets/icons';
 import {
   Alert,
   Badge,
@@ -12,6 +13,7 @@ import {
   Container,
   EmptyState,
   Field,
+  IconButton,
   Input,
   Pagination,
   Select,
@@ -28,6 +30,10 @@ import {
 import { formatCharacterSelectLabel } from '@/common/utils';
 import { DownloadFileButton } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
+import {
+  ImageToVideoDrawer,
+  type ImageToVideoSource,
+} from '@/pages/videos/components/ImageToVideoDrawer';
 
 import { SaveGenerationButton } from './components/SaveGenerationButton';
 import s from './GenerationsPage.module.scss';
@@ -122,6 +128,20 @@ function getStatusMeta(status: ImgGenerationStatus) {
   return { label: 'Generating', tone: 'warning' as const, outline: true };
 }
 
+function buildImageToVideoSource(
+  generation: IImgGeneration,
+): ImageToVideoSource | null {
+  if (!generation.file?.id || !generation.scenario?.id) return null;
+
+  return {
+    startFrameId: generation.file.id,
+    scenarioId: generation.scenario.id,
+    characterName: generation.character?.name,
+    posePromptId: generation.posePrompt?.id,
+    posePromptName: generation.posePrompt?.name,
+  };
+}
+
 export function GenerationsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -134,6 +154,8 @@ export function GenerationsPage() {
   const rawPageSize = searchParams.get('pageSize');
 
   const [searchInput, setSearchInput] = useState(rawSearch);
+  const [imageToVideoSource, setImageToVideoSource] =
+    useState<ImageToVideoSource | null>(null);
   const debouncedSearch = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
   const normalizedSearch = debouncedSearch.trim();
 
@@ -510,6 +532,9 @@ export function GenerationsPage() {
                       generation.status === ImgGenerationStatus.Ready &&
                       generation.file?.url,
                     );
+                    const videoSource = hasImage
+                      ? buildImageToVideoSource(generation)
+                      : null;
 
                     return (
                       <Card
@@ -555,6 +580,19 @@ export function GenerationsPage() {
                                 loading="lazy"
                               />
                               <div className={s.previewActions}>
+                                {videoSource ? (
+                                  <IconButton
+                                    aria-label="Generate video"
+                                    tooltip="Generate video"
+                                    variant="ghost"
+                                    size="sm"
+                                    icon={<VideoIcon />}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      setImageToVideoSource(videoSource);
+                                    }}
+                                  />
+                                ) : null}
                                 <SaveGenerationButton
                                   id={generation.id}
                                   isSaved={generation.isSaved}
@@ -659,6 +697,12 @@ export function GenerationsPage() {
           </div>
         ) : null}
       </Container>
+      {imageToVideoSource ? (
+        <ImageToVideoDrawer
+          source={imageToVideoSource}
+          onClose={() => setImageToVideoSource(null)}
+        />
+      ) : null}
     </AppShell>
   );
 }

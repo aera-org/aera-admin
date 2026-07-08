@@ -7,6 +7,7 @@ import {
   useImgGenerationDetails,
   useRegenerateImgGeneration,
 } from '@/app/img-generations';
+import { VideoIcon } from '@/assets/icons';
 import {
   Alert,
   Badge,
@@ -18,7 +19,10 @@ import {
   Stack,
   Typography,
 } from '@/atoms';
-import { ImgGenerationStatus } from '@/common/types';
+import {
+  type IImgGenerationDetails,
+  ImgGenerationStatus,
+} from '@/common/types';
 import {
   formatUserRequestForDisplay,
   requiresPosePrompt,
@@ -27,6 +31,10 @@ import {
 import { DownloadFileButton } from '@/components/molecules';
 import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
 import { AppShell } from '@/components/templates';
+import {
+  ImageToVideoDrawer,
+  type ImageToVideoSource,
+} from '@/pages/videos/components/ImageToVideoDrawer';
 
 import { SaveGenerationButton } from './components/SaveGenerationButton';
 import s from './GenerationDetailsPage.module.scss';
@@ -59,6 +67,20 @@ function formatStage(value: string | null | undefined) {
     .join(' ');
 }
 
+function buildImageToVideoSource(
+  generation: IImgGenerationDetails,
+): ImageToVideoSource | null {
+  if (!generation.file?.id || !generation.scenario?.id) return null;
+
+  return {
+    startFrameId: generation.file.id,
+    scenarioId: generation.scenario.id,
+    characterName: generation.character?.name,
+    posePromptId: generation.posePrompt?.id ?? generation.posePromptId,
+    posePromptName: generation.posePrompt?.name,
+  };
+}
+
 export function GenerationDetailsPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -68,6 +90,8 @@ export function GenerationDetailsPage() {
   const deleteMutation = useDeleteImgGeneration();
   const regenerateMutation = useRegenerateImgGeneration();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [imageToVideoSource, setImageToVideoSource] =
+    useState<ImageToVideoSource | null>(null);
 
   const showSkeleton = isLoading && !data;
   const showEmpty = !showSkeleton && !error && !data;
@@ -88,6 +112,7 @@ export function GenerationDetailsPage() {
   const userRequestEntries = data
     ? formatUserRequestForDisplay(data.userRequest, data.stage, requestMode)
     : [];
+  const videoSource = data && hasImage ? buildImageToVideoSource(data) : null;
 
   const handleRegenerate = async () => {
     if (!id || isGenerating || regenerateMutation.isPending) return;
@@ -205,6 +230,16 @@ export function GenerationDetailsPage() {
                           size="sm"
                           className={s.previewDownloadAction}
                         />
+                        {videoSource ? (
+                          <IconButton
+                            aria-label="Generate video"
+                            tooltip="Generate video"
+                            variant="ghost"
+                            size="sm"
+                            icon={<VideoIcon />}
+                            onClick={() => setImageToVideoSource(videoSource)}
+                          />
+                        ) : null}
                       </>
                     ) : null}
                     <IconButton
@@ -291,7 +326,9 @@ export function GenerationDetailsPage() {
                             <Typography variant="caption" tone="muted">
                               {entry.label}
                             </Typography>
-                            <Typography variant="body">{entry.value}</Typography>
+                            <Typography variant="body">
+                              {entry.value}
+                            </Typography>
                           </div>
                         ))}
                       </Stack>
@@ -451,6 +488,12 @@ export function GenerationDetailsPage() {
         }}
         onClose={() => setIsDeleteOpen(false)}
       />
+      {imageToVideoSource ? (
+        <ImageToVideoDrawer
+          source={imageToVideoSource}
+          onClose={() => setImageToVideoSource(null)}
+        />
+      ) : null}
     </AppShell>
   );
 }

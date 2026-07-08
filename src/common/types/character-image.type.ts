@@ -1,9 +1,7 @@
-import {
-  type ICharacter,
-} from './character.type.ts';
+import { type ICharacter } from './character.type.ts';
 import type { IFile } from './file.type.ts';
 import type { UserRequest } from './img-generation.type.ts';
-import { Pose } from './pose-prompt.type.ts';
+import { type IPosePrompt, Pose } from './pose-prompt.type.ts';
 import type { IScenario, RoleplayStage } from './scenario.type.ts';
 
 export type CreateCharacterImageDto = {
@@ -19,6 +17,7 @@ export type CreateCharacterImageDto = {
 };
 
 export type UpdateCharacterImageDto = {
+  isPregenerated?: boolean;
   isPromotional?: boolean;
   isAnal?: boolean;
 };
@@ -45,6 +44,8 @@ export interface ICharacterImage {
   isPromotional: boolean;
   character: ICharacter;
   scenario: IScenario;
+  posePrompt?: IPosePrompt | null;
+  posePromptId?: string;
   createdAt: string;
   updatedAt: string;
   file: IFile;
