@@ -21,6 +21,7 @@ import { notifyError, notifySuccess } from '@/app/toast';
 import { DownloadIcon, PlusIcon, UploadIcon } from '@/assets/icons';
 import {
   Alert,
+  Badge,
   Button,
   ButtonGroup,
   Container,
@@ -35,11 +36,13 @@ import {
   Table,
   Typography,
 } from '@/atoms';
-import type {
-  CreatePosePromptDto,
-  IPosePrompt,
-  IPosePromptDetails,
+import {
+  type CreatePosePromptDto,
+  type IPosePrompt,
+  type IPosePromptDetails,
+  Pose,
 } from '@/common/types';
+import { poseOptions } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 
 import s from './PosesPage.module.scss';
@@ -52,12 +55,13 @@ import {
 
 type QueryUpdate = {
   search?: string;
+  pose?: string;
   page?: number;
   pageSize?: number;
 };
 
-const PAGE_SIZE_OPTIONS = [20, 50, 100];
-const DEFAULT_PAGE_SIZE = 20;
+const PAGE_SIZE_OPTIONS = [20, 40, 50, 100];
+const DEFAULT_PAGE_SIZE = 40;
 const SEARCH_DEBOUNCE_MS = 400;
 
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
@@ -95,11 +99,16 @@ function parsePageSize(value: string | null) {
   return PAGE_SIZE_OPTIONS.includes(parsed) ? parsed : DEFAULT_PAGE_SIZE;
 }
 
+function resolvePoseFilter(value: string | null) {
+  return Object.values(Pose).includes(value as Pose) ? (value as Pose) : '';
+}
+
 export function PosesPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSearch = searchParams.get('search') ?? '';
+  const rawPose = searchParams.get('pose');
   const rawPage = searchParams.get('page');
   const rawPageSize = searchParams.get('pageSize');
 
@@ -112,6 +121,7 @@ export function PosesPage() {
 
   const page = parsePositiveNumber(rawPage, 1);
   const pageSize = parsePageSize(rawPageSize);
+  const poseFilter = resolvePoseFilter(rawPose);
 
   const updateSearchParams = useCallback(
     (update: QueryUpdate, replace = false) => {
@@ -123,6 +133,14 @@ export function PosesPage() {
           next.set('search', nextSearch);
         } else {
           next.delete('search');
+        }
+      }
+
+      if (update.pose !== undefined) {
+        if (update.pose) {
+          next.set('pose', update.pose);
+        } else {
+          next.delete('pose');
         }
       }
 
@@ -156,13 +174,19 @@ export function PosesPage() {
     updateSearchParams({ search: normalizedSearch, page: 1 }, true);
   }, [normalizedSearch, rawSearch, updateSearchParams]);
 
+  useEffect(() => {
+    if (!rawPose || poseFilter) return;
+    updateSearchParams({ pose: '' }, true);
+  }, [poseFilter, rawPose, updateSearchParams]);
+
   const queryParams = useMemo(
     () => ({
       search: normalizedSearch || undefined,
+      pose: poseFilter || undefined,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    [normalizedSearch, page, pageSize],
+    [normalizedSearch, page, pageSize, poseFilter],
   );
 
   const { data, error, isLoading, refetch } = usePosePrompts(queryParams);
@@ -191,7 +215,14 @@ export function PosesPage() {
   const rows = useMemo(
     () =>
       poses.map((pose) => ({
-        name: <Typography variant="body">{pose.name}</Typography>,
+        name: (
+          <div className={s.nameCell}>
+            <Typography variant="body">{pose.name}</Typography>
+            {!pose.referenceImgId ? (
+              <Badge tone="accent">No pose control</Badge>
+            ) : null}
+          </div>
+        ),
         updated: (
           <Typography variant="caption" tone="muted" className={s.alignRight}>
             {formatDate(pose.updatedAt)}
@@ -393,6 +424,18 @@ export function PosesPage() {
                 onChange={(event) => setSearchInput(event.target.value)}
                 iconLeft={<MagnifyingGlassIcon />}
                 fullWidth
+              />
+            </Field>
+            <Field label="Pose" labelFor="poses-pose">
+              <Select
+                id="poses-pose"
+                options={[{ label: 'Any pose', value: '' }, ...poseOptions]}
+                value={poseFilter}
+                size="sm"
+                variant="ghost"
+                onChange={(value) =>
+                  updateSearchParams({ pose: value, page: 1 })
+                }
               />
             </Field>
           </div>

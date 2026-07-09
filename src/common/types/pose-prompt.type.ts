@@ -4,6 +4,7 @@ import type { RoleplayStage } from './scenario.type.ts';
 export interface IPosePrompt {
   id: string;
   name: string;
+  referenceImgId?: string;
   createdAt: string;
   updatedAt: string;
 }

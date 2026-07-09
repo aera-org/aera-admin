@@ -4,6 +4,7 @@ import type {
   CreatePosePromptDto,
   IPosePrompt,
   IPosePromptDetails,
+  Pose,
   UpdatePosePromptDto,
 } from '@/common/types';
 
@@ -11,6 +12,7 @@ import type { PaginatedResponse } from '../paginated-response.type';
 
 export type PosePromptsListParams = {
   search?: string;
+  pose?: Pose;
   skip?: number;
   take?: number;
 };
@@ -29,6 +31,7 @@ export type UpdatePosePromptReferenceDto = {
 export async function getPosePrompts(params: PosePromptsListParams) {
   const query = new URLSearchParams();
   if (params.search) query.set('search', params.search);
+  if (params.pose) query.set('pose', params.pose);
   if (typeof params.skip === 'number') query.set('skip', String(params.skip));
   if (typeof params.take === 'number') query.set('take', String(params.take));
 
