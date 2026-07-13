@@ -169,7 +169,7 @@ export async function getAnalyticsCohortRevenue(params: {
   cohortMonth: string;
 }) {
   const query = new URLSearchParams();
-  query.set('cohortMonth', params.cohortMonth);
+  query.set('month', params.cohortMonth);
 
   const res = await apiFetch(
     `/admin/analytics/cohort-revenue?${query.toString()}`,
