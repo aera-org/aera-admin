@@ -25,6 +25,7 @@ import {
   CharactersPage,
   ChatDetailsPage,
   ChatsPage,
+  CohortRevenuePage,
   ConfirmEmailPage,
   ConversionsPage,
   CustomCharacterCreatePage,
@@ -97,6 +98,10 @@ export function AppRoutes() {
       <Route path="/auth/reset" element={<ResetPasswordPage />} />
       <Route element={<AuthGuard />}>
         <Route path="/" element={<AnalyticsPage />} />
+        <Route
+          path="/analytics/cohort-revenue"
+          element={<CohortRevenuePage />}
+        />
         <Route path="/ui" element={<UiKitPage />} />
         <Route path="/characters" element={<CharactersPage />} />
         <Route path="/characters/:id" element={<CharacterDetailsPage />} />

@@ -74,6 +74,7 @@ export function Navigation() {
     .filter(
       (item) =>
         location.pathname === item.to ||
+        (item.to === '/' && location.pathname.startsWith('/analytics')) ||
         (item.to !== '/' && location.pathname.startsWith(item.to)),
     )
     .sort((a, b) => b.to.length - a.to.length)[0];

@@ -4,6 +4,7 @@ export type {
   AnalyticsMetricPoint,
   AnalyticsMetricSeries,
   AnalyticsMetricsResponse,
+  CohortRevenueResponse,
   DailyAnalyticsItem,
   DailyCountrySeriesItem,
   DailyCountryTopItem,
@@ -51,9 +52,11 @@ export {
   isValidMonthId,
   normalizeRange,
 } from './months';
+export type { MonthId } from './months';
 export {
   useAnalyticsDailyByCountry,
   useAnalyticsDailyCountryTop,
+  useAnalyticsCohortRevenue,
   useAnalyticsDaily,
   useAnalyticsDeeplinks,
   useAnalyticsMainRange,

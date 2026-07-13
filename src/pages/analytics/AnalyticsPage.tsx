@@ -7,7 +7,7 @@ import {
 } from '@visx/xychart';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import {
   addMonths,
@@ -3488,6 +3488,16 @@ export function AnalyticsPage() {
                   </Button>
                 );
               })}
+              {!isTargetUser || isX ? (
+                <Button
+                  as={Link}
+                  to="/analytics/cohort-revenue"
+                  size="sm"
+                  variant="ghost"
+                >
+                  Cohort Revenue
+                </Button>
+              ) : null}
             </ButtonGroup>
             <IconButton
               aria-label="Export CSV"

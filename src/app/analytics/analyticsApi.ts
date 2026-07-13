@@ -27,6 +27,11 @@ export type AnalyticsMetricsResponse = {
   metrics: AnalyticsMetricSeries[];
 };
 
+export type CohortRevenueResponse = {
+  cohortDate: string;
+  revenueByMonth: Record<string, number>;
+};
+
 export type DailyAnalyticsItem = {
   day: string;
   visits: number;
@@ -158,6 +163,22 @@ export async function getAnalyticsDaily(params: {
   }
 
   return (await res.json()) as DailyAnalyticsItem[];
+}
+
+export async function getAnalyticsCohortRevenue(params: {
+  cohortMonth: string;
+}) {
+  const query = new URLSearchParams();
+  query.set('cohortMonth', params.cohortMonth);
+
+  const res = await apiFetch(
+    `/admin/analytics/cohort-revenue?${query.toString()}`,
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, 'Unable to load cohort revenue.');
+  }
+
+  return (await res.json()) as CohortRevenueResponse;
 }
 
 export async function getAnalyticsDailyByCountry(params: {
