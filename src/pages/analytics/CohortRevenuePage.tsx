@@ -11,7 +11,6 @@ import { useSearchParams } from 'react-router-dom';
 import {
   addMonths,
   compareMonthIds,
-  diffInMonths,
   formatMonthLabel,
   getLastFullMonthId,
   getMonthRange,
@@ -147,15 +146,12 @@ function buildChartData(
     return [];
   }
 
-  return getMonthRange(cohortMonth, lastRevenueMonth).map((month) => {
-    const monthIndex = diffInMonths(cohortMonth, month) + 1;
-    return {
-      label: `M${monthIndex}`,
-      month,
-      monthLabel: formatMonthLabel(month, 'long'),
-      value: normalizedRevenue.get(month) ?? 0,
-    };
-  });
+  return getMonthRange(cohortMonth, lastRevenueMonth).map((month) => ({
+    label: formatMonthLabel(month, 'short'),
+    month,
+    monthLabel: formatMonthLabel(month, 'long'),
+    value: normalizedRevenue.get(month) ?? 0,
+  }));
 }
 
 export function CohortRevenuePage() {
@@ -208,7 +204,7 @@ export function CohortRevenuePage() {
     () => [
       { key: 'total', label: 'Total' },
       ...chartData.map((item) => ({
-        key: item.label,
+        key: item.month,
         label: item.label,
       })),
     ],
@@ -220,7 +216,7 @@ export function CohortRevenuePage() {
       {
         total: formatUsd(totalRevenue),
         ...Object.fromEntries(
-          chartData.map((item) => [item.label, formatUsd(item.value)]),
+          chartData.map((item) => [item.month, formatUsd(item.value)]),
         ),
       },
     ],
@@ -319,7 +315,7 @@ export function CohortRevenuePage() {
                           return (
                             <div className={s.chartTooltip}>
                               <Typography variant="meta" as="div">
-                                {datum.label} · {datum.monthLabel}
+                                {datum.monthLabel}
                               </Typography>
                               <Typography variant="body" as="div">
                                 {formatUsd(datum.value)}
