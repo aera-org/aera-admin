@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import {
+  getAnalyticsActiveUsers,
   getAnalyticsCohortRevenue,
   getAnalyticsDeeplinks,
   getAnalyticsDailyByCountry,
@@ -14,6 +15,7 @@ import {
   type DailyCountrySeriesItem,
   type DailyCountryTopItem,
   type DailyAnalyticsItem,
+  type ActiveUsersResponse,
   type AnalyticsMainRangeResponse,
   type AnalyticsMetricsResponse,
   type CohortRevenueResponse,
@@ -53,6 +55,8 @@ const analyticsKeys = {
   }) => ['analytics', 'deeplinks', params] as const,
   daily: (params: { startDate: string; endDate: string }) =>
     ['analytics', 'daily', params] as const,
+  activeUsers: (params: { month: string }) =>
+    ['analytics', 'active-users', params] as const,
   cohortRevenue: (params: { cohortMonth: string }) =>
     ['analytics', 'cohort-revenue', params] as const,
   dailyByCountry: (params: {
@@ -165,6 +169,19 @@ export function useAnalyticsDaily(
   return useQuery({
     queryKey: analyticsKeys.daily(params),
     queryFn: () => getAnalyticsDaily(params),
+    placeholderData: options.placeholderData ?? ((previous) => previous),
+    staleTime: options.staleTime ?? DEFAULT_STALE_TIME,
+    enabled: options.enabled ?? true,
+  });
+}
+
+export function useAnalyticsActiveUsers(
+  params: { month: string },
+  options: AnalyticsQueryOptions<ActiveUsersResponse> = {},
+) {
+  return useQuery({
+    queryKey: analyticsKeys.activeUsers(params),
+    queryFn: () => getAnalyticsActiveUsers(params),
     placeholderData: options.placeholderData ?? ((previous) => previous),
     staleTime: options.staleTime ?? DEFAULT_STALE_TIME,
     enabled: options.enabled ?? true,

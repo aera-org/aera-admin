@@ -1,6 +1,7 @@
 export { ActivationsPage } from './activations/ActivationsPage';
 export { AdminsPage } from './admins/AdminsPage';
 export { AirPurchasesPage } from './air-purchases/AirPurchasesPage';
+export { ActiveUsersPage } from './analytics/ActiveUsersPage';
 export { AnalyticsPage } from './analytics/AnalyticsPage';
 export { CohortRevenuePage } from './analytics/CohortRevenuePage';
 export { AuthCallbackPage } from './auth/AuthCallbackPage';

@@ -1,5 +1,6 @@
 import { apiFetch } from '@/app/api';
 import { buildApiError } from '@/app/api/apiErrors';
+import type { CharacterType, IScenario } from '@/common/types';
 
 import type { AnalyticsMetricKey, AnalyticsSection } from './metricRegistry';
 
@@ -30,6 +31,33 @@ export type AnalyticsMetricsResponse = {
 export type CohortRevenueResponse = {
   cohortDate: string;
   revenueByMonth: Record<string, number>;
+};
+
+export type ActiveUserStats = {
+  users: number;
+  customers: number;
+  chats: number;
+  sessions: number;
+  photos: number;
+  messages: number;
+};
+
+export type ActiveUserData = {
+  totals: ActiveUserStats;
+  byScenario: Record<string, ActiveUserStats>;
+};
+
+export type ActiveUsersScenario = IScenario & {
+  character?: {
+    id: string;
+    name: string;
+    type: CharacterType;
+  } | null;
+};
+
+export type ActiveUsersResponse = {
+  data: ActiveUserData;
+  scenarios: ActiveUsersScenario[];
 };
 
 export type DailyAnalyticsItem = {
@@ -179,6 +207,18 @@ export async function getAnalyticsCohortRevenue(params: {
   }
 
   return (await res.json()) as CohortRevenueResponse;
+}
+
+export async function getAnalyticsActiveUsers(params: { month: string }) {
+  const query = new URLSearchParams();
+  query.set('month', params.month);
+
+  const res = await apiFetch(`/admin/analytics/active-users?${query.toString()}`);
+  if (!res.ok) {
+    throw await buildApiError(res, 'Unable to load active users.');
+  }
+
+  return (await res.json()) as ActiveUsersResponse;
 }
 
 export async function getAnalyticsDailyByCountry(params: {

@@ -1,4 +1,8 @@
 export type {
+  ActiveUserData,
+  ActiveUsersResponse,
+  ActiveUsersScenario,
+  ActiveUserStats,
   AnalyticsMainRangeResponse,
   AnalyticsMainRow,
   AnalyticsMetricPoint,
@@ -54,6 +58,7 @@ export {
 } from './months';
 export type { MonthId } from './months';
 export {
+  useAnalyticsActiveUsers,
   useAnalyticsDailyByCountry,
   useAnalyticsDailyCountryTop,
   useAnalyticsCohortRevenue,

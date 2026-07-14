@@ -3489,14 +3489,24 @@ export function AnalyticsPage() {
                 );
               })}
               {!isTargetUser || isX ? (
-                <Button
-                  as={Link}
-                  to="/analytics/cohort-revenue"
-                  size="sm"
-                  variant="ghost"
-                >
-                  Cohort Revenue
-                </Button>
+                <>
+                  <Button
+                    as={Link}
+                    to="/analytics/cohort-revenue"
+                    size="sm"
+                    variant="ghost"
+                  >
+                    Cohort Revenue
+                  </Button>
+                  <Button
+                    as={Link}
+                    to="/analytics/active-users"
+                    size="sm"
+                    variant="ghost"
+                  >
+                    Active Users
+                  </Button>
+                </>
               ) : null}
             </ButtonGroup>
             <IconButton
