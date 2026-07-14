@@ -235,7 +235,7 @@ export function VideoDetailsPage() {
     const scenario = data.scenario ?? null;
     return {
       name: data.name ?? '',
-      prompt: data.prompt ?? '',
+      prompt: data.posePrompt?.id ? '' : (data.prompt ?? ''),
       characterId: scenario?.character.id ?? '',
       scenarioId: scenario?.id ?? '',
       posePromptId: scenario && data.posePrompt?.id ? data.posePrompt.id : '',
