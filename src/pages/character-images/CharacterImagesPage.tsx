@@ -542,7 +542,7 @@ export function CharacterImagesPage() {
     usePosePrompts({
       search: debouncedPosePromptSearch.trim() || undefined,
       skip: 0,
-      take: 20,
+      take: 100,
     });
   const { data: selectedPosePromptDetails } = usePosePromptDetails(
     posePromptFilter || null,

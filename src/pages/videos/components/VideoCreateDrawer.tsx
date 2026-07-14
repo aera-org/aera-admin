@@ -181,7 +181,7 @@ export function VideoCreateDrawer({
     usePosePrompts({
       search: debouncedPosePromptSearch.trim() || undefined,
       skip: 0,
-      take: 20,
+      take: 100,
     });
   const { data: selectedCharacterDetails, isLoading: isScenariosLoading } =
     useCharacterDetails(values.characterId || null);

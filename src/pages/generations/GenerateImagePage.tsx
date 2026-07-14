@@ -310,7 +310,7 @@ export function GenerateImagePage() {
   } = usePosePrompts({
     search: debouncedPoseSearch || undefined,
     skip: 0,
-    take: PAGE_SIZE,
+    take: 100,
   });
   const { data: characterDetails, error: detailsError } = useCharacterDetails(
     values.characterId || null,

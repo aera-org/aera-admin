@@ -140,7 +140,7 @@ export function ImageToVideoDrawer({
     usePosePrompts({
       search: debouncedPosePromptSearch.trim() || undefined,
       skip: 0,
-      take: 20,
+      take: 100,
     });
 
   const initialPosePromptOption = useMemo(

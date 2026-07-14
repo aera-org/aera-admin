@@ -192,7 +192,7 @@ export function VideoDetailsPage() {
     usePosePrompts({
       search: editPosePromptSearch.trim() || undefined,
       skip: 0,
-      take: 20,
+      take: 100,
     });
 
   useEffect(() => {
