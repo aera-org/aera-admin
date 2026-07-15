@@ -9,7 +9,7 @@ import {
   useRegenerateBatchImageItem,
   useUpdateBatchImage,
 } from '@/app/batch-images';
-import { DownloadIcon, PencilLineIcon, TrashIcon } from '@/assets/icons';
+import { DownloadIcon, PencilLineIcon, TrashIcon, VideoIcon } from '@/assets/icons';
 import {
   Alert,
   Badge,
@@ -31,6 +31,10 @@ import {
 } from '@/common/types';
 import { ConfirmModal, Drawer } from '@/components/molecules';
 import { AppShell } from '@/components/templates';
+import {
+  ImageToVideoDrawer,
+  type ImageToVideoSource,
+} from '@/pages/videos/components/ImageToVideoDrawer';
 
 import s from './BatchImageDetailsPage.module.scss';
 
@@ -87,6 +91,8 @@ export function BatchImageDetailsPage() {
 
   const [activeItem, setActiveItem] = useState<IBatchImgItem | null>(null);
   const [itemToDelete, setItemToDelete] = useState<IBatchImgItem | null>(null);
+  const [imageToVideoSource, setImageToVideoSource] =
+    useState<ImageToVideoSource | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [editShowErrors, setEditShowErrors] = useState(false);
@@ -111,6 +117,19 @@ export function BatchImageDetailsPage() {
   const showEmpty = !showSkeleton && !error && !data;
 
   const closeItemModal = () => setActiveItem(null);
+
+  const buildImageToVideoSource = (
+    item: IBatchImgItem,
+  ): ImageToVideoSource | null => {
+    if (!item.file?.id) return null;
+
+    return {
+      startFrameId: item.file.id,
+      scenarioId: data?.scenario?.id ?? data?.scenarioId ?? undefined,
+      characterName: data?.name,
+      prompt: item.prompt || data?.prompt || '',
+    };
+  };
 
   const openEditModal = () => {
     if (!data) return;
@@ -350,6 +369,25 @@ export function BatchImageDetailsPage() {
                             onClick={(event) => event.stopPropagation()}
                           />
                         ) : null}
+                        {item.file?.id ? (
+                          <IconButton
+                            aria-label="Generate video"
+                            tooltip="Generate video"
+                            size="sm"
+                            variant="ghost"
+                            icon={<VideoIcon />}
+                            disabled={
+                              regenerateItemMutation.isPending ||
+                              deleteItemMutation.isPending
+                            }
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setImageToVideoSource(
+                                buildImageToVideoSource(item),
+                              );
+                            }}
+                          />
+                        ) : null}
                         <IconButton
                           aria-label="Regenerate item"
                           tooltip="Regenerate item"
@@ -458,6 +496,17 @@ export function BatchImageDetailsPage() {
               <Button variant="secondary" onClick={closeItemModal}>
                 Close
               </Button>
+              {activeItem.file?.id ? (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setImageToVideoSource(buildImageToVideoSource(activeItem));
+                    setActiveItem(null);
+                  }}
+                >
+                  Generate video
+                </Button>
+              ) : null}
               <Button
                 variant="secondary"
                 onClick={() => {
@@ -550,6 +599,13 @@ export function BatchImageDetailsPage() {
           setItemToDelete(null);
         }}
       />
+
+      {imageToVideoSource ? (
+        <ImageToVideoDrawer
+          source={imageToVideoSource}
+          onClose={() => setImageToVideoSource(null)}
+        />
+      ) : null}
     </AppShell>
   );
 }

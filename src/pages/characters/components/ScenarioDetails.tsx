@@ -58,7 +58,6 @@ import {
 import { ConfirmModal, Drawer, FileUpload } from '@/components/molecules';
 
 import s from '../CharacterDetailsPage.module.scss';
-import { ScenarioVideosSection } from './ScenarioVideosSection';
 import { ScenarioVideosV2Section } from './ScenarioVideosV2Section';
 
 type ScenarioDetailsProps = {
@@ -1087,21 +1086,21 @@ export function ScenarioDetails({
         </div>
         {showVideos ? (
           <>
-            {isX ? (
+            {/* {isX ? ( */}
               <ScenarioVideosV2Section
                 characterId={characterId}
                 scenarioId={scenario.id}
                 videos={scenario.videos ?? []}
                 formatDate={formatDate}
               />
-            ) : (
-              <ScenarioVideosSection
-                characterId={characterId}
-                scenarioId={scenario.id}
-                videos={scenario.videos ?? []}
-                formatDate={formatDate}
-              />
-            )}
+            {/* // ) : (
+            //   <ScenarioVideosSection
+            //     characterId={characterId}
+            //     scenarioId={scenario.id}
+            //     videos={scenario.videos ?? []}
+            //     formatDate={formatDate}
+            //   />
+            )} */}
           </>
         ) : null}
       </Stack>

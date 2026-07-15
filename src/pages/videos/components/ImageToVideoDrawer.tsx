@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { usePosePrompts } from '@/app/pose-prompts';
 import { useCreateVideoGeneration } from '@/app/video-generations';
-import { Button, Field, FormRow, Input, Select, Stack } from '@/atoms';
+import { Button, Field, FormRow, Input, Select, Stack, Textarea } from '@/atoms';
 import {
   type IVideoGenerationCreateDto,
   VideoAspectRatio,
@@ -16,10 +16,11 @@ import s from './ImageToVideoDrawer.module.scss';
 
 export type ImageToVideoSource = {
   startFrameId: string;
-  scenarioId: string;
+  scenarioId?: string;
   characterName?: string;
   posePromptId?: string;
   posePromptName?: string;
+  prompt?: string;
 };
 
 type ImageToVideoDrawerProps = {
@@ -34,6 +35,7 @@ type ImageToVideoValues = {
   aspectRatio: VideoAspectRatio;
   duration: string;
   posePromptId: string;
+  prompt: string;
 };
 
 type SearchOption = {
@@ -118,6 +120,7 @@ function buildInitialValues(source: ImageToVideoSource): ImageToVideoValues {
     aspectRatio: VideoAspectRatio.Square,
     duration: '10',
     posePromptId: source.posePromptId ?? '',
+    prompt: source.prompt ?? '',
   };
 }
 
@@ -168,6 +171,8 @@ export function ImageToVideoDrawer({
   );
 
   const parsedDuration = parsePositiveInteger(values.duration);
+  const selectedPosePromptId = values.posePromptId;
+  const requiresPrompt = !selectedPosePromptId;
 
   const validationErrors = useMemo(() => {
     if (!showErrors) return {};
@@ -183,21 +188,23 @@ export function ImageToVideoDrawer({
         : 'Select aspect ratio.',
       duration:
         parsedDuration !== null ? undefined : `Enter ${MIN_DURATION} or more.`,
-      posePromptId: values.posePromptId ? undefined : 'Select a pose prompt.',
+      prompt:
+        !requiresPrompt || values.prompt.trim() ? undefined : 'Enter a prompt.',
     };
   }, [
     parsedDuration,
+    requiresPrompt,
     showErrors,
     values.aspectRatio,
     values.name,
-    values.posePromptId,
+    values.prompt,
     values.quality,
     values.resolution,
   ]);
 
   const isValid = Boolean(
     values.name.trim() &&
-    values.posePromptId &&
+    (!requiresPrompt || values.prompt.trim()) &&
     isVideoQuality(values.quality) &&
     isVideoResolution(values.resolution) &&
     isVideoAspectRatio(values.aspectRatio) &&
@@ -221,14 +228,18 @@ export function ImageToVideoDrawer({
     }
     const payload: IVideoGenerationCreateDto = {
       name: values.name.trim(),
-      scenarioId: source.scenarioId,
-      posePromptId: values.posePromptId,
+      scenarioId: source.scenarioId || undefined,
+      posePromptId: selectedPosePromptId || undefined,
       quality: values.quality,
       resolution: values.resolution,
       aspectRatio: values.aspectRatio,
       duration: parsedDuration!,
       startFrameId: source.startFrameId,
     };
+
+    if (!selectedPosePromptId) {
+      payload.prompt = values.prompt.trim();
+    }
 
     try {
       const result = await createMutation.mutateAsync(payload);
@@ -358,16 +369,12 @@ export function ImageToVideoDrawer({
           </Field>
         </FormRow>
 
-        <Field
-          label="Pose prompt"
-          labelFor="image-to-video-pose-prompt"
-          error={validationErrors.posePromptId}
-        >
+        <Field label="Pose prompt" labelFor="image-to-video-pose-prompt">
           <SearchSelect
             id="image-to-video-pose-prompt"
             value={values.posePromptId}
             valueLabel={initialPosePromptOption?.label}
-            options={posePromptOptions}
+            options={[{ id: '', label: 'No pose prompt' }, ...posePromptOptions]}
             search={posePromptSearch}
             onSearchChange={setPosePromptSearch}
             onSelect={(value) =>
@@ -382,7 +389,24 @@ export function ImageToVideoDrawer({
             loadingLabel="Loading pose prompts..."
             emptyLabel="No pose prompts found."
             disabled={createMutation.isPending}
-            invalid={Boolean(validationErrors.posePromptId)}
+          />
+        </Field>
+
+        <Field
+          label="Prompt"
+          labelFor="image-to-video-prompt"
+          error={validationErrors.prompt}
+        >
+          <Textarea
+            id="image-to-video-prompt"
+            size="sm"
+            value={values.prompt}
+            onChange={(event) =>
+              setValues((prev) => ({ ...prev, prompt: event.target.value }))
+            }
+            rows={6}
+            placeholder="Describe the video to generate"
+            fullWidth
           />
         </Field>
 

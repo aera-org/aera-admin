@@ -1,6 +1,7 @@
 import type { ILora } from '@/common/types/lora.type.ts';
 
 import type { IFile } from './file.type.ts';
+import type { IScenario } from './scenario.type.ts';
 
 export interface IBatchImgSet {
   id: string;
@@ -30,6 +31,8 @@ export interface IBatchImgSetDetails extends IBatchImgSet {
   items: IBatchImgItem[];
   prompt: string;
   lora: ILora;
+  scenarioId?: string | null;
+  scenario?: Pick<IScenario, 'id' | 'name'> | null;
 }
 
 export interface BatchImgSetCreate {
