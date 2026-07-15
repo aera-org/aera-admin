@@ -18,6 +18,7 @@ import {
   Switch,
   Typography,
 } from '@/atoms';
+import { isX } from '@/common/is-x';
 import {
   FileDir,
   type IFile,
@@ -330,7 +331,7 @@ export function ScenarioVideosV2Section({
                     <Badge tone={video.isActive ? 'success' : 'warning'}>
                       {video.isActive ? 'Active' : 'Inactive'}
                     </Badge>
-                    {video.forFeed ? <Badge>Feed</Badge> : null}
+                    {video.forFeed && isX ? <Badge>Feed</Badge> : null}
                   </div>
                   <div className={s.scenarioVideoHoverActions}>
                     <IconButton
@@ -468,7 +469,7 @@ export function ScenarioVideosV2Section({
             />
           </Field>
 
-          <Switch
+          {isX && <Switch
             checked={createValues.forFeed}
             onChange={(event) =>
               setCreateValues((prev) => ({
@@ -478,7 +479,7 @@ export function ScenarioVideosV2Section({
             }
             label="Feed"
             disabled={createMutation.isPending}
-          />
+          />}
 
           <div className={s.storyDrawerActions}>
             <Button
@@ -551,11 +552,11 @@ export function ScenarioVideosV2Section({
                 <Typography variant="body">-</Typography>
               )}
             </Field>
-            <Field label="Feed">
+            {isX && <Field label="Feed">
               <Typography variant="body">
                 {detailsTarget.forFeed ? 'Yes' : 'No'}
               </Typography>
-            </Field>
+            </Field>}
             <Field label="Status">
               <Badge tone={detailsTarget.isActive ? 'success' : 'warning'}>
                 {detailsTarget.isActive ? 'Active' : 'Inactive'}
@@ -643,7 +644,7 @@ export function ScenarioVideosV2Section({
             />
           </Field>
 
-          <Switch
+          {isX && <Switch
             checked={editValues.forFeed}
             onChange={(event) =>
               setEditValues((prev) => ({
@@ -653,7 +654,7 @@ export function ScenarioVideosV2Section({
             }
             label="Feed"
             disabled={updateMutation.isPending}
-          />
+          />}
 
           <Switch
             checked={editValues.isActive}
