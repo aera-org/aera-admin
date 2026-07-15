@@ -294,7 +294,7 @@ export function ScenarioVideosV2Section({
       {videos.length === 0 ? (
         <EmptyState
           title="No videos"
-          description="Add the first v2 scenario video."
+          description="Add the first scenario video."
           action={
             <Button
               variant="secondary"
