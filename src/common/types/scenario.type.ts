@@ -63,9 +63,9 @@ export interface ScenarioLiveGenerations {
   export interface IScenarioVideo {
     id: string;
     video: IFile;
-    pose?: Pose;
+    pose?: Pose | null;
     startFrame?: IFile;
-    stage?: RoleplayStage;
+    stage?: RoleplayStage | null;
     isPaid?: boolean;
     forFeed: boolean;
     isActive: boolean;

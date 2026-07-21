@@ -124,6 +124,23 @@ function buildVideoLabel(video: IScenarioVideo) {
   return parts.length > 0 ? parts.join(' · ') : 'Video';
 }
 
+function compareVideosByStatusAndPose(
+  left: IScenarioVideo,
+  right: IScenarioVideo,
+) {
+  if (left.isActive !== right.isActive) {
+    return left.isActive ? -1 : 1;
+  }
+
+  if (!left.pose && right.pose) return 1;
+  if (left.pose && !right.pose) return -1;
+  if (!left.pose && !right.pose) return 0;
+
+  return formatPose(left.pose).localeCompare(formatPose(right.pose), undefined, {
+    sensitivity: 'base',
+  });
+}
+
 export function ScenarioVideosV2Section({
   characterId,
   scenarioId,
@@ -156,6 +173,17 @@ export function ScenarioVideosV2Section({
       videoId: createFile?.id ? undefined : 'Upload a video.',
     };
   }, [createFile?.id, createShowErrors]);
+  const sortedVideos = useMemo(
+    () =>
+      videos
+        .map((video, index) => ({ video, index }))
+        .sort((left, right) => {
+          const order = compareVideosByStatusAndPose(left.video, right.video);
+          return order || left.index - right.index;
+        })
+        .map(({ video }) => video),
+    [videos],
+  );
 
   const isCreateValid = Boolean(createFile?.id);
 
@@ -231,8 +259,8 @@ export function ScenarioVideosV2Section({
         payload: {
           isActive,
           startFrameId: video.startFrame?.id ?? null,
-          pose: video.pose ?? undefined,
-          stage: video.stage ?? undefined,
+          pose: video.pose ?? null,
+          stage: video.stage ?? null,
           isPaid: video.isPaid ?? undefined,
           forFeed: video.forFeed,
         },
@@ -252,8 +280,8 @@ export function ScenarioVideosV2Section({
       payload: {
         isActive: editValues.isActive,
         startFrameId: editStartFrame?.id ?? null,
-        pose: editValues.pose || undefined,
-        stage: editValues.stage || undefined,
+        pose: editValues.pose || null,
+        stage: editValues.stage || null,
         isPaid: parsePaidValue(editValues.isPaid),
         forFeed: editValues.forFeed,
       },
@@ -308,7 +336,7 @@ export function ScenarioVideosV2Section({
         />
       ) : (
         <div className={s.scenarioVideoGrid}>
-          {videos.map((video) => {
+          {sortedVideos.map((video) => {
             const isUpdating =
               updateMutation.isPending && updatingVideoId === video.id;
 
