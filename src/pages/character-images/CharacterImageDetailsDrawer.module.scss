@@ -63,7 +63,8 @@
   gap: var(--space-3);
 }
 
-.flagEditor {
+.flagEditor,
+.poseEditor {
   display: grid;
   gap: var(--space-3);
 }

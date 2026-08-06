@@ -20,6 +20,8 @@ export type UpdateCharacterImageDto = {
   isPregenerated?: boolean;
   isPromotional?: boolean;
   isAnal?: boolean;
+  pose?: Pose | null;
+  posePromptId?: string | null;
 };
 
 export type CharacterImageVectorSearchPayload = {

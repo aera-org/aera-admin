@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   useCharacterImageDetails,
   useUpdateCharacterImage,
 } from '@/app/character-images';
+import { usePosePrompts } from '@/app/pose-prompts';
 import { DownloadIcon, SaveIcon, VideoIcon } from '@/assets/icons';
 import {
   Alert,
@@ -12,6 +13,7 @@ import {
   EmptyState,
   Field,
   IconButton,
+  Select,
   Skeleton,
   Stack,
   Switch,
@@ -19,10 +21,12 @@ import {
 } from '@/atoms';
 import type {
   ICharacterImageDetails,
+  Pose,
   UpdateCharacterImageDto,
 } from '@/common/types';
-import { formatPose, USER_REQUEST_FIELD_CONFIG } from '@/common/utils';
+import { poseOptions, USER_REQUEST_FIELD_CONFIG } from '@/common/utils';
 import { Drawer } from '@/components/molecules';
+import { SearchSelect } from '@/pages/generations/components/SearchSelect';
 import {
   ImageToVideoDrawer,
   type ImageToVideoSource,
@@ -42,10 +46,41 @@ type FlagsDraft = {
   isAnal?: boolean;
 };
 
+type PoseDraft = {
+  imageId: string | null;
+  pose?: Pose | '';
+  posePromptId?: string;
+};
+
+type SearchOption = {
+  id: string;
+  label: string;
+  meta?: string;
+};
+
+const SEARCH_DEBOUNCE_MS = 300;
+
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
   timeStyle: 'short',
 });
+
+function useDebouncedValue<T>(value: T, delay: number) {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebounced(value), delay);
+    return () => window.clearTimeout(timer);
+  }, [value, delay]);
+
+  return debounced;
+}
+
+function mergeSelectedOption(options: SearchOption[], selected?: SearchOption) {
+  if (!selected) return options;
+  if (options.some((option) => option.id === selected.id)) return options;
+  return [selected, ...options];
+}
 
 function formatDate(value: string | null | undefined) {
   if (!value) return '-';
@@ -61,6 +96,10 @@ function formatStage(value: string | null | undefined) {
     .split('_')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+}
+
+function getCurrentPosePromptId(image: ICharacterImageDetails) {
+  return image.posePrompt?.id ?? image.posePromptId ?? '';
 }
 
 function buildImageToVideoSource(
@@ -90,8 +129,24 @@ export function CharacterImageDetailsDrawer({
   const [flagsDraft, setFlagsDraft] = useState<FlagsDraft>({
     imageId: null,
   });
+  const [poseDraft, setPoseDraft] = useState<PoseDraft>({
+    imageId: null,
+  });
+  const [posePromptSearch, setPosePromptSearch] = useState('');
   const [imageToVideoSource, setImageToVideoSource] =
     useState<ImageToVideoSource | null>(null);
+
+  const debouncedPosePromptSearch = useDebouncedValue(
+    posePromptSearch,
+    SEARCH_DEBOUNCE_MS,
+  );
+
+  const { data: posePromptData, isLoading: isPosePromptsLoading } =
+    usePosePrompts({
+      search: debouncedPosePromptSearch.trim() || undefined,
+      skip: 0,
+      take: 100,
+    });
 
   const userRequestEntries = data
     ? Object.entries(USER_REQUEST_FIELD_CONFIG).map(([fieldKey, config]) => {
@@ -132,6 +187,26 @@ export function CharacterImageDetailsDrawer({
     };
   }, [data, flagsDraft.imageId, flagsDraft.isAnal, flagsDraft.isPromotional]);
 
+  const effectivePose = useMemo(() => {
+    if (!data) {
+      return {
+        pose: '' as Pose | '',
+        posePromptId: '',
+      };
+    }
+
+    const isCurrentDraft = poseDraft.imageId === data.id;
+
+    return {
+      pose: isCurrentDraft
+        ? (poseDraft.pose ?? data.pose ?? '')
+        : (data.pose ?? ''),
+      posePromptId: isCurrentDraft
+        ? (poseDraft.posePromptId ?? getCurrentPosePromptId(data))
+        : getCurrentPosePromptId(data),
+    };
+  }, [data, poseDraft.imageId, poseDraft.pose, poseDraft.posePromptId]);
+
   const hasFlagChanges = useMemo(() => {
     if (!data) return false;
     return (
@@ -139,6 +214,52 @@ export function CharacterImageDetailsDrawer({
       effectiveFlags.isAnal !== Boolean(data.isAnal)
     );
   }, [data, effectiveFlags.isAnal, effectiveFlags.isPromotional]);
+
+  const hasPoseChanges = useMemo(() => {
+    if (!data) return false;
+    return (
+      (effectivePose.pose || '') !== (data.pose ?? '') ||
+      effectivePose.posePromptId !== getCurrentPosePromptId(data)
+    );
+  }, [data, effectivePose.pose, effectivePose.posePromptId]);
+
+  const initialPosePromptOption = useMemo(() => {
+    const id = data ? getCurrentPosePromptId(data) : '';
+    if (!id) return undefined;
+
+    return {
+      id,
+      label: data?.posePrompt?.name || id,
+      meta: id,
+    };
+  }, [data]);
+
+  const posePromptOptions = useMemo(
+    () =>
+      mergeSelectedOption(
+        [
+          { id: '', label: 'No pose prompt' },
+          ...(posePromptData?.data ?? []).map((posePrompt) => ({
+            id: posePrompt.id,
+            label: posePrompt.name,
+            meta: posePrompt.id,
+          })),
+        ],
+        initialPosePromptOption,
+      ),
+    [initialPosePromptOption, posePromptData?.data],
+  );
+
+  const poseSelectOptions = useMemo(
+    () => [
+      { label: 'No pose', value: '' },
+      ...poseOptions.map((option) => ({
+        label: option.label,
+        value: option.value,
+      })),
+    ],
+    [],
+  );
 
   const videoSource = data ? buildImageToVideoSource(data) : null;
 
@@ -158,6 +279,28 @@ export function CharacterImageDetailsDrawer({
       id: data.id,
       payload,
     });
+  };
+
+  const handleSavePose = async () => {
+    if (!data) return;
+
+    const payload: UpdateCharacterImageDto = {};
+    const currentPose = data.pose ?? '';
+    const currentPosePromptId = getCurrentPosePromptId(data);
+
+    if (effectivePose.pose !== currentPose) {
+      payload.pose = effectivePose.pose || null;
+    }
+    if (effectivePose.posePromptId !== currentPosePromptId) {
+      payload.posePromptId = effectivePose.posePromptId || null;
+    }
+    if (Object.keys(payload).length === 0) return;
+
+    await updateMutation.mutateAsync({
+      id: data.id,
+      payload,
+    });
+    setPoseDraft({ imageId: null });
   };
 
   const handleMarkPregenerated = async () => {
@@ -323,16 +466,72 @@ export function CharacterImageDetailsDrawer({
                       <Typography variant="body">{entry.value}</Typography>
                     </div>
                   ))}
-                  <div>
-                    <Typography variant="caption" tone="muted">
-                      Pose
-                    </Typography>
-                    <Typography variant="body">
-                      {data.pose ? formatPose(data.pose) : '-'}
-                    </Typography>
-                  </div>
                 </Stack>
               </Field>
+
+              <div className={s.poseEditor}>
+                <Field label="Pose" labelFor="image-details-pose">
+                  <Select
+                    id="image-details-pose"
+                    size="sm"
+                    options={poseSelectOptions}
+                    value={effectivePose.pose}
+                    disabled={updateMutation.isPending}
+                    onChange={(value) =>
+                      setPoseDraft({
+                        imageId: data.id,
+                        pose: value as Pose | '',
+                        posePromptId: effectivePose.posePromptId,
+                      })
+                    }
+                    fullWidth
+                  />
+                </Field>
+                <Field
+                  label="Pose prompt"
+                  labelFor="image-details-pose-prompt"
+                >
+                  <SearchSelect
+                    id="image-details-pose-prompt"
+                    value={effectivePose.posePromptId}
+                    valueLabel={
+                      effectivePose.posePromptId ===
+                      getCurrentPosePromptId(data)
+                        ? data.posePrompt?.name
+                        : undefined
+                    }
+                    options={posePromptOptions}
+                    search={posePromptSearch}
+                    onSearchChange={setPosePromptSearch}
+                    onSelect={(value) =>
+                      setPoseDraft({
+                        imageId: data.id,
+                        pose: effectivePose.pose,
+                        posePromptId: value,
+                      })
+                    }
+                    placeholder={
+                      isPosePromptsLoading
+                        ? 'Loading pose prompts...'
+                        : 'Select pose prompt'
+                    }
+                    loading={isPosePromptsLoading}
+                    loadingLabel="Loading pose prompts..."
+                    emptyLabel="No pose prompts found."
+                    disabled={updateMutation.isPending}
+                  />
+                </Field>
+                <div className={s.flagActions}>
+                  <Button
+                    size="sm"
+                    onClick={handleSavePose}
+                    loading={updateMutation.isPending}
+                    disabled={!hasPoseChanges || updateMutation.isPending}
+                  >
+                    Save pose
+                  </Button>
+                </div>
+              </div>
 
               <Field label="Character">
                 <Typography variant="body">
