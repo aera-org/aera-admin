@@ -1,4 +1,5 @@
 export type {
+  AddScenarioI18nDto,
   CharacterCreateDto,
   CharactersListParams,
   CharacterStoriesOrderDto,
@@ -19,6 +20,7 @@ export type {
 export {
   useAddScenarioActions,
   useAddScenarioGifts,
+  useAddScenarioI18n,
   useCharacterDetails,
   useCharacters,
   useCloneCharacterAsAnime,

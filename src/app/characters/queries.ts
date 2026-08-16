@@ -18,6 +18,8 @@ import type { PaginatedResponse } from '../paginated-response.type.ts';
 import {
   addScenarioActions,
   addScenarioGifts,
+  addScenarioI18n,
+  type AddScenarioI18nDto,
   addScenarioStageGift,
   type CharacterCreateDto,
   type CharactersListParams,
@@ -549,6 +551,34 @@ export function useGenerateScenarioOpeningImage() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to generate the opening image.');
+    },
+  });
+}
+
+export function useAddScenarioI18n() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      characterId,
+      scenarioId,
+      payload,
+    }: {
+      characterId: string;
+      scenarioId: string;
+      payload: AddScenarioI18nDto;
+    }) => addScenarioI18n(characterId, scenarioId, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.details(variables.characterId),
+      });
+      notifySuccess(
+        'Scenario translations generated.',
+        'Scenario translations generated.',
+      );
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to generate scenario translations.');
     },
   });
 }

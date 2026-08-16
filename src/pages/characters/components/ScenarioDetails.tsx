@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import {
   useAddScenarioActions,
   useAddScenarioGifts,
+  useAddScenarioI18n,
   useCreateScenarioStageGift,
   useDeleteScenarioStageGift,
   useGenerateScenarioOpeningImage,
@@ -16,6 +17,7 @@ import { notifyError } from '@/app/toast';
 import {
   CopyIcon,
   GiftIcon,
+  GlobeIcon,
   ImageIcon,
   PencilLineIcon,
   PlusIcon,
@@ -27,10 +29,12 @@ import {
   Badge,
   Button,
   ButtonGroup,
+  Checkbox,
   Field,
   FormRow,
   IconButton,
   Input,
+  Modal,
   Select,
   Stack,
   Switch,
@@ -39,9 +43,11 @@ import {
 } from '@/atoms';
 import { isX } from '@/common/is-x';
 import {
+  type ChatContent,
   FileDir,
   type ICharacterDetails,
   type IFile,
+  Language,
   RoleplayStage,
   type StageAction,
   StageActionType,
@@ -52,6 +58,7 @@ import {
   buildStageDirectivesPayload,
   createEmptyStageDirectives,
   formatStageActionType,
+  getLanguageOptions,
   normalizeStageDirectives,
   stageActionTypeOptions,
 } from '@/common/utils';
@@ -111,6 +118,28 @@ const EMPTY_GIFT_VALUES: StageGiftFormValues = {
 };
 const VIDEO_ACCEPT =
   'video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v';
+const SCENARIO_I18N_LANGUAGE_OPTIONS = getLanguageOptions();
+
+type ScenarioI18nField = keyof NonNullable<ChatContent[Language]>;
+type ScenarioI18nValues = Record<ScenarioI18nField, string>;
+
+const SCENARIO_I18N_FIELDS: Array<{
+  key: ScenarioI18nField;
+  label: string;
+  rows: number;
+}> = [
+  { key: 'startMessage', label: 'Start message', rows: 4 },
+  { key: 'openingMessage', label: 'Opening message', rows: 4 },
+  { key: 'description', label: 'Description', rows: 5 },
+  { key: 'shortDescription', label: 'Short description', rows: 3 },
+];
+
+const EMPTY_SCENARIO_I18N_VALUES: ScenarioI18nValues = {
+  startMessage: '',
+  openingMessage: '',
+  description: '',
+  shortDescription: '',
+};
 
 function buildStageGiftCreatePayload(values: StageGiftFormValues) {
   return {
@@ -176,9 +205,31 @@ function buildScenarioPayload(
     opensAfterId: scenario.level > 1 ? scenario.opensAfterId || null : null,
     openingImageId: scenario.openingImage?.id,
     startImgId: scenario.startImg?.id,
+    content: scenario.content ?? {},
     liveGenerations: {
       stages: nextLiveGenerationStages,
     },
+  };
+}
+
+function getScenarioI18nValues(
+  content: ChatContent | undefined,
+  language: Language,
+): ScenarioI18nValues {
+  return {
+    ...EMPTY_SCENARIO_I18N_VALUES,
+    ...(content?.[language] ?? {}),
+  };
+}
+
+function buildScenarioI18nContent(
+  content: ChatContent | undefined,
+  language: Language,
+  values: ScenarioI18nValues,
+): ChatContent {
+  return {
+    ...(content ?? {}),
+    [language]: values,
   };
 }
 
@@ -205,6 +256,7 @@ export function ScenarioDetails({
 }: ScenarioDetailsProps) {
   const updateScenarioMutation = useUpdateScenario();
   const updatePromoVideoMutation = useUpdateScenarioPromoVideo();
+  const addScenarioI18nMutation = useAddScenarioI18n();
   const addScenarioActionsMutation = useAddScenarioActions();
   const addScenarioGiftsMutation = useAddScenarioGifts();
   const generateOpeningImageMutation = useGenerateScenarioOpeningImage();
@@ -245,6 +297,16 @@ export function ScenarioDetails({
   const [promoVideoFile, setPromoVideoFile] = useState<IFile | null>(null);
   const [promoVideoShowErrors, setPromoVideoShowErrors] = useState(false);
   const [isPromoVideoDeleteOpen, setIsPromoVideoDeleteOpen] = useState(false);
+  const [isI18nDrawerOpen, setIsI18nDrawerOpen] = useState(false);
+  const [i18nLanguage, setI18nLanguage] = useState<Language>(
+    SCENARIO_I18N_LANGUAGE_OPTIONS[0]?.value ?? Language.Ru,
+  );
+  const [i18nValues, setI18nValues] = useState<ScenarioI18nValues>(
+    EMPTY_SCENARIO_I18N_VALUES,
+  );
+  const [isI18nAddModalOpen, setIsI18nAddModalOpen] = useState(false);
+  const [i18nAddLanguages, setI18nAddLanguages] = useState<Language[]>([]);
+  const [i18nAddShowErrors, setI18nAddShowErrors] = useState(false);
 
   const selectedStageContent = useMemo(
     () => normalizeStageDirectives(scenario.stages?.[selectedStage]),
@@ -333,6 +395,123 @@ export function ScenarioDetails({
   const promoVideoPreviewUrl = promoVideoFile?.url ?? null;
   const promoVideoError =
     promoVideoShowErrors && !promoVideoFile?.id ? 'Upload a video.' : null;
+  const allI18nLanguages = useMemo(
+    () => SCENARIO_I18N_LANGUAGE_OPTIONS.map((option) => option.value),
+    [],
+  );
+  const allI18nLanguagesSelected =
+    i18nAddLanguages.length === allI18nLanguages.length;
+  const i18nAddLanguagesError =
+    i18nAddShowErrors && i18nAddLanguages.length === 0
+      ? 'Select at least one language.'
+      : undefined;
+
+  const openI18nDrawer = () => {
+    const nextLanguage =
+      SCENARIO_I18N_LANGUAGE_OPTIONS.find(
+        (option) => scenario.content?.[option.value],
+      )?.value ??
+      SCENARIO_I18N_LANGUAGE_OPTIONS[0]?.value ??
+      Language.Ru;
+
+    setI18nLanguage(nextLanguage);
+    setI18nValues(getScenarioI18nValues(scenario.content, nextLanguage));
+    setIsI18nDrawerOpen(true);
+  };
+
+  const closeI18nDrawer = () => {
+    if (updateScenarioMutation.isPending) return;
+    setIsI18nDrawerOpen(false);
+  };
+
+  const openI18nAddModal = () => {
+    setI18nAddLanguages(
+      SCENARIO_I18N_LANGUAGE_OPTIONS.filter(
+        (option) => !scenario.content?.[option.value],
+      ).map((option) => option.value),
+    );
+    setI18nAddShowErrors(false);
+    setIsI18nDrawerOpen(false);
+    setIsI18nAddModalOpen(true);
+  };
+
+  const closeI18nAddModal = () => {
+    if (addScenarioI18nMutation.isPending) return;
+    setIsI18nAddModalOpen(false);
+  };
+
+  const handleI18nLanguageChange = (value: string) => {
+    const nextLanguage = value as Language;
+    setI18nLanguage(nextLanguage);
+    setI18nValues(getScenarioI18nValues(scenario.content, nextLanguage));
+  };
+
+  const handleI18nFieldChange = (
+    field: ScenarioI18nField,
+    value: string,
+  ) => {
+    setI18nValues((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleI18nSave = async () => {
+    if (!characterId) return;
+
+    await updateScenarioMutation.mutateAsync({
+      characterId,
+      scenarioId: scenario.id,
+      payload: {
+        ...buildScenarioPayload(
+          scenario,
+          selectedStage,
+          selectedStageLiveGeneration,
+        ),
+        content: buildScenarioI18nContent(
+          scenario.content,
+          i18nLanguage,
+          i18nValues,
+        ),
+      },
+    });
+
+    setIsI18nDrawerOpen(false);
+  };
+
+  const handleI18nAddLanguageChange = (
+    language: Language,
+    checked: boolean,
+  ) => {
+    setI18nAddLanguages((prev) =>
+      checked
+        ? prev.includes(language)
+          ? prev
+          : [...prev, language]
+        : prev.filter((item) => item !== language),
+    );
+  };
+
+  const handleI18nSelectAllChange = (checked: boolean) => {
+    setI18nAddLanguages(checked ? allI18nLanguages : []);
+  };
+
+  const handleI18nGenerate = async () => {
+    if (!characterId || i18nAddLanguages.length === 0) {
+      setI18nAddShowErrors(true);
+      return;
+    }
+
+    await addScenarioI18nMutation.mutateAsync({
+      characterId,
+      scenarioId: scenario.id,
+      payload: {
+        languages: i18nAddLanguages,
+      },
+    });
+
+    setIsI18nAddModalOpen(false);
+  };
 
   const openPromoVideoDrawer = () => {
     setPromoVideoFile(scenario.promoVideo ?? null);
@@ -596,6 +775,15 @@ export function ScenarioDetails({
             onClick={() => void handleGenerateOpeningImage()}
             loading={generateOpeningImageMutation.isPending}
             disabled={!characterId || generateOpeningImageMutation.isPending}
+          />
+          <IconButton
+            aria-label="Scenario i18n"
+            icon={<GlobeIcon />}
+            tooltip="Scenario i18n"
+            variant="ghost"
+            size="sm"
+            onClick={openI18nDrawer}
+            disabled={!characterId}
           />
           <IconButton
             aria-label="Add Gifts"
@@ -1183,6 +1371,136 @@ export function ScenarioDetails({
           </div>
         </Stack>
       </Drawer>
+
+      <Drawer
+        open={isI18nDrawerOpen}
+        title="Scenario i18n"
+        className={s.scenarioI18nDrawer}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeI18nDrawer();
+          } else {
+            setIsI18nDrawerOpen(true);
+          }
+        }}
+      >
+        <Stack gap="16px">
+          <div className={s.i18nLanguageRow}>
+            <Field label="Language" labelFor="scenario-i18n-language">
+              <Select
+                id="scenario-i18n-language"
+                options={SCENARIO_I18N_LANGUAGE_OPTIONS}
+                value={i18nLanguage}
+                onChange={handleI18nLanguageChange}
+                fullWidth
+                disabled={updateScenarioMutation.isPending}
+              />
+            </Field>
+            <Button
+              variant="secondary"
+              iconLeft={<PlusIcon />}
+              onClick={openI18nAddModal}
+              disabled={
+                !characterId ||
+                updateScenarioMutation.isPending ||
+                addScenarioI18nMutation.isPending
+              }
+            >
+              Add translation
+            </Button>
+          </div>
+
+          {SCENARIO_I18N_FIELDS.map((field) => (
+            <Field
+              key={field.key}
+              label={field.label}
+              labelFor={`scenario-i18n-${field.key}`}
+            >
+              <Textarea
+                id={`scenario-i18n-${field.key}`}
+                value={i18nValues[field.key]}
+                onChange={(event) =>
+                  handleI18nFieldChange(field.key, event.target.value)
+                }
+                rows={field.rows}
+                fullWidth
+                disabled={updateScenarioMutation.isPending}
+              />
+            </Field>
+          ))}
+
+          <div className={s.modalActions}>
+            <Button
+              variant="secondary"
+              onClick={closeI18nDrawer}
+              disabled={updateScenarioMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void handleI18nSave()}
+              loading={updateScenarioMutation.isPending}
+              disabled={!characterId || updateScenarioMutation.isPending}
+            >
+              Save
+            </Button>
+          </div>
+        </Stack>
+      </Drawer>
+
+      <Modal
+        open={isI18nAddModalOpen}
+        title="Add translation"
+        onClose={closeI18nAddModal}
+        actions={
+          <div className={s.modalActions}>
+            <Button
+              variant="secondary"
+              onClick={closeI18nAddModal}
+              disabled={addScenarioI18nMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void handleI18nGenerate()}
+              loading={addScenarioI18nMutation.isPending}
+              disabled={addScenarioI18nMutation.isPending}
+            >
+              Generate
+            </Button>
+          </div>
+        }
+      >
+        <Stack gap="12px">
+          <Field label="Languages" error={i18nAddLanguagesError}>
+            <div className={s.i18nCheckboxList}>
+              <Checkbox
+                label="Select all"
+                checked={allI18nLanguagesSelected}
+                disabled={addScenarioI18nMutation.isPending}
+                onChange={(event) =>
+                  handleI18nSelectAllChange(event.target.checked)
+                }
+              />
+              <div className={s.i18nCheckboxDivider} />
+              {SCENARIO_I18N_LANGUAGE_OPTIONS.map((option) => (
+                <Checkbox
+                  key={option.value}
+                  label={option.label}
+                  checked={i18nAddLanguages.includes(option.value)}
+                  disabled={addScenarioI18nMutation.isPending}
+                  onChange={(event) =>
+                    handleI18nAddLanguageChange(
+                      option.value,
+                      event.target.checked,
+                    )
+                  }
+                />
+              ))}
+            </div>
+          </Field>
+        </Stack>
+      </Modal>
 
       <Drawer
         open={isStageDrawerOpen}

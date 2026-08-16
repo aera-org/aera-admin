@@ -183,6 +183,29 @@
   width: min(86vw, 720px);
 }
 
+.scenarioI18nDrawer {
+  width: min(86vw, 720px);
+}
+
+.i18nLanguageRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.i18nCheckboxList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+}
+
+.i18nCheckboxDivider {
+  height: 1px;
+  background: hsl(var(--border));
+}
+
 .giftDrawer {
   width: min(80vw, 560px);
 }
@@ -630,6 +653,11 @@
 }
 
 @media (max-width: 640px) {
+  .i18nLanguageRow {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
   .storyGrid {
     grid-template-columns: minmax(0, 1fr);
   }

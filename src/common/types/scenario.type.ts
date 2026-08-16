@@ -1,6 +1,7 @@
 import type { IFile } from "./file.type";
 import type { IGift } from "./gift.type";
 import type { Pose } from "./pose-prompt.type";
+import type { Language } from "./post.type";
 
 export enum RoleplayStage {
     // hook
@@ -40,7 +41,6 @@ export interface StageAction {
     text: string;
     type: StageActionType;
   }
-  
   export interface StageDirectives {
     toneAndBehavior: string;
     restrictions: string;
@@ -50,7 +50,6 @@ export interface StageAction {
     escalationTrigger: string;
     actions?: StageAction[];
   }
-  
   export type StageDirectivesMap = Record<RoleplayStage, StageDirectives>;
   
 
@@ -86,8 +85,21 @@ export interface ScenarioLiveGenerations {
     updatedAt: string;
   }
 
+  export type ChatContent = Partial<
+  Record<
+    Language,
+    {
+      startMessage: string;
+      openingMessage: string;
+      description: string;
+      shortDescription: string;
+    }
+  >
+>;
+
 export interface IScenario {
     id: string;
+    content: ChatContent;
     name: string;
     emoji: string;
     slug: string;

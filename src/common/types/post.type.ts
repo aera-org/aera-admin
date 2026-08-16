@@ -7,8 +7,12 @@ export enum PostType {
 }
 
 export enum Language {
-    Russian = 'ru',
-    French = 'fr',
+    Ru = 'ru',
+    Es = 'es',
+    Fr = 'fr',
+    De = 'de',
+    It = 'it',
+    Pl = 'pl',
 }
 
 export interface IPost {

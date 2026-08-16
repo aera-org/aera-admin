@@ -9,11 +9,13 @@ import type {
   CharacterHairStyle,
   CharacterPersonality,
   CharacterType,
+  ChatContent,
   CreateCustomScenarioDto,
   CustomCharacterCreateDto,
   ICharacter,
   ICharacterDetails,
   IScenarioVideo,
+  Language,
   Pose,
   RoleplayStage,
   ScenarioLiveGenerations,
@@ -45,6 +47,7 @@ const createCustomScenarioFallbackError =
 const deleteScenarioFallbackError = 'Unable to delete the scenario.';
 const generateScenarioOpeningImageFallbackError =
   'Unable to generate the opening image.';
+const addScenarioI18nFallbackError = 'Unable to generate scenario translations.';
 const addScenarioGiftsFallbackError = 'Unable to add gifts.';
 const addScenarioActionsFallbackError = 'Unable to add actions.';
 const createScenarioGiftFallbackError = 'Unable to add the gift.';
@@ -122,9 +125,13 @@ export type ScenarioCreateDto = {
 };
 
 export type ScenarioUpdateDto = ScenarioCreateDto & {
+  content?: ChatContent;
   level?: number;
   liveGenerations?: ScenarioLiveGenerations;
   promoVideoId?: string | null;
+};
+export type AddScenarioI18nDto = {
+  languages: Language[];
 };
 export type ScenarioPromoVideoUpdateDto = {
   promoVideoId: string | null;
@@ -333,6 +340,25 @@ export async function generateScenarioOpeningImage(
     throw await buildApiError(res, generateScenarioOpeningImageFallbackError);
   }
   return await parseJsonIfPresent(res);
+}
+
+export async function addScenarioI18n(
+  characterId: string,
+  scenarioId: string,
+  payload: AddScenarioI18nDto,
+) {
+  const res = await apiFetch(
+    `/admin/characters/${characterId}/scenarios/${scenarioId}/i18n`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!res.ok) {
+    throw await buildApiError(res, addScenarioI18nFallbackError);
+  }
+  return (await res.json()) as { success: true };
 }
 
 export async function addScenarioGifts(

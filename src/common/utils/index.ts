@@ -5,6 +5,7 @@ export {
   formatCharacterType,
 } from './characterType';
 export { cn } from './classnames';
+export { getLanguageLabel, getLanguageOptions } from './language';
 export {
   formatPhotoAngle,
   formatPose,
