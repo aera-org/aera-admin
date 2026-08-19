@@ -466,7 +466,6 @@ export function ScenarioAnalyticsPage() {
       <MetricCard
         label="Active users"
         value={formatCount(ranking.platform.activeUsers)}
-        meta="Partner traffic, not attractiveness"
       />
       <MetricCard
         label="Customers"
