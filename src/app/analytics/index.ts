@@ -44,6 +44,7 @@ export {
   isMetricForSection,
   isValidSection,
 } from './metricRegistry';
+export type { MonthId } from './months';
 export {
   addMonths,
   compareMonthIds,
@@ -56,16 +57,31 @@ export {
   isValidMonthId,
   normalizeRange,
 } from './months';
-export type { MonthId } from './months';
 export {
   useAnalyticsActiveUsers,
-  useAnalyticsDailyByCountry,
-  useAnalyticsDailyCountryTop,
   useAnalyticsCohortRevenue,
   useAnalyticsDaily,
+  useAnalyticsDailyByCountry,
+  useAnalyticsDailyCountryTop,
   useAnalyticsDeeplinks,
   useAnalyticsMainRange,
   useAnalyticsMetrics,
   usePaymentsConversionBreakdown,
   usePaymentsRevenueBreakdown,
 } from './queries';
+export type {
+  ConfidenceFilter,
+  ConfidenceTier,
+  Quadrant,
+  RankedItem,
+  RankedJoinKey,
+  ScenarioRankingPlatform,
+  ScenarioRankingResult,
+} from './scenarioRanking';
+export {
+  buildScenarioRanking,
+  getConfidenceTier,
+  rankItems,
+  TIER_HIGH_MIN_USERS,
+  TIER_MEDIUM_MIN_USERS,
+} from './scenarioRanking';

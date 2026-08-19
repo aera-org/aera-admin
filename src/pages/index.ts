@@ -4,6 +4,7 @@ export { AirPurchasesPage } from './air-purchases/AirPurchasesPage';
 export { ActiveUsersPage } from './analytics/ActiveUsersPage';
 export { AnalyticsPage } from './analytics/AnalyticsPage';
 export { CohortRevenuePage } from './analytics/CohortRevenuePage';
+export { ScenarioAnalyticsPage } from './analytics/ScenarioAnalyticsPage';
 export { AuthCallbackPage } from './auth/AuthCallbackPage';
 export { AuthNewPage } from './auth/AuthNewPage';
 export { AuthPage } from './auth/AuthPage';

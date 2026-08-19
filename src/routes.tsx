@@ -8,8 +8,8 @@ import {
 
 import { AuthGuard } from '@/app/auth';
 import {
-  ActiveUsersPage,
   ActivationsPage,
+  ActiveUsersPage,
   AdminsPage,
   AirPurchasesPage,
   AnalyticsPage,
@@ -53,6 +53,7 @@ import {
   PromptsPage,
   PromptUpdatePage,
   ResetPasswordPage,
+  ScenarioAnalyticsPage,
   ScenarioGenCreatePage,
   ScenarioGenDetailsPage,
   ScenarioGenPage,
@@ -104,6 +105,10 @@ export function AppRoutes() {
           element={<CohortRevenuePage />}
         />
         <Route path="/analytics/active-users" element={<ActiveUsersPage />} />
+        <Route
+          path="/analytics/scenarios"
+          element={<ScenarioAnalyticsPage />}
+        />
         <Route path="/ui" element={<UiKitPage />} />
         <Route path="/characters" element={<CharactersPage />} />
         <Route path="/characters/:id" element={<CharacterDetailsPage />} />

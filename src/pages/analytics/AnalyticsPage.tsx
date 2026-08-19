@@ -3506,6 +3506,14 @@ export function AnalyticsPage() {
                   >
                     Active Users
                   </Button>
+                  <Button
+                    as={Link}
+                    to="/analytics/scenarios"
+                    size="sm"
+                    variant="ghost"
+                  >
+                    Scenario Analytics
+                  </Button>
                 </>
               ) : null}
             </ButtonGroup>
