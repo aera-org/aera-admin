@@ -57,6 +57,7 @@ export {
   isValidMonthId,
   normalizeRange,
 } from './months';
+export type { PaymentsBreakdownRangeMonth } from './queries';
 export {
   useAnalyticsActiveUsers,
   useAnalyticsCohortRevenue,
@@ -66,6 +67,7 @@ export {
   useAnalyticsDeeplinks,
   useAnalyticsMainRange,
   useAnalyticsMetrics,
+  usePaymentsBreakdownRange,
   usePaymentsConversionBreakdown,
   usePaymentsRevenueBreakdown,
 } from './queries';
@@ -75,12 +77,17 @@ export type {
   Quadrant,
   RankedItem,
   RankedJoinKey,
+  ScenarioChartMetric,
   ScenarioRankingPlatform,
   ScenarioRankingResult,
 } from './scenarioRanking';
 export {
   buildScenarioRanking,
   getConfidenceTier,
+  getPlatformMetricValue,
+  getRankedItemKey,
+  getRankedMetricValue,
+  pickTopItems,
   rankItems,
   TIER_HIGH_MIN_USERS,
   TIER_MEDIUM_MIN_USERS,

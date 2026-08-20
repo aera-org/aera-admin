@@ -1,24 +1,24 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 
 import {
-  getAnalyticsActiveUsers,
-  getAnalyticsCohortRevenue,
-  getAnalyticsDeeplinks,
-  getAnalyticsDailyByCountry,
-  getAnalyticsDailyCountryTop,
-  getAnalyticsDaily,
-  getAnalyticsMainRange,
-  getAnalyticsMetrics,
-  getPaymentsConversionBreakdown,
-  getPaymentsRevenueBreakdown,
-  type DeeplinkAnalyticsItem,
-  type DailyCountrySeriesItem,
-  type DailyCountryTopItem,
-  type DailyAnalyticsItem,
   type ActiveUsersResponse,
   type AnalyticsMainRangeResponse,
   type AnalyticsMetricsResponse,
   type CohortRevenueResponse,
+  type DailyAnalyticsItem,
+  type DailyCountrySeriesItem,
+  type DailyCountryTopItem,
+  type DeeplinkAnalyticsItem,
+  getAnalyticsActiveUsers,
+  getAnalyticsCohortRevenue,
+  getAnalyticsDaily,
+  getAnalyticsDailyByCountry,
+  getAnalyticsDailyCountryTop,
+  getAnalyticsDeeplinks,
+  getAnalyticsMainRange,
+  getAnalyticsMetrics,
+  getPaymentsConversionBreakdown,
+  getPaymentsRevenueBreakdown,
   type PaymentsConversionBreakdownItem,
   type PaymentsConversionGroupBy,
   type PaymentsRevenueBreakdownItem,
@@ -140,6 +140,72 @@ export function usePaymentsRevenueBreakdown(
     staleTime: options.staleTime ?? DEFAULT_STALE_TIME,
     enabled: options.enabled ?? true,
   });
+}
+
+export type PaymentsBreakdownRangeMonth = {
+  month: string;
+  conversion: PaymentsConversionBreakdownItem[];
+  revenue: PaymentsRevenueBreakdownItem[];
+};
+
+export function usePaymentsBreakdownRange(
+  params: {
+    groupBy: PaymentsConversionGroupBy;
+    months: string[];
+  },
+  options: { enabled?: boolean; staleTime?: number } = {},
+) {
+  const enabled = (options.enabled ?? true) && params.months.length > 0;
+  const staleTime = options.staleTime ?? DEFAULT_STALE_TIME;
+  const { groupBy, months } = params;
+
+  const conversionQueries = useQueries({
+    queries: months.map((month) => ({
+      queryKey: analyticsKeys.paymentsConversionBreakdown({ groupBy, month }),
+      queryFn: () => getPaymentsConversionBreakdown({ groupBy, month }),
+      placeholderData: (previous: PaymentsConversionBreakdownItem[] | undefined) =>
+        previous,
+      staleTime,
+      enabled,
+    })),
+  });
+
+  const revenueQueries = useQueries({
+    queries: months.map((month) => ({
+      queryKey: analyticsKeys.paymentsRevenueBreakdown({
+        groupBy,
+        month,
+      }),
+      queryFn: () => getPaymentsRevenueBreakdown({ groupBy, month }),
+      placeholderData: (previous: PaymentsRevenueBreakdownItem[] | undefined) =>
+        previous,
+      staleTime,
+      enabled,
+    })),
+  });
+
+  const error =
+    conversionQueries.find((query) => query.error)?.error ??
+    revenueQueries.find((query) => query.error)?.error ??
+    null;
+  const hasAllData = months.every(
+    (_, index) =>
+      conversionQueries[index]?.data !== undefined &&
+      revenueQueries[index]?.data !== undefined,
+  );
+
+  return {
+    data: hasAllData
+      ? months.map((month, index) => ({
+          month,
+          conversion: conversionQueries[index]?.data ?? [],
+          revenue: revenueQueries[index]?.data ?? [],
+        }))
+      : undefined,
+    error,
+    isError: Boolean(error),
+    isPending: enabled && !hasAllData && !error,
+  };
 }
 
 export function useAnalyticsDeeplinks(

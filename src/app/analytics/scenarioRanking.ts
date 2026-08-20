@@ -10,6 +10,12 @@ export type ConfidenceTier = 'high' | 'medium' | 'low';
 export type ConfidenceFilter = 'all' | 'highMedium' | 'high';
 export type Quadrant = 'scale' | 'hiddenGems' | 'trafficSinks' | 'belowAverage';
 export type RankedJoinKey = 'id' | 'name' | 'none';
+export type ScenarioChartMetric =
+  | 'rpau'
+  | 'revenue'
+  | 'conversionRate'
+  | 'activeUsers'
+  | 'efficiency';
 
 export type RankedItem = {
   id: string;
@@ -145,6 +151,66 @@ function emptyQuadrants(): Record<Quadrant, RankedItem[]> {
     trafficSinks: [],
     belowAverage: [],
   };
+}
+
+export function getRankedItemKey(item: RankedItem): string {
+  return item.id || item.name;
+}
+
+export function getRankedMetricValue(
+  item: RankedItem,
+  metric: ScenarioChartMetric,
+): number | null {
+  switch (metric) {
+    case 'rpau':
+      return item.rpau;
+    case 'revenue':
+      return item.revenue;
+    case 'conversionRate':
+      return item.conversionRate;
+    case 'activeUsers':
+      return item.activeUsers;
+    case 'efficiency':
+      return item.efficiency;
+  }
+}
+
+export function getPlatformMetricValue(
+  platform: ScenarioRankingPlatform,
+  metric: ScenarioChartMetric,
+): number | null {
+  switch (metric) {
+    case 'rpau':
+      return platform.activeUsers > 0 ? platform.rpau : null;
+    case 'revenue':
+      return platform.revenue;
+    case 'conversionRate':
+      return platform.activeUsers > 0 ? platform.conversionRate : null;
+    case 'activeUsers':
+      return platform.activeUsers;
+    case 'efficiency':
+      return 1;
+  }
+}
+
+export function pickTopItems(
+  items: RankedItem[],
+  metric: ScenarioChartMetric,
+  limit: number,
+): RankedItem[] {
+  return [...items]
+    .sort((left, right) => {
+      const leftValue = getRankedMetricValue(left, metric);
+      const rightValue = getRankedMetricValue(right, metric);
+      if (leftValue === null && rightValue === null) {
+        return left.name.localeCompare(right.name);
+      }
+      if (leftValue === null) return 1;
+      if (rightValue === null) return -1;
+      if (rightValue !== leftValue) return rightValue - leftValue;
+      return left.name.localeCompare(right.name);
+    })
+    .slice(0, limit);
 }
 
 export function rankItems(

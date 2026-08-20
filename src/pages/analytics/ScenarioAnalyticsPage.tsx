@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import {
+  AnimatedAxis,
+  AnimatedGrid,
+  AnimatedLineSeries,
+  Tooltip as ChartTooltip,
+  XYChart,
+} from '@visx/xychart';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import {
@@ -13,12 +20,19 @@ import {
   getLastFullMonthId,
   getMetricDefinition,
   getMonthRange,
+  getPlatformMetricValue,
+  getRankedItemKey,
+  getRankedMetricValue,
   isValidMonthId,
   type MonthId,
+  normalizeRange,
   type PaymentsConversionGroupBy,
+  pickTopItems,
   type Quadrant,
   type RankedItem,
   rankItems,
+  type ScenarioChartMetric,
+  usePaymentsBreakdownRange,
   usePaymentsConversionBreakdown,
   usePaymentsRevenueBreakdown,
 } from '@/app/analytics';
@@ -43,6 +57,21 @@ import s from './ScenarioAnalyticsPage.module.scss';
 
 const MONTH_OPTION_COUNT = 36;
 const TABLE_MIN_WIDTH = 1120;
+const CHART_HEIGHT = 280;
+const MAX_CHART_MONTHS = 12;
+const TOP_CHART_SERIES = 8;
+const PLATFORM_SERIES_ID = '__platform__';
+const PLATFORM_COLOR = '#4AA3F0';
+const ENTITY_COLORS = [
+  '#1C232B',
+  '#5B6675',
+  '#2F6F9F',
+  '#6B7C59',
+  '#8A6A4A',
+  '#4A6B7A',
+  '#7A5B73',
+  '#3F5E4A',
+];
 
 type GroupBy = Extract<PaymentsConversionGroupBy, 'character' | 'scenario'>;
 
@@ -56,6 +85,14 @@ const CONFIDENCE_OPTIONS = [
   { value: 'highMedium', label: 'High and Medium' },
   { value: 'high', label: 'High only' },
 ] as const;
+
+const CHART_METRIC_OPTIONS: { value: ScenarioChartMetric; label: string }[] = [
+  { value: 'rpau', label: 'RPAU' },
+  { value: 'revenue', label: 'Revenue' },
+  { value: 'conversionRate', label: 'Conversion' },
+  { value: 'activeUsers', label: 'Users' },
+  { value: 'efficiency', label: 'Efficiency' },
+];
 
 const QUADRANT_CONFIG: {
   key: Quadrant;
@@ -88,6 +125,22 @@ type QueryUpdate = {
   month?: string;
   groupBy?: string;
   confidence?: string;
+  chartStart?: string;
+  chartEnd?: string;
+  chartMetric?: string;
+};
+
+type ChartPoint = {
+  month: MonthId;
+  value: number;
+};
+
+type ChartSeries = {
+  id: string;
+  label: string;
+  color: string;
+  isPlatform: boolean;
+  data: ChartPoint[];
 };
 
 function isGroupBy(value: string | null): value is GroupBy {
@@ -98,11 +151,23 @@ function isConfidenceFilter(value: string | null): value is ConfidenceFilter {
   return value === 'all' || value === 'highMedium' || value === 'high';
 }
 
-function buildMonthOptions(selectedMonth: MonthId, defaultMonth: MonthId) {
+function isChartMetric(value: string | null): value is ScenarioChartMetric {
+  return (
+    value === 'rpau' ||
+    value === 'revenue' ||
+    value === 'conversionRate' ||
+    value === 'activeUsers' ||
+    value === 'efficiency'
+  );
+}
+
+function buildMonthOptions(defaultMonth: MonthId, selectedMonths: MonthId[]) {
   const rangeStart = addMonths(defaultMonth, -(MONTH_OPTION_COUNT - 1));
   const months = getMonthRange(rangeStart, defaultMonth);
-  if (!months.includes(selectedMonth)) {
-    months.push(selectedMonth);
+  for (const selected of selectedMonths) {
+    if (!months.includes(selected)) {
+      months.push(selected);
+    }
   }
 
   return months
@@ -141,6 +206,75 @@ function formatRpau(value: number | null) {
 function formatEfficiency(value: number | null) {
   if (value === null) return '—';
   return `${formatCount(value * 100, 0)}%`;
+}
+
+function formatChartMetricValue(
+  metric: ScenarioChartMetric,
+  value: number | null,
+  variant: 'axis' | 'tooltip',
+) {
+  if (value === null || !Number.isFinite(value)) return '—';
+
+  if (metric === 'rpau') {
+    return formatUsd(value, variant === 'axis' ? 3 : 4);
+  }
+  if (metric === 'revenue') {
+    if (variant === 'axis') {
+      return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: 'USD',
+        notation: 'compact',
+        maximumFractionDigits: 1,
+      }).format(value);
+    }
+    return formatUsd(value, 2);
+  }
+  if (metric === 'conversionRate') {
+    return `${formatCount(value * 100, 1)}%`;
+  }
+  if (metric === 'efficiency') {
+    return `${formatCount(value * 100, 0)}%`;
+  }
+  return formatCount(value);
+}
+
+function useElementWidth<T extends HTMLElement>() {
+  const [node, setNode] = useState<T | null>(null);
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    if (!node) return;
+
+    const measure = () => {
+      const nextWidth = node.getBoundingClientRect().width ?? 0;
+      setWidth(nextWidth);
+    };
+
+    measure();
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        if (entry) setWidth(entry.contentRect.width);
+      });
+      observer.observe(node);
+      return () => observer.disconnect();
+    }
+
+    let frame = 0;
+    const handleResize = () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(measure);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [node]);
+
+  return { ref: setNode, width };
 }
 
 function ConfidenceBadge({ tier }: { tier: ConfidenceTier }) {
@@ -188,12 +322,38 @@ export function ScenarioAnalyticsPage() {
   const rawMonth = searchParams.get('month');
   const rawGroupBy = searchParams.get('groupBy');
   const rawConfidence = searchParams.get('confidence');
+  const rawChartStart = searchParams.get('chartStart');
+  const rawChartEnd = searchParams.get('chartEnd');
+  const rawChartMetric = searchParams.get('chartMetric');
   const defaultMonth = useMemo(() => getLastFullMonthId(), []);
   const month = isValidMonthId(rawMonth) ? rawMonth : defaultMonth;
   const groupBy: GroupBy = isGroupBy(rawGroupBy) ? rawGroupBy : 'scenario';
   const confidence: ConfidenceFilter = isConfidenceFilter(rawConfidence)
     ? rawConfidence
     : 'all';
+  const fallbackChartRange = useMemo(
+    () => ({ start: addMonths(defaultMonth, -1), end: defaultMonth }),
+    [defaultMonth],
+  );
+  const {
+    start: chartStart,
+    end: chartEnd,
+    adjusted: chartRangeAdjusted,
+  } = normalizeRange(
+    rawChartStart,
+    rawChartEnd,
+    fallbackChartRange,
+    MAX_CHART_MONTHS,
+  );
+  const chartMetric: ScenarioChartMetric = isChartMetric(rawChartMetric)
+    ? rawChartMetric
+    : 'rpau';
+  const chartMonths = useMemo(
+    () => getMonthRange(chartStart, chartEnd),
+    [chartEnd, chartStart],
+  );
+  const { ref: chartRef, width: chartWidth } =
+    useElementWidth<HTMLDivElement>();
 
   const conversionQuery = usePaymentsConversionBreakdown({
     groupBy,
@@ -202,6 +362,10 @@ export function ScenarioAnalyticsPage() {
   const revenueQuery = usePaymentsRevenueBreakdown({
     groupBy,
     month,
+  });
+  const breakdownRange = usePaymentsBreakdownRange({
+    groupBy,
+    months: chartMonths,
   });
 
   const updateSearchParams = useCallback(
@@ -225,6 +389,19 @@ export function ScenarioAnalyticsPage() {
           next.set('confidence', update.confidence);
         }
       }
+      if (update.chartStart !== undefined) {
+        next.set('chartStart', update.chartStart);
+      }
+      if (update.chartEnd !== undefined) {
+        next.set('chartEnd', update.chartEnd);
+      }
+      if (update.chartMetric !== undefined) {
+        if (update.chartMetric === 'rpau') {
+          next.delete('chartMetric');
+        } else {
+          next.set('chartMetric', update.chartMetric);
+        }
+      }
 
       setSearchParams(next, { replace });
     },
@@ -232,13 +409,25 @@ export function ScenarioAnalyticsPage() {
   );
 
   useEffect(() => {
-    if (rawMonth === month) return;
-    updateSearchParams({ month }, true);
-  }, [month, rawMonth, updateSearchParams]);
+    const updates: QueryUpdate = {};
+    if (rawMonth !== month) updates.month = month;
+    if (rawChartStart !== chartStart) updates.chartStart = chartStart;
+    if (rawChartEnd !== chartEnd) updates.chartEnd = chartEnd;
+    if (Object.keys(updates).length === 0) return;
+    updateSearchParams(updates, true);
+  }, [
+    chartEnd,
+    chartStart,
+    month,
+    rawChartEnd,
+    rawChartStart,
+    rawMonth,
+    updateSearchParams,
+  ]);
 
   const monthOptions = useMemo(
-    () => buildMonthOptions(month, defaultMonth),
-    [defaultMonth, month],
+    () => buildMonthOptions(defaultMonth, [month, chartStart, chartEnd]),
+    [chartEnd, chartStart, defaultMonth, month],
   );
 
   const ranking = useMemo(() => {
@@ -253,6 +442,72 @@ export function ScenarioAnalyticsPage() {
     () => rankItems(ranking.items, confidence),
     [confidence, ranking.items],
   );
+
+  const monthlyRankings = useMemo(() => {
+    if (!breakdownRange.data) return [];
+
+    return breakdownRange.data.map((row) => ({
+      month: row.month,
+      ranking: buildScenarioRanking(row.conversion, row.revenue),
+    }));
+  }, [breakdownRange.data]);
+
+  const chartSeries = useMemo(() => {
+    const endRow = monthlyRankings.find((row) => row.month === chartEnd);
+    if (!endRow) return [] as ChartSeries[];
+
+    const topItems = pickTopItems(
+      rankItems(endRow.ranking.items, confidence),
+      chartMetric,
+      TOP_CHART_SERIES,
+    );
+
+    const entitySeries: ChartSeries[] = topItems.map((item, index) => {
+      const id = getRankedItemKey(item);
+      return {
+        id,
+        label: formatEntityLabel(item.name, item.characterType, item.id),
+        color: ENTITY_COLORS[index % ENTITY_COLORS.length],
+        isPlatform: false,
+        data: monthlyRankings.flatMap((row) => {
+          const match = row.ranking.items.find(
+            (candidate) => getRankedItemKey(candidate) === id,
+          );
+          const value = match
+            ? getRankedMetricValue(match, chartMetric)
+            : null;
+          if (value === null) return [];
+          return [{ month: row.month, value }];
+        }),
+      };
+    });
+
+    return [
+      ...entitySeries.filter((series) => series.data.length > 0),
+      {
+        id: PLATFORM_SERIES_ID,
+        label: 'Platform',
+        color: PLATFORM_COLOR,
+        isPlatform: true,
+        data: monthlyRankings.flatMap((row) => {
+          const value = getPlatformMetricValue(
+            row.ranking.platform,
+            chartMetric,
+          );
+          if (value === null) return [];
+          return [{ month: row.month, value }];
+        }),
+      },
+    ];
+  }, [chartEnd, chartMetric, confidence, monthlyRankings]);
+
+  const chartMetricLabel =
+    CHART_METRIC_OPTIONS.find((option) => option.value === chartMetric)
+      ?.label ?? 'RPAU';
+  const hasChartPoints = chartSeries.some((series) => series.data.length > 0);
+  const showChartSkeleton = breakdownRange.isPending;
+  const showChartEmpty =
+    !showChartSkeleton && !breakdownRange.error && !hasChartPoints;
 
   const revenueMetric = useMemo(() => getMetricDefinition('revenue'), []);
   const conversionMetric = useMemo(
@@ -666,6 +921,196 @@ export function ScenarioAnalyticsPage() {
                 description="Quadrants use High and Medium confidence rows only."
               />
             )}
+          </Section>
+
+          <Section
+            title="Month comparison"
+            description={[
+              `Ranking above is a single-month snapshot. This chart follows the same group-by and confidence filter, and shows top ${TOP_CHART_SERIES} by ${chartMetricLabel} in ${formatMonthLabel(chartEnd, 'long')} plus Platform.`,
+              chartRangeAdjusted
+                ? `Range limited to ${MAX_CHART_MONTHS} months. From month adjusted to ${formatMonthLabel(chartStart, 'long')}.`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            <div className={s.filters}>
+              <FormRow columns={3}>
+                <Field
+                  label="From"
+                  labelFor="scenario-analytics-chart-start"
+                  className={s.filterField}
+                >
+                  <Select
+                    id="scenario-analytics-chart-start"
+                    options={monthOptions}
+                    value={chartStart}
+                    onChange={(value) =>
+                      updateSearchParams({ chartStart: value })
+                    }
+                    size="sm"
+                    fullWidth
+                  />
+                </Field>
+                <Field
+                  label="To"
+                  labelFor="scenario-analytics-chart-end"
+                  className={s.filterField}
+                >
+                  <Select
+                    id="scenario-analytics-chart-end"
+                    options={monthOptions}
+                    value={chartEnd}
+                    onChange={(value) =>
+                      updateSearchParams({ chartEnd: value })
+                    }
+                    size="sm"
+                    fullWidth
+                  />
+                </Field>
+                <Field
+                  label="Metric"
+                  labelFor="scenario-analytics-chart-metric"
+                  className={s.filterField}
+                >
+                  <Select
+                    id="scenario-analytics-chart-metric"
+                    options={CHART_METRIC_OPTIONS}
+                    value={chartMetric}
+                    onChange={(value) =>
+                      updateSearchParams({ chartMetric: value })
+                    }
+                    size="sm"
+                    fullWidth
+                  />
+                </Field>
+              </FormRow>
+            </div>
+
+            <Card className={s.panel} padding="md">
+              {breakdownRange.error ? (
+                <Alert
+                  tone="danger"
+                  title="Unable to load comparison chart"
+                  description="Please retry or choose another range."
+                />
+              ) : null}
+              {showChartSkeleton ? (
+                <Skeleton height={CHART_HEIGHT} />
+              ) : showChartEmpty ? (
+                <EmptyState
+                  title="No comparison data"
+                  description="Try another range, metric, or confidence filter."
+                />
+              ) : (
+                <>
+                  <div ref={chartRef} className={s.chart}>
+                    {chartWidth > 0 ? (
+                      <XYChart
+                        width={chartWidth}
+                        height={CHART_HEIGHT}
+                        xScale={{ type: 'point' }}
+                        yScale={{ type: 'linear', nice: true }}
+                      >
+                        <AnimatedGrid columns={false} numTicks={4} />
+                        <AnimatedAxis
+                          orientation="bottom"
+                          tickFormat={(value) =>
+                            formatMonthLabel(String(value), 'short')
+                          }
+                          numTicks={Math.min(6, chartMonths.length)}
+                        />
+                        <AnimatedAxis
+                          orientation="left"
+                          numTicks={4}
+                          tickFormat={(value) =>
+                            formatChartMetricValue(
+                              chartMetric,
+                              Number(value),
+                              'axis',
+                            )
+                          }
+                        />
+                        {chartSeries.map((series) => (
+                          <AnimatedLineSeries
+                            key={series.id}
+                            dataKey={series.id}
+                            data={series.data}
+                            color={series.color}
+                            strokeDasharray={
+                              series.isPlatform ? '4 4' : undefined
+                            }
+                            xAccessor={(datum) => datum.month}
+                            yAccessor={(datum) => datum.value}
+                          />
+                        ))}
+                        <ChartTooltip
+                          showVerticalCrosshair
+                          showSeriesGlyphs
+                          renderTooltip={({ tooltipData }) => {
+                            const nearest = tooltipData?.nearestDatum;
+                            if (!nearest) return null;
+                            const datum = nearest.datum as ChartPoint;
+                            return (
+                              <div className={s.chartTooltip}>
+                                <Typography variant="meta" as="div">
+                                  {formatMonthLabel(datum.month, 'long')}
+                                </Typography>
+                                {chartSeries.map((series) => {
+                                  const point = series.data.find(
+                                    (item) => item.month === datum.month,
+                                  );
+                                  return (
+                                    <div
+                                      key={series.id}
+                                      className={s.chartTooltipRow}
+                                    >
+                                      <span
+                                        className={s.legendSwatch}
+                                        style={{ background: series.color }}
+                                      />
+                                      <Typography variant="caption">
+                                        {series.label}
+                                      </Typography>
+                                      <Typography variant="body">
+                                        {formatChartMetricValue(
+                                          chartMetric,
+                                          point?.value ?? null,
+                                          'tooltip',
+                                        )}
+                                      </Typography>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          }}
+                        />
+                      </XYChart>
+                    ) : (
+                      <Skeleton height={CHART_HEIGHT} />
+                    )}
+                  </div>
+                  <div className={s.legend}>
+                    {chartSeries.map((series) => (
+                      <div key={series.id} className={s.legendItem}>
+                        <span
+                          className={
+                            series.isPlatform
+                              ? `${s.legendSwatch} ${s.legendSwatchDashed}`
+                              : s.legendSwatch
+                          }
+                          style={{ background: series.color }}
+                        />
+                        <Typography variant="caption" tone="muted">
+                          {series.label}
+                        </Typography>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </Card>
           </Section>
         </Stack>
       </Container>

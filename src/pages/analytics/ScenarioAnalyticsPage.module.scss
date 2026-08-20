@@ -84,6 +84,82 @@
   gap: 2px;
 }
 
+.panel {
+  background: hsl(var(--color-surface));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-base);
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.chart {
+  width: 100%;
+  min-height: 280px;
+}
+
+.chartTooltip {
+  background: hsl(var(--color-surface));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+}
+
+.chartTooltipRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.chart :global(.visx-axis path),
+.chart :global(.visx-axis line) {
+  stroke: hsl(var(--border));
+}
+
+.chart :global(.visx-axis text) {
+  fill: hsl(var(--fg-muted));
+  font-size: 12px;
+  font-family: var(--font-body);
+}
+
+.chart :global(.visx-grid line) {
+  stroke: hsl(var(--border));
+  stroke-dasharray: 2 4;
+}
+
+.chart :global(.visx-line-path) {
+  stroke-width: 2px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legendSwatchDashed {
+  box-shadow: inset 0 0 0 1px hsl(var(--color-surface));
+}
+
 @media (max-width: 640px) {
   .matrix {
     grid-template-columns: 1fr;
