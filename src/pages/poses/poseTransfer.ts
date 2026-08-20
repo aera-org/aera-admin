@@ -13,6 +13,8 @@ export type PoseTransferItem = {
   idx: number;
   note?: string;
   isAnal: boolean;
+  isActive: boolean;
+  strength: number | null;
   stages: RoleplayStage[];
   angle: PhotoAngle;
   pose: Pose;
@@ -79,6 +81,21 @@ function ensureBoolean(value: unknown, path: string) {
   return value;
 }
 
+function ensureOptionalBoolean(value: unknown, path: string, fallback: boolean) {
+  if (value === undefined) return fallback;
+  return ensureBoolean(value, path);
+}
+
+function ensureOptionalStrength(value: unknown, path: string) {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0.1 || value > 1) {
+    throw new Error(
+      `Invalid import file: "${path}" must be a number from 0.1 to 1, or null.`,
+    );
+  }
+  return value;
+}
+
 function ensureEnumValue<T extends string>(
   value: unknown,
   path: string,
@@ -119,6 +136,8 @@ function parseTransferPose(value: unknown, path: string): PoseTransferItem {
     idx: ensureNonNegativeInteger(obj.idx, `${path}.idx`),
     note: ensureOptionalString(obj.note, `${path}.note`),
     isAnal: ensureBoolean(obj.isAnal, `${path}.isAnal`),
+    isActive: ensureOptionalBoolean(obj.isActive, `${path}.isActive`, true),
+    strength: ensureOptionalStrength(obj.strength, `${path}.strength`),
     stages: parseStages(obj.stages, `${path}.stages`),
     angle: ensureEnumValue(
       obj.angle,
@@ -193,6 +212,8 @@ export function buildPosesTransferPayload(poses: IPosePromptDetails[]) {
       idx: pose.idx,
       note: pose.note?.trim() || undefined,
       isAnal: pose.isAnal,
+      isActive: Boolean(pose.isActive),
+      strength: pose.strength ?? null,
       stages,
       angle: pose.angle,
       pose: pose.pose,

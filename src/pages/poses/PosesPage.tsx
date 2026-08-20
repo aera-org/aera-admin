@@ -341,6 +341,8 @@ export function PosesPage() {
           idx: pose.idx,
           note: pose.note,
           isAnal: pose.isAnal,
+          isActive: pose.isActive,
+          strength: pose.strength,
           stages: pose.stages,
           pose: pose.pose,
           angle: pose.angle,

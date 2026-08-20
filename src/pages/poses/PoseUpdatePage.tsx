@@ -19,68 +19,19 @@ import {
   Stack,
   Typography,
 } from '@/atoms';
-import {
-  FileDir,
-  type IFile,
-  RoleplayStage,
-  type UpdatePosePromptDto,
-} from '@/common/types';
+import { FileDir, type IFile, RoleplayStage } from '@/common/types';
 import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
 import { FileUpload } from '@/components/molecules/file-upload/FileUpload';
 import { AppShell } from '@/components/templates';
 
 import s from './PoseFormPage.module.scss';
 import {
+  getEmptyPosePromptFormValues,
+  getPosePromptFormErrors,
   PosePromptForm,
-  type PosePromptFormErrors,
   type PosePromptFormValues,
+  toPosePromptPayload,
 } from './PosePromptForm';
-
-function getInitialValues(): PosePromptFormValues {
-  return {
-    idx: '',
-    note: '',
-    isAnal: false,
-    stages: [],
-    pose: '',
-    angle: '',
-    prompt: '',
-    videoPrompt: '',
-  };
-}
-
-function parseIdx(value: string) {
-  const normalized = value.trim();
-  if (!normalized) return null;
-  const parsed = Number(normalized);
-  if (!Number.isInteger(parsed) || parsed < 0) return null;
-  return parsed;
-}
-
-function getErrors(values: PosePromptFormValues): PosePromptFormErrors {
-  const errors: PosePromptFormErrors = {};
-
-  if (parseIdx(values.idx) === null) {
-    errors.idx = 'Enter a non-negative integer.';
-  }
-  if (values.stages.length === 0) {
-    errors.stages = 'Select at least one stage.';
-  }
-  if (values.isAnal && !values.stages.includes(RoleplayStage.Sex)) {
-    errors.isAnal = 'Anal poses must include the Sex stage.';
-  }
-  if (!values.pose) {
-    errors.pose = 'Select a pose.';
-  }
-  if (!values.angle) {
-    errors.angle = 'Select an angle.';
-  }
-  if (!values.prompt.trim()) {
-    errors.prompt = 'Enter prompt text.';
-  }
-
-  return errors;
-}
 
 function PoseReferenceImages({
   referenceImg,
@@ -135,12 +86,14 @@ export function PoseUpdatePage() {
   const [referenceFile, setReferenceFile] = useState<IFile | null>(null);
 
   const values = useMemo(() => {
-    if (!data) return getInitialValues();
+    if (!data) return getEmptyPosePromptFormValues();
     if (draft?.id === data.id) return draft.values;
     return {
       idx: String(data.idx),
       note: data.note ?? '',
       isAnal: data.isAnal,
+      isActive: data.isActive ?? true,
+      strength: data.strength == null ? '' : String(data.strength),
       stages: data.stages ?? [],
       pose: data.pose,
       angle: data.angle,
@@ -150,11 +103,11 @@ export function PoseUpdatePage() {
   }, [data, draft]);
 
   const errors = useMemo(
-    () => (showErrorsForId === data?.id ? getErrors(values) : {}),
+    () => (showErrorsForId === data?.id ? getPosePromptFormErrors(values) : {}),
     [data?.id, showErrorsForId, values],
   );
   const isValid = useMemo(
-    () => Object.keys(getErrors(values)).length === 0,
+    () => Object.keys(getPosePromptFormErrors(values)).length === 0,
     [values],
   );
 
@@ -205,7 +158,7 @@ export function PoseUpdatePage() {
   const handleUpdate = async () => {
     if (!data) return;
 
-    const nextErrors = getErrors(values);
+    const nextErrors = getPosePromptFormErrors(values);
     if (Object.keys(nextErrors).length > 0) {
       setShowErrorsForId(data.id);
       return;
@@ -213,16 +166,7 @@ export function PoseUpdatePage() {
 
     await updateMutation.mutateAsync({
       id: data.id,
-      payload: {
-        idx: parseIdx(values.idx) as UpdatePosePromptDto['idx'],
-        note: values.note.trim() || undefined,
-        isAnal: values.isAnal,
-        stages: values.stages,
-        pose: values.pose as UpdatePosePromptDto['pose'],
-        angle: values.angle as UpdatePosePromptDto['angle'],
-        prompt: values.prompt.trim(),
-        videoPrompt: values.videoPrompt.trim() || undefined,
-      },
+      payload: toPosePromptPayload(values),
     });
     setDraft(null);
     setShowErrorsForId(null);

@@ -48,6 +48,8 @@ export interface IPosePromptDetails extends IPosePrompt {
   idx: number;
   note?: string;
   isAnal: boolean;
+  isActive: boolean;
+  strength: number | null;
   stages: RoleplayStage[];
   angle: PhotoAngle;
   pose: Pose;
@@ -61,6 +63,8 @@ export type CreatePosePromptDto = {
   idx: number;
   note?: string;
   isAnal: boolean;
+  isActive: boolean;
+  strength: number | null;
   stages: RoleplayStage[];
   angle: PhotoAngle;
   pose: Pose;
@@ -72,6 +76,8 @@ export type UpdatePosePromptDto = {
   idx: number;
   note?: string;
   isAnal: boolean;
+  isActive: boolean;
+  strength: number | null;
   stages: RoleplayStage[];
   angle: PhotoAngle;
   pose: Pose;

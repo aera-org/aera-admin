@@ -7,9 +7,11 @@ import {
   Input,
   Select,
   Stack,
+  Switch,
   Textarea,
 } from '@/atoms';
 import {
+  type CreatePosePromptDto,
   PhotoAngle,
   Pose,
   RoleplayStage,
@@ -32,6 +34,8 @@ export type PosePromptFormValues = {
   idx: string;
   note: string;
   isAnal: boolean;
+  isActive: boolean;
+  strength: string;
   stages: RoleplayStage[];
   pose: Pose | '';
   angle: PhotoAngle | '';
@@ -42,6 +46,84 @@ export type PosePromptFormValues = {
 export type PosePromptFormErrors = Partial<
   Record<keyof PosePromptFormValues, string>
 >;
+
+export function getEmptyPosePromptFormValues(): PosePromptFormValues {
+  return {
+    idx: '',
+    note: '',
+    isAnal: false,
+    isActive: true,
+    strength: '',
+    stages: [],
+    pose: '',
+    angle: '',
+    prompt: '',
+    videoPrompt: '',
+  };
+}
+
+export function parseIdx(value: string) {
+  const normalized = value.trim();
+  if (!normalized) return null;
+  const parsed = Number(normalized);
+  if (!Number.isInteger(parsed) || parsed < 0) return null;
+  return parsed;
+}
+
+export function parseStrength(value: string): number | null {
+  const normalized = value.trim();
+  if (!normalized) return null;
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed < 0.1 || parsed > 1) return null;
+  return parsed;
+}
+
+export function getPosePromptFormErrors(
+  values: PosePromptFormValues,
+): PosePromptFormErrors {
+  const errors: PosePromptFormErrors = {};
+
+  if (parseIdx(values.idx) === null) {
+    errors.idx = 'Enter a non-negative integer.';
+  }
+  if (values.stages.length === 0) {
+    errors.stages = 'Select at least one stage.';
+  }
+  if (values.isAnal && !values.stages.includes(RoleplayStage.Sex)) {
+    errors.isAnal = 'Anal poses must include the Sex stage.';
+  }
+  if (values.strength.trim() && parseStrength(values.strength) === null) {
+    errors.strength = 'Enter a value from 0.1 to 1, or leave empty.';
+  }
+  if (!values.pose) {
+    errors.pose = 'Select a pose.';
+  }
+  if (!values.angle) {
+    errors.angle = 'Select an angle.';
+  }
+  if (!values.prompt.trim()) {
+    errors.prompt = 'Enter prompt text.';
+  }
+
+  return errors;
+}
+
+export function toPosePromptPayload(
+  values: PosePromptFormValues,
+): CreatePosePromptDto {
+  return {
+    idx: parseIdx(values.idx) as CreatePosePromptDto['idx'],
+    note: values.note.trim() || undefined,
+    isAnal: values.isAnal,
+    isActive: values.isActive,
+    strength: parseStrength(values.strength),
+    stages: values.stages,
+    pose: values.pose as CreatePosePromptDto['pose'],
+    angle: values.angle as CreatePosePromptDto['angle'],
+    prompt: values.prompt.trim(),
+    videoPrompt: values.videoPrompt.trim() || undefined,
+  };
+}
 
 type PosePromptFormProps = {
   values: PosePromptFormValues;
@@ -122,6 +204,40 @@ export function PosePromptForm({
               disabled={disabled}
             />
           </Stack>
+        </Field>
+      </FormRow>
+
+      <FormRow columns={2}>
+        <Field label="Status" labelFor="pose-is-active">
+          <Switch
+            id="pose-is-active"
+            checked={values.isActive}
+            onChange={(event) => onChange('isActive', event.target.checked)}
+            label={values.isActive ? 'Active' : 'Inactive'}
+            disabled={disabled}
+          />
+        </Field>
+
+        <Field
+          label="Strength"
+          labelFor="pose-strength"
+          hint="Optional. From 0.1 to 1. Leave empty for default."
+          error={errors.strength}
+        >
+          <Input
+            id="pose-strength"
+            size="sm"
+            type="number"
+            min={0.1}
+            max={1}
+            step={0.1}
+            inputMode="decimal"
+            value={values.strength}
+            onChange={(event) => onChange('strength', event.target.value)}
+            placeholder="Default"
+            disabled={disabled}
+            fullWidth
+          />
         </Field>
       </FormRow>
 
