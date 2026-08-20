@@ -134,19 +134,13 @@
 }
 
 .chart :global(.visx-line-path) {
+  stroke: hsl(var(--accent));
   stroke-width: 2px;
 }
 
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-}
-
-.legendItem {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.chart :global(.visx-series-point) {
+  fill: hsl(var(--accent));
+  stroke: hsl(var(--accent));
 }
 
 .legendSwatch {
@@ -154,10 +148,7 @@
   height: 10px;
   border-radius: 2px;
   flex-shrink: 0;
-}
-
-.legendSwatchDashed {
-  box-shadow: inset 0 0 0 1px hsl(var(--color-surface));
+  background: hsl(var(--accent));
 }
 
 @media (max-width: 640px) {

@@ -20,14 +20,12 @@ import {
   getLastFullMonthId,
   getMetricDefinition,
   getMonthRange,
-  getPlatformMetricValue,
   getRankedItemKey,
   getRankedMetricValue,
   isValidMonthId,
   type MonthId,
   normalizeRange,
   type PaymentsConversionGroupBy,
-  pickTopItems,
   type Quadrant,
   type RankedItem,
   rankItems,
@@ -59,19 +57,7 @@ const MONTH_OPTION_COUNT = 36;
 const TABLE_MIN_WIDTH = 1120;
 const CHART_HEIGHT = 280;
 const MAX_CHART_MONTHS = 12;
-const TOP_CHART_SERIES = 8;
-const PLATFORM_SERIES_ID = '__platform__';
-const PLATFORM_COLOR = '#4AA3F0';
-const ENTITY_COLORS = [
-  '#1C232B',
-  '#5B6675',
-  '#2F6F9F',
-  '#6B7C59',
-  '#8A6A4A',
-  '#4A6B7A',
-  '#7A5B73',
-  '#3F5E4A',
-];
+const CHART_LINE_COLOR = '#4AA3F0';
 
 type GroupBy = Extract<PaymentsConversionGroupBy, 'character' | 'scenario'>;
 
@@ -128,6 +114,7 @@ type QueryUpdate = {
   chartStart?: string;
   chartEnd?: string;
   chartMetric?: string;
+  chartEntity?: string;
 };
 
 type ChartPoint = {
@@ -138,8 +125,6 @@ type ChartPoint = {
 type ChartSeries = {
   id: string;
   label: string;
-  color: string;
-  isPlatform: boolean;
   data: ChartPoint[];
 };
 
@@ -325,6 +310,7 @@ export function ScenarioAnalyticsPage() {
   const rawChartStart = searchParams.get('chartStart');
   const rawChartEnd = searchParams.get('chartEnd');
   const rawChartMetric = searchParams.get('chartMetric');
+  const rawChartEntity = searchParams.get('chartEntity');
   const defaultMonth = useMemo(() => getLastFullMonthId(), []);
   const month = isValidMonthId(rawMonth) ? rawMonth : defaultMonth;
   const groupBy: GroupBy = isGroupBy(rawGroupBy) ? rawGroupBy : 'scenario';
@@ -381,6 +367,7 @@ export function ScenarioAnalyticsPage() {
         } else {
           next.set('groupBy', update.groupBy);
         }
+        next.delete('chartEntity');
       }
       if (update.confidence !== undefined) {
         if (update.confidence === 'all') {
@@ -400,6 +387,13 @@ export function ScenarioAnalyticsPage() {
           next.delete('chartMetric');
         } else {
           next.set('chartMetric', update.chartMetric);
+        }
+      }
+      if (update.chartEntity !== undefined) {
+        if (update.chartEntity) {
+          next.set('chartEntity', update.chartEntity);
+        } else {
+          next.delete('chartEntity');
         }
       }
 
@@ -452,58 +446,78 @@ export function ScenarioAnalyticsPage() {
     }));
   }, [breakdownRange.data]);
 
+  const chartEntityOptions = useMemo(() => {
+    const byId = new Map<
+      string,
+      { value: string; label: string; endRpau: number | null }
+    >();
+
+    for (const row of monthlyRankings) {
+      for (const item of row.ranking.items) {
+        const id = getRankedItemKey(item);
+        const label = formatEntityLabel(item.name, item.characterType, item.id);
+        const existing = byId.get(id);
+        const endRpau = row.month === chartEnd ? item.rpau : null;
+        if (!existing) {
+          byId.set(id, { value: id, label, endRpau });
+        } else if (row.month === chartEnd) {
+          existing.label = label;
+          existing.endRpau = item.rpau;
+        }
+      }
+    }
+
+    return [...byId.values()].sort((left, right) => {
+      if (left.endRpau === null && right.endRpau === null) {
+        return left.label.localeCompare(right.label);
+      }
+      if (left.endRpau === null) return 1;
+      if (right.endRpau === null) return -1;
+      if (right.endRpau !== left.endRpau) return right.endRpau - left.endRpau;
+      return left.label.localeCompare(right.label);
+    });
+  }, [chartEnd, monthlyRankings]);
+
+  const defaultChartEntity = chartEntityOptions[0]?.value ?? '';
+  const chartEntity =
+    rawChartEntity &&
+    chartEntityOptions.some((option) => option.value === rawChartEntity)
+      ? rawChartEntity
+      : defaultChartEntity;
+
+  useEffect(() => {
+    if (!chartEntity || rawChartEntity === chartEntity) return;
+    updateSearchParams({ chartEntity }, true);
+  }, [chartEntity, rawChartEntity, updateSearchParams]);
+
   const chartSeries = useMemo(() => {
-    const endRow = monthlyRankings.find((row) => row.month === chartEnd);
-    if (!endRow) return [] as ChartSeries[];
+    if (!chartEntity) return [] as ChartSeries[];
 
-    const topItems = pickTopItems(
-      rankItems(endRow.ranking.items, confidence),
-      chartMetric,
-      TOP_CHART_SERIES,
+    const selectedOption = chartEntityOptions.find(
+      (option) => option.value === chartEntity,
     );
+    if (!selectedOption) return [] as ChartSeries[];
 
-    const entitySeries: ChartSeries[] = topItems.map((item, index) => {
-      const id = getRankedItemKey(item);
-      return {
-        id,
-        label: formatEntityLabel(item.name, item.characterType, item.id),
-        color: ENTITY_COLORS[index % ENTITY_COLORS.length],
-        isPlatform: false,
-        data: monthlyRankings.flatMap((row) => {
-          const match = row.ranking.items.find(
-            (candidate) => getRankedItemKey(candidate) === id,
-          );
-          const value = match
-            ? getRankedMetricValue(match, chartMetric)
-            : null;
-          if (value === null) return [];
-          return [{ month: row.month, value }];
-        }),
-      };
+    const data = monthlyRankings.flatMap((row) => {
+      const match = row.ranking.items.find(
+        (item) => getRankedItemKey(item) === chartEntity,
+      );
+      const value = match ? getRankedMetricValue(match, chartMetric) : null;
+      if (value === null) return [];
+      return [{ month: row.month, value }];
     });
 
+    if (data.length === 0) return [] as ChartSeries[];
+
     return [
-      ...entitySeries.filter((series) => series.data.length > 0),
       {
-        id: PLATFORM_SERIES_ID,
-        label: 'Platform',
-        color: PLATFORM_COLOR,
-        isPlatform: true,
-        data: monthlyRankings.flatMap((row) => {
-          const value = getPlatformMetricValue(
-            row.ranking.platform,
-            chartMetric,
-          );
-          if (value === null) return [];
-          return [{ month: row.month, value }];
-        }),
+        id: chartEntity,
+        label: selectedOption.label,
+        data,
       },
     ];
-  }, [chartEnd, chartMetric, confidence, monthlyRankings]);
+  }, [chartEntity, chartEntityOptions, chartMetric, monthlyRankings]);
 
-  const chartMetricLabel =
-    CHART_METRIC_OPTIONS.find((option) => option.value === chartMetric)
-      ?.label ?? 'RPAU';
   const hasChartPoints = chartSeries.some((series) => series.data.length > 0);
   const showChartSkeleton = breakdownRange.isPending;
   const showChartEmpty =
@@ -926,7 +940,7 @@ export function ScenarioAnalyticsPage() {
           <Section
             title="Month comparison"
             description={[
-              `Ranking above is a single-month snapshot. This chart follows the same group-by and confidence filter, and shows top ${TOP_CHART_SERIES} by ${chartMetricLabel} in ${formatMonthLabel(chartEnd, 'long')} plus Platform.`,
+              `One ${groupBy} over the selected months. Ranking above is a single-month snapshot.`,
               chartRangeAdjusted
                 ? `Range limited to ${MAX_CHART_MONTHS} months. From month adjusted to ${formatMonthLabel(chartStart, 'long')}.`
                 : null,
@@ -985,6 +999,33 @@ export function ScenarioAnalyticsPage() {
                   />
                 </Field>
               </FormRow>
+              <FormRow columns={1}>
+                <Field
+                  label={groupBy === 'character' ? 'Character' : 'Scenario'}
+                  labelFor="scenario-analytics-chart-entity"
+                  className={s.filterField}
+                >
+                  <Select
+                    id="scenario-analytics-chart-entity"
+                    options={chartEntityOptions.map((option) => ({
+                      value: option.value,
+                      label: option.label,
+                    }))}
+                    value={chartEntity}
+                    onChange={(value) =>
+                      updateSearchParams({ chartEntity: value })
+                    }
+                    placeholder={
+                      groupBy === 'character'
+                        ? 'Select character'
+                        : 'Select scenario'
+                    }
+                    size="sm"
+                    fullWidth
+                    disabled={chartEntityOptions.length === 0}
+                  />
+                </Field>
+              </FormRow>
             </div>
 
             <Card className={s.panel} padding="md">
@@ -1000,7 +1041,9 @@ export function ScenarioAnalyticsPage() {
               ) : showChartEmpty ? (
                 <EmptyState
                   title="No comparison data"
-                  description="Try another range, metric, or confidence filter."
+                  description={`Try another ${
+                    groupBy === 'character' ? 'character' : 'scenario'
+                  }, range, or metric.`}
                 />
               ) : (
                 <>
@@ -1036,10 +1079,7 @@ export function ScenarioAnalyticsPage() {
                             key={series.id}
                             dataKey={series.id}
                             data={series.data}
-                            color={series.color}
-                            strokeDasharray={
-                              series.isPlatform ? '4 4' : undefined
-                            }
+                            color={CHART_LINE_COLOR}
                             xAccessor={(datum) => datum.month}
                             yAccessor={(datum) => datum.value}
                           />
@@ -1065,10 +1105,7 @@ export function ScenarioAnalyticsPage() {
                                       key={series.id}
                                       className={s.chartTooltipRow}
                                     >
-                                      <span
-                                        className={s.legendSwatch}
-                                        style={{ background: series.color }}
-                                      />
+                                      <span className={s.legendSwatch} />
                                       <Typography variant="caption">
                                         {series.label}
                                       </Typography>
@@ -1090,23 +1127,6 @@ export function ScenarioAnalyticsPage() {
                     ) : (
                       <Skeleton height={CHART_HEIGHT} />
                     )}
-                  </div>
-                  <div className={s.legend}>
-                    {chartSeries.map((series) => (
-                      <div key={series.id} className={s.legendItem}>
-                        <span
-                          className={
-                            series.isPlatform
-                              ? `${s.legendSwatch} ${s.legendSwatchDashed}`
-                              : s.legendSwatch
-                          }
-                          style={{ background: series.color }}
-                        />
-                        <Typography variant="caption" tone="muted">
-                          {series.label}
-                        </Typography>
-                      </div>
-                    ))}
                   </div>
                 </>
               )}
