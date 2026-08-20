@@ -286,7 +286,7 @@ export function CohortRevenuePage() {
                     <XYChart
                       width={chartWidth}
                       height={CHART_HEIGHT}
-                      xScale={{ type: 'point', padding: 0.2 }}
+                      xScale={{ type: 'point', padding: 0.1 }}
                       yScale={{ type: 'linear', nice: true }}
                     >
                       <AnimatedGrid columns={false} numTicks={4} />
