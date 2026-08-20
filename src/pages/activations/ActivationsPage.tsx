@@ -8,8 +8,8 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { formatCount } from '@/app/analytics';
 import { useActivations } from '@/app/activations';
+import { formatCount } from '@/app/analytics';
 import {
   Alert,
   Card,
@@ -27,9 +27,9 @@ import {
   Typography,
 } from '@/atoms';
 import {
-  StageActionType,
   type ActivationScenarioMetadata,
   type ActivationsStats,
+  StageActionType,
 } from '@/common/types';
 import { formatCharacterType } from '@/common/utils';
 import { AppShell } from '@/components/templates';
@@ -627,7 +627,7 @@ export function ActivationsPage() {
                     <XYChart
                       width={chartWidth}
                       height={260}
-                      xScale={{ type: 'point', padding: 0.5 }}
+                      xScale={{ type: 'point', padding: 0.2 }}
                       yScale={{ type: 'linear', nice: true }}
                     >
                       <AnimatedGrid columns={false} numTicks={4} />
