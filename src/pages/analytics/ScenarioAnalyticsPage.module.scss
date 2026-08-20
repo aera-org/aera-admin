@@ -151,6 +151,18 @@
   background: hsl(var(--accent));
 }
 
+.monthCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+  min-width: 96px;
+}
+
+.selectedRow {
+  background: hsl(var(--accent-muted));
+}
+
 @media (max-width: 640px) {
   .matrix {
     grid-template-columns: 1fr;

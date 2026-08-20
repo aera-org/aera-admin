@@ -627,7 +627,7 @@ export function ActivationsPage() {
                     <XYChart
                       width={chartWidth}
                       height={260}
-                      xScale={{ type: 'point' }}
+                      xScale={{ type: 'point', padding: 0.5 }}
                       yScale={{ type: 'linear', nice: true }}
                     >
                       <AnimatedGrid columns={false} numTicks={4} />

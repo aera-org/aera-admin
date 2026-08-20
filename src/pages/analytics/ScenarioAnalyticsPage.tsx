@@ -193,6 +193,29 @@ function formatEfficiency(value: number | null) {
   return `${formatCount(value * 100, 0)}%`;
 }
 
+function formatMoMChange(current: number | null, previous: number | null) {
+  if (
+    current === null ||
+    previous === null ||
+    !Number.isFinite(current) ||
+    !Number.isFinite(previous) ||
+    previous === 0
+  ) {
+    return null;
+  }
+
+  const change = (current - previous) / previous;
+  if (change === 0) {
+    return { label: '0%', tone: 'muted' as const };
+  }
+
+  const sign = change > 0 ? '+' : '−';
+  return {
+    label: `${sign}${formatCount(Math.abs(change) * 100, 0)}%`,
+    tone: change > 0 ? ('success' as const) : ('danger' as const),
+  };
+}
+
 function formatChartMetricValue(
   metric: ScenarioChartMetric,
   value: number | null,
@@ -291,6 +314,35 @@ function MetricCard({ label, value, meta }: MetricCardProps) {
         </Typography>
       ) : null}
     </Card>
+  );
+}
+
+function MonthMetricCell({
+  metric,
+  value,
+  previous,
+}: {
+  metric: ScenarioChartMetric;
+  value: number | null;
+  previous: number | null;
+}) {
+  const change = formatMoMChange(value, previous);
+
+  return (
+    <div className={s.monthCell}>
+      <Typography variant="body" as="span" className={s.alignRight}>
+        {formatChartMetricValue(metric, value, 'tooltip')}
+      </Typography>
+      {change ? (
+        <Typography
+          variant="caption"
+          tone={change.tone}
+          className={s.alignRight}
+        >
+          {change.label}
+        </Typography>
+      ) : null}
+    </div>
   );
 }
 
@@ -522,6 +574,85 @@ export function ScenarioAnalyticsPage() {
   const showChartSkeleton = breakdownRange.isPending;
   const showChartEmpty =
     !showChartSkeleton && !breakdownRange.error && !hasChartPoints;
+  const showComparisonTable =
+    !showChartSkeleton &&
+    !breakdownRange.error &&
+    chartEntityOptions.length > 0 &&
+    chartMonths.length > 0;
+
+  const comparisonColumns = useMemo(
+    () => [
+      {
+        key: 'name',
+        label: (
+          <Typography variant="meta" tone="muted" as="div">
+            {groupBy === 'character' ? 'Character' : 'Scenario'}
+          </Typography>
+        ),
+      },
+      ...chartMonths.map((monthId) => ({
+        key: monthId,
+        label: (
+          <Typography
+            variant="meta"
+            tone="muted"
+            as="div"
+            className={s.alignRight}
+          >
+            {formatMonthLabel(monthId, 'short')}
+          </Typography>
+        ),
+      })),
+    ],
+    [chartMonths, groupBy],
+  );
+
+  const comparisonRows = useMemo(
+    () =>
+      chartEntityOptions.map((option) => {
+        const values = chartMonths.map((monthId) => {
+          const row = monthlyRankings.find((item) => item.month === monthId);
+          const match = row?.ranking.items.find(
+            (item) => getRankedItemKey(item) === option.value,
+          );
+          return match ? getRankedMetricValue(match, chartMetric) : null;
+        });
+
+        return {
+          name: (
+            <Typography variant="body" className={s.nameCell}>
+              {option.label}
+            </Typography>
+          ),
+          ...Object.fromEntries(
+            chartMonths.map((monthId, index) => [
+              monthId,
+              <MonthMetricCell
+                key={`${option.value}-${monthId}`}
+                metric={chartMetric}
+                value={values[index] ?? null}
+                previous={index === 0 ? null : (values[index - 1] ?? null)}
+              />,
+            ]),
+          ),
+        };
+      }),
+    [chartEntityOptions, chartMetric, chartMonths, monthlyRankings],
+  );
+
+  const comparisonSkeletonRows = useMemo(
+    () =>
+      Array.from({ length: 6 }).map((_, index) => ({
+        name: <Skeleton key={`comparison-name-${index}`} height={20} />,
+        ...Object.fromEntries(
+          chartMonths.map((monthId) => [
+            monthId,
+            <Skeleton key={`comparison-${monthId}-${index}`} height={36} />,
+          ]),
+        ),
+      })),
+    [chartMonths],
+  );
 
   const revenueMetric = useMemo(() => getMetricDefinition('revenue'), []);
   const conversionMetric = useMemo(
@@ -949,7 +1080,7 @@ export function ScenarioAnalyticsPage() {
               .join(' ')}
           >
             <div className={s.filters}>
-              <FormRow columns={3}>
+              <FormRow columns={4}>
                 <Field
                   label="From"
                   labelFor="scenario-analytics-chart-start"
@@ -998,8 +1129,6 @@ export function ScenarioAnalyticsPage() {
                     fullWidth
                   />
                 </Field>
-              </FormRow>
-              <FormRow columns={1}>
                 <Field
                   label={groupBy === 'character' ? 'Character' : 'Scenario'}
                   labelFor="scenario-analytics-chart-entity"
@@ -1037,97 +1166,121 @@ export function ScenarioAnalyticsPage() {
                 />
               ) : null}
               {showChartSkeleton ? (
-                <Skeleton height={CHART_HEIGHT} />
-              ) : showChartEmpty ? (
-                <EmptyState
-                  title="No comparison data"
-                  description={`Try another ${
-                    groupBy === 'character' ? 'character' : 'scenario'
-                  }, range, or metric.`}
-                />
+                <>
+                  <Skeleton height={CHART_HEIGHT} />
+                  <Table
+                    columns={comparisonColumns}
+                    rows={comparisonSkeletonRows}
+                    scrollable
+                    minWidth={Math.max(640, 220 + chartMonths.length * 120)}
+                  />
+                </>
               ) : (
                 <>
-                  <div ref={chartRef} className={s.chart}>
-                    {chartWidth > 0 ? (
-                      <XYChart
-                        width={chartWidth}
-                        height={CHART_HEIGHT}
-                        xScale={{ type: 'point' }}
-                        yScale={{ type: 'linear', nice: true }}
-                      >
-                        <AnimatedGrid columns={false} numTicks={4} />
-                        <AnimatedAxis
-                          orientation="bottom"
-                          tickFormat={(value) =>
-                            formatMonthLabel(String(value), 'short')
-                          }
-                          numTicks={Math.min(6, chartMonths.length)}
-                        />
-                        <AnimatedAxis
-                          orientation="left"
-                          numTicks={4}
-                          tickFormat={(value) =>
-                            formatChartMetricValue(
-                              chartMetric,
-                              Number(value),
-                              'axis',
-                            )
-                          }
-                        />
-                        {chartSeries.map((series) => (
-                          <AnimatedLineSeries
-                            key={series.id}
-                            dataKey={series.id}
-                            data={series.data}
-                            color={CHART_LINE_COLOR}
-                            xAccessor={(datum) => datum.month}
-                            yAccessor={(datum) => datum.value}
+                  {showChartEmpty ? (
+                    <EmptyState
+                      title="No comparison data"
+                      description={`Try another ${
+                        groupBy === 'character' ? 'character' : 'scenario'
+                      }, range, or metric.`}
+                    />
+                  ) : (
+                    <div ref={chartRef} className={s.chart}>
+                      {chartWidth > 0 ? (
+                        <XYChart
+                          width={chartWidth}
+                          height={CHART_HEIGHT}
+                          xScale={{ type: 'point', padding: 0.5 }}
+                          yScale={{ type: 'linear', nice: true }}
+                        >
+                          <AnimatedGrid columns={false} numTicks={4} />
+                          <AnimatedAxis
+                            orientation="bottom"
+                            tickFormat={(value) =>
+                              formatMonthLabel(String(value), 'short')
+                            }
+                            numTicks={Math.min(6, chartMonths.length)}
                           />
-                        ))}
-                        <ChartTooltip
-                          showVerticalCrosshair
-                          showSeriesGlyphs
-                          renderTooltip={({ tooltipData }) => {
-                            const nearest = tooltipData?.nearestDatum;
-                            if (!nearest) return null;
-                            const datum = nearest.datum as ChartPoint;
-                            return (
-                              <div className={s.chartTooltip}>
-                                <Typography variant="meta" as="div">
-                                  {formatMonthLabel(datum.month, 'long')}
-                                </Typography>
-                                {chartSeries.map((series) => {
-                                  const point = series.data.find(
-                                    (item) => item.month === datum.month,
-                                  );
-                                  return (
-                                    <div
-                                      key={series.id}
-                                      className={s.chartTooltipRow}
-                                    >
-                                      <span className={s.legendSwatch} />
-                                      <Typography variant="caption">
-                                        {series.label}
-                                      </Typography>
-                                      <Typography variant="body">
-                                        {formatChartMetricValue(
-                                          chartMetric,
-                                          point?.value ?? null,
-                                          'tooltip',
-                                        )}
-                                      </Typography>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            );
-                          }}
-                        />
-                      </XYChart>
-                    ) : (
-                      <Skeleton height={CHART_HEIGHT} />
-                    )}
-                  </div>
+                          <AnimatedAxis
+                            orientation="left"
+                            numTicks={4}
+                            tickFormat={(value) =>
+                              formatChartMetricValue(
+                                chartMetric,
+                                Number(value),
+                                'axis',
+                              )
+                            }
+                          />
+                          {chartSeries.map((series) => (
+                            <AnimatedLineSeries
+                              key={series.id}
+                              dataKey={series.id}
+                              data={series.data}
+                              color={CHART_LINE_COLOR}
+                              xAccessor={(datum) => datum.month}
+                              yAccessor={(datum) => datum.value}
+                            />
+                          ))}
+                          <ChartTooltip
+                            showVerticalCrosshair
+                            showSeriesGlyphs
+                            renderTooltip={({ tooltipData }) => {
+                              const nearest = tooltipData?.nearestDatum;
+                              if (!nearest) return null;
+                              const datum = nearest.datum as ChartPoint;
+                              return (
+                                <div className={s.chartTooltip}>
+                                  <Typography variant="meta" as="div">
+                                    {formatMonthLabel(datum.month, 'long')}
+                                  </Typography>
+                                  {chartSeries.map((series) => {
+                                    const point = series.data.find(
+                                      (item) => item.month === datum.month,
+                                    );
+                                    return (
+                                      <div
+                                        key={series.id}
+                                        className={s.chartTooltipRow}
+                                      >
+                                        <span className={s.legendSwatch} />
+                                        <Typography variant="caption">
+                                          {series.label}
+                                        </Typography>
+                                        <Typography variant="body">
+                                          {formatChartMetricValue(
+                                            chartMetric,
+                                            point?.value ?? null,
+                                            'tooltip',
+                                          )}
+                                        </Typography>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            }}
+                          />
+                        </XYChart>
+                      ) : (
+                        <Skeleton height={CHART_HEIGHT} />
+                      )}
+                    </div>
+                  )}
+                  {showComparisonTable ? (
+                    <Table
+                      columns={comparisonColumns}
+                      rows={comparisonRows}
+                      scrollable
+                      minWidth={Math.max(640, 220 + chartMonths.length * 120)}
+                      getRowProps={(_row, index) => ({
+                        className:
+                          chartEntityOptions[index]?.value === chartEntity
+                            ? s.selectedRow
+                            : undefined,
+                      })}
+                    />
+                  ) : null}
                 </>
               )}
             </Card>

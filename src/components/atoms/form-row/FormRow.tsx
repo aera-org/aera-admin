@@ -3,7 +3,7 @@ import type { HTMLAttributes } from 'react';
 import s from './FormRow.module.scss';
 
 type FormRowProps = {
-  columns?: 1 | 2 | 3;
+  columns?: 1 | 2 | 3 | 4;
 } & HTMLAttributes<HTMLDivElement>;
 
 export function FormRow({
