@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { notifyError, notifySuccess } from '@/app/toast';
-import type { UpdateUserTypeDto } from '@/common/types';
+import type { CreateUserTypeDto, UpdateUserTypeDto } from '@/common/types';
 
 import {
+  createUserType,
   getUserTypeDetails,
   getUserTypes,
   updateUserType,
@@ -28,6 +29,21 @@ export function useUserTypeDetails(id: string | null, enabled = true) {
     queryKey: userTypeKeys.detail(id ?? 'unknown'),
     queryFn: () => getUserTypeDetails(id as string),
     enabled: Boolean(id) && enabled,
+  });
+}
+
+export function useCreateUserType() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateUserTypeDto) => createUserType(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-types'] });
+      notifySuccess('User type created.', 'User type created.');
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to create the user type.');
+    },
   });
 }
 

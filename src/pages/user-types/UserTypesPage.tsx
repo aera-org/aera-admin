@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useUserTypes } from '@/app/user-types';
+import { PlusIcon } from '@/assets/icons';
 import {
   Alert,
   Button,
@@ -258,6 +259,12 @@ export function UserTypesPage() {
           <div className={s.titleBlock}>
             <Typography variant="h2">User Types</Typography>
           </div>
+          <Button
+            iconLeft={<PlusIcon />}
+            onClick={() => navigate('/user-types/new')}
+          >
+            Create user type
+          </Button>
         </div>
 
         <div className={s.filters}>
@@ -309,7 +316,12 @@ export function UserTypesPage() {
         {showEmpty ? (
           <EmptyState
             title="No user types found"
-            description="No user types match the current filters."
+            description="Create a user type to get started."
+            action={
+              <Button onClick={() => navigate('/user-types/new')}>
+                Create user type
+              </Button>
+            }
           />
         ) : null}
 

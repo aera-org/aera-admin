@@ -1,6 +1,7 @@
 import { apiFetch } from '@/app/api';
 import { buildApiError } from '@/app/api/apiErrors';
 import type {
+  CreateUserTypeDto,
   IUserType,
   IUserTypeDetails,
   UpdateUserTypeDto,
@@ -16,6 +17,7 @@ export type UserTypesListParams = {
 };
 
 const fallbackError = 'Unable to load user types.';
+const createFallbackError = 'Unable to create the user type.';
 const updateFallbackError = 'Unable to update the user type.';
 const detailsFallbackError = 'Unable to load the user type details.';
 
@@ -38,6 +40,18 @@ export async function getUserTypeDetails(id: string) {
   const res = await apiFetch(`/admin/user-types/${id}`);
   if (!res.ok) {
     throw await buildApiError(res, detailsFallbackError);
+  }
+  return (await res.json()) as IUserTypeDetails;
+}
+
+export async function createUserType(payload: CreateUserTypeDto) {
+  const res = await apiFetch('/admin/user-types', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, createFallbackError);
   }
   return (await res.json()) as IUserTypeDetails;
 }

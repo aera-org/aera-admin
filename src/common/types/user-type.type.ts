@@ -14,7 +14,7 @@ export interface IUserTypeDetails extends IUserType {
   resistance: string;
 }
 
-export type UpdateUserTypeDto = {
+export type CreateUserTypeDto = {
   name: string;
   paywallStage: RoleplayStage;
   stageLength: number;
@@ -22,3 +22,5 @@ export type UpdateUserTypeDto = {
   photoCoolDown: number;
   resistance: string;
 };
+
+export type UpdateUserTypeDto = CreateUserTypeDto;
