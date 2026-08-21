@@ -49,6 +49,8 @@ export { ScenarioGenDetailsPage } from './scenario-gen/ScenarioGenDetailsPage';
 export { ScenarioGenPage } from './scenario-gen/ScenarioGenPage';
 export { UiKitPage } from './ui/UiKitPage';
 export { UserProgressPage } from './user-progress/UserProgressPage';
+export { UserTypesPage } from './user-types/UserTypesPage';
+export { UserTypeUpdatePage } from './user-types/UserTypeUpdatePage';
 export { UserDetailsPage } from './users/UserDetailsPage';
 export { UsersPage } from './users/UsersPage';
 export { VideoDetailsPage } from './videos/VideoDetailsPage';

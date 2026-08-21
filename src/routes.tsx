@@ -61,6 +61,8 @@ import {
   UserDetailsPage,
   UserProgressPage,
   UsersPage,
+  UserTypesPage,
+  UserTypeUpdatePage,
   VideoDetailsPage,
   VideosPage,
 } from '@/pages';
@@ -140,6 +142,8 @@ export function AppRoutes() {
         />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/users/:id" element={<UserDetailsPage />} />
+        <Route path="/user-types" element={<UserTypesPage />} />
+        <Route path="/user-types/:id" element={<UserTypeUpdatePage />} />
         <Route path="/user-progress" element={<UserProgressPage />} />
         <Route path="/activations" element={<ActivationsPage />} />
         <Route path="/conversions" element={<ConversionsPage />} />

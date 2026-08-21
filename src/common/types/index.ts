@@ -22,4 +22,5 @@ export * from './scenario-gen.type';
 export * from './tg-user.type';
 export * from './user.type';
 export * from './user-progress.type';
+export * from './user-type.type';
 export * from './video-generation.types';
