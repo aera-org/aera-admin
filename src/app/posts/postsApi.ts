@@ -51,7 +51,9 @@ export type CreatePostDto =
       videoId: string;
     });
 
-export type UpdatePostDto = CreatePostDto;
+export type UpdatePostDto = CreatePostDto & {
+  localizations: Partial<Record<Language, string>>;
+};
 export type LocalizePostDto = {
   languages: Language[];
 };

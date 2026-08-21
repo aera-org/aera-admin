@@ -12,6 +12,7 @@ import { useCharacterDetails, useCharacters } from '@/app/characters';
 import { markFileUploaded, signUpload } from '@/app/files/filesApi';
 import {
   type CreatePostDto,
+  type UpdatePostDto,
   useCreatePost,
   useUpdatePost,
 } from '@/app/posts';
@@ -72,6 +73,7 @@ type Values = {
   type: PostType;
   text: string;
   isActive: boolean;
+  localizations: Partial<Record<Language, string>>;
 };
 
 const CHARACTER_LIST_LIMIT = 100;
@@ -233,6 +235,7 @@ export function PostUpsertDrawer({
     type: PostType.Img,
     text: '',
     isActive: true,
+    localizations: {},
   });
   const [uploadItem, setUploadItem] = useState<UploadItem | null>(null);
   const [currentMedia, setCurrentMedia] = useState<IFile | null>(null);
@@ -293,10 +296,12 @@ export function PostUpsertDrawer({
     updateMutation.isPending;
   const localizationEntries = useMemo(
     () =>
-      Object.entries(post?.localizations ?? {}).filter(
-        (entry): entry is [string, string] => Boolean(entry[1]?.trim()),
+      Object.entries(values.localizations).filter(
+        (entry): entry is [Language, string] =>
+          Object.values(Language).includes(entry[0] as Language) &&
+          typeof entry[1] === 'string',
       ),
-    [post?.localizations],
+    [values.localizations],
   );
 
   const resetState = useCallback(() => {
@@ -310,6 +315,7 @@ export function PostUpsertDrawer({
       type: postType,
       text: post?.text ?? '',
       isActive: post?.isActive ?? true,
+      localizations: { ...(post?.localizations ?? {}) },
     });
     setCurrentMedia(
       postType === PostType.Video ? (post?.video ?? null) : (post?.img ?? null),
@@ -510,7 +516,11 @@ export function PostUpsertDrawer({
             };
 
       if (post) {
-        await updateMutation.mutateAsync({ id: post.id, payload });
+        const updatePayload: UpdatePostDto = {
+          ...payload,
+          localizations: values.localizations,
+        };
+        await updateMutation.mutateAsync({ id: post.id, payload: updatePayload });
       } else {
         await createMutation.mutateAsync(payload);
       }
@@ -801,14 +811,25 @@ export function PostUpsertDrawer({
                 {localizationEntries.map(([language, text]) => (
                   <div key={language} className={s.localizationItem}>
                     <Typography variant="meta" tone="muted">
-                      {getLanguageLabel(language as Language)}
+                      {getLanguageLabel(language)}
                     </Typography>
-                    <Typography
-                      variant="body"
-                      className={s.localizationText}
-                    >
-                      {text}
-                    </Typography>
+                    <Textarea
+                      id={`post-upsert-localization-${language}`}
+                      size="sm"
+                      value={text}
+                      onChange={(event) =>
+                        setValues((prev) => ({
+                          ...prev,
+                          localizations: {
+                            ...prev.localizations,
+                            [language]: event.target.value,
+                          },
+                        }))
+                      }
+                      rows={6}
+                      fullWidth
+                      disabled={isBusy}
+                    />
                   </div>
                 ))}
               </div>
