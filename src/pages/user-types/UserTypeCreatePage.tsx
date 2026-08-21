@@ -27,6 +27,7 @@ const STAGE_OPTIONS = STAGES_IN_ORDER.map((stage) => ({
 
 type FormValues = {
   name: string;
+  description: string;
   paywallStage: RoleplayStage;
   stageLength: string;
   chatPrompt: string;
@@ -52,6 +53,7 @@ export function UserTypeCreatePage() {
   const createMutation = useCreateUserType();
   const [values, setValues] = useState<FormValues>({
     name: '',
+    description: '',
     paywallStage: STAGES_IN_ORDER[0],
     stageLength: '',
     chatPrompt: '',
@@ -114,6 +116,7 @@ export function UserTypeCreatePage() {
     }
     await createMutation.mutateAsync({
       name,
+      description: values.description,
       paywallStage: values.paywallStage,
       stageLength: stageLength as number,
       chatPrompt: values.chatPrompt,
@@ -177,6 +180,23 @@ export function UserTypeCreatePage() {
               />
             </Field>
           </FormRow>
+
+          <Field label="Description" labelFor="user-type-create-description">
+            <Textarea
+              id="user-type-create-description"
+              size="sm"
+              value={values.description}
+              onChange={(event) =>
+                setValues((prev) => ({
+                  ...prev,
+                  description: event.target.value,
+                }))
+              }
+              rows={4}
+              disabled={createMutation.isPending}
+              fullWidth
+            />
+          </Field>
 
           <FormRow columns={2}>
             <Field

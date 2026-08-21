@@ -28,6 +28,7 @@ const STAGE_OPTIONS = STAGES_IN_ORDER.map((stage) => ({
 
 type FormValues = {
   name: string;
+  description: string;
   paywallStage: RoleplayStage;
   stageLength: string;
   chatPrompt: string;
@@ -62,6 +63,7 @@ export function UserTypeUpdatePage() {
 
   const [values, setValues] = useState<FormValues>({
     name: '',
+    description: '',
     paywallStage: STAGES_IN_ORDER[0],
     stageLength: '',
     chatPrompt: '',
@@ -74,6 +76,7 @@ export function UserTypeUpdatePage() {
     if (!data) return;
     setValues({
       name: data.name ?? '',
+      description: data.description ?? '',
       paywallStage: data.paywallStage ?? STAGES_IN_ORDER[0],
       stageLength: String(data.stageLength ?? ''),
       chatPrompt: data.chatPrompt ?? '',
@@ -140,6 +143,7 @@ export function UserTypeUpdatePage() {
       id: data.id,
       payload: {
         name,
+        description: values.description,
         paywallStage: values.paywallStage,
         stageLength: stageLength as number,
         chatPrompt: values.chatPrompt,
@@ -235,6 +239,23 @@ export function UserTypeUpdatePage() {
                 />
               </Field>
             </FormRow>
+
+            <Field label="Description" labelFor="user-type-edit-description">
+              <Textarea
+                id="user-type-edit-description"
+                size="sm"
+                value={values.description}
+                onChange={(event) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    description: event.target.value,
+                  }))
+                }
+                rows={4}
+                disabled={isBusy}
+                fullWidth
+              />
+            </Field>
 
             <FormRow columns={2}>
               <Field

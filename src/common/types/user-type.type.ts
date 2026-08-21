@@ -10,12 +10,14 @@ export interface IUserType {
 }
 
 export interface IUserTypeDetails extends IUserType {
+  description: string;
   chatPrompt: string;
   resistance: string;
 }
 
 export type CreateUserTypeDto = {
   name: string;
+  description: string;
   paywallStage: RoleplayStage;
   stageLength: number;
   chatPrompt: string;
