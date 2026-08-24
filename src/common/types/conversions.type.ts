@@ -52,4 +52,5 @@ export interface IConversions {
 export interface ConversionsQuery {
   start: string;
   end: string;
+  userTypeId?: string;
 }

@@ -10,6 +10,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import { formatCount } from '@/app/analytics';
 import { useConversions } from '@/app/conversions';
+import { useUserTypes } from '@/app/user-types';
 import {
   Alert,
   Button,
@@ -43,6 +44,8 @@ import s from './ConversionsPage.module.scss';
 
 const MIN_START_DATE = '2026-06-17';
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DAILY_STAGE_ALL = 'all';
 const SCENARIO_STAGE_TOTALS = 'totals';
 const STAGE_MATRIX_SCENARIO_TOTALS = 'totals';
@@ -52,6 +55,7 @@ const PAYWALL_TABLE_MIN_WIDTH = 1780;
 type QueryUpdate = {
   start?: string;
   end?: string;
+  userTypeId?: string;
 };
 
 type Lens = 'core' | 'subscription' | 'air';
@@ -181,6 +185,10 @@ function isValidDateId(value: string | null | undefined): value is string {
   if (!value || !ISO_DATE_PATTERN.test(value)) return false;
   const parsed = parseUtcDateId(value);
   return toUtcDateId(parsed) === value;
+}
+
+function isValidUserTypeId(value: string | null | undefined): value is string {
+  return Boolean(value && UUID_PATTERN.test(value));
 }
 
 function addDaysToDateId(value: string, delta: number) {
@@ -710,6 +718,7 @@ export function ConversionsPage() {
 
   const rawStart = searchParams.get('start');
   const rawEnd = searchParams.get('end');
+  const rawUserTypeId = searchParams.get('userTypeId');
 
   const defaultEnd = useMemo(
     () => addDaysToDateId(toUtcDateId(new Date()), -1),
@@ -730,6 +739,10 @@ export function ConversionsPage() {
       ),
     [maxSelectableDate, rawEnd, rawStart],
   );
+  const userTypeId = useMemo(() => {
+    const value = rawUserTypeId?.trim() ?? '';
+    return isValidUserTypeId(value) ? value : '';
+  }, [rawUserTypeId]);
 
   const updateSearchParams = useCallback(
     (update: QueryUpdate, replace = false) => {
@@ -753,21 +766,62 @@ export function ConversionsPage() {
         }
       }
 
+      if (update.userTypeId !== undefined) {
+        const nextUserTypeId = update.userTypeId.trim();
+        if (nextUserTypeId) {
+          next.set('userTypeId', nextUserTypeId);
+        } else {
+          next.delete('userTypeId');
+        }
+      }
+
       setSearchParams(next, { replace });
     },
     [searchParams, setSearchParams],
   );
 
   useEffect(() => {
-    if (rawStart === start && rawEnd === end) return;
+    if (
+      rawStart === start &&
+      rawEnd === end &&
+      (rawUserTypeId ?? '') === userTypeId
+    ) {
+      return;
+    }
 
-    updateSearchParams({ start, end }, true);
-  }, [end, rawEnd, rawStart, start, updateSearchParams]);
+    updateSearchParams({ start, end, userTypeId }, true);
+  }, [
+    end,
+    rawEnd,
+    rawStart,
+    rawUserTypeId,
+    start,
+    updateSearchParams,
+    userTypeId,
+  ]);
 
-  const query = useMemo(() => ({ start, end }), [end, start]);
+  const query = useMemo(
+    () => ({
+      start,
+      end,
+      ...(userTypeId ? { userTypeId } : {}),
+    }),
+    [end, start, userTypeId],
+  );
   const isRangeValid = isValidDateId(start) && isValidDateId(end);
 
   const { data, error, isLoading } = useConversions(query, isRangeValid);
+  const userTypesQuery = useUserTypes({ order: 'ASC', take: 1000 });
+  const userTypeOptions = useMemo(
+    () => [
+      { value: '', label: 'All user types' },
+      ...(userTypesQuery.data?.data ?? []).map((userType) => ({
+        value: userType.id,
+        label: userType.name,
+      })),
+    ],
+    [userTypesQuery.data?.data],
+  );
   const errorDescription =
     error instanceof Error && error.message
       ? error.message
@@ -1214,7 +1268,7 @@ export function ConversionsPage() {
           ) : null}
 
           <div className={s.filters}>
-            <FormRow columns={2}>
+            <FormRow columns={3}>
               <Field label="Start date" className={s.filterField}>
                 <Input
                   type="date"
@@ -1239,6 +1293,21 @@ export function ConversionsPage() {
                     updateSearchParams({ end: event.target.value })
                   }
                   fullWidth
+                />
+              </Field>
+              <Field label="User type" className={s.filterField}>
+                <Select
+                  options={userTypeOptions}
+                  value={userTypeId}
+                  onChange={(value) =>
+                    updateSearchParams({ userTypeId: value })
+                  }
+                  placeholder="All user types"
+                  size="sm"
+                  fullWidth
+                  disabled={
+                    userTypesQuery.isLoading && !userTypesQuery.data
+                  }
                 />
               </Field>
             </FormRow>

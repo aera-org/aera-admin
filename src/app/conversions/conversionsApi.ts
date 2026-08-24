@@ -8,6 +8,7 @@ export async function getConversions(params: ConversionsQuery) {
   const query = new URLSearchParams();
   query.set('start', params.start);
   query.set('end', params.end);
+  if (params.userTypeId) query.set('userTypeId', params.userTypeId);
 
   const res = await apiFetch(`/admin/analytics/chats?${query.toString()}`);
   if (!res.ok) {
