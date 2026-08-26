@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useCharacterDetails, useCharacters } from '@/app/characters';
 import { useChats } from '@/app/chats';
+import { useUserTypes } from '@/app/user-types';
 import { useUsers } from '@/app/users';
 import {
   Alert,
@@ -11,6 +12,7 @@ import {
   Container,
   EmptyState,
   Field,
+  Input,
   Pagination,
   Select,
   Skeleton,
@@ -29,8 +31,11 @@ import s from './ChatsPage.module.scss';
 type QueryUpdate = {
   userId?: string;
   characterId?: string;
+  createdAfter?: string;
+  createdBefore?: string;
   scenarioId?: string;
   stage?: RoleplayStage | '';
+  userTypeId?: string;
   order?: string;
   page?: number;
   pageSize?: number;
@@ -46,6 +51,8 @@ const PAGE_SIZE_OPTIONS = [20, 50, 100];
 const DEFAULT_ORDER = 'DESC';
 const DEFAULT_PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 400;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const stageValues = new Set(STAGES_IN_ORDER);
 
@@ -92,6 +99,10 @@ function parsePageSize(value: string | null) {
   return PAGE_SIZE_OPTIONS.includes(parsed) ? parsed : DEFAULT_PAGE_SIZE;
 }
 
+function isValidUserTypeId(value: string) {
+  return value === '' || UUID_PATTERN.test(value);
+}
+
 function formatUserName(user: ITgUser) {
   const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
   if (fullName) return fullName;
@@ -114,18 +125,27 @@ export function ChatsPage() {
 
   const rawUserId = searchParams.get('userId') ?? '';
   const rawCharacterId = searchParams.get('characterId') ?? '';
+  const rawCreatedAfter = searchParams.get('createdAfter') ?? '';
+  const rawCreatedBefore = searchParams.get('createdBefore') ?? '';
   const rawScenarioId = searchParams.get('scenarioId') ?? '';
   const rawStage = searchParams.get('stage');
+  const rawUserTypeId = searchParams.get('userTypeId');
   const rawOrder = searchParams.get('order');
   const rawPage = searchParams.get('page');
   const rawPageSize = searchParams.get('pageSize');
 
   const userId = rawUserId.trim();
   const characterId = rawCharacterId.trim();
+  const createdAfter = rawCreatedAfter.trim();
+  const createdBefore = rawCreatedBefore.trim();
   const scenarioId = rawScenarioId.trim();
   const stage = stageValues.has(rawStage as RoleplayStage)
     ? (rawStage as RoleplayStage)
     : undefined;
+  const userTypeId = useMemo(() => {
+    const value = rawUserTypeId?.trim() ?? '';
+    return isValidUserTypeId(value) ? value : '';
+  }, [rawUserTypeId]);
 
   const order = ORDER_VALUES.has(rawOrder ?? '') ? rawOrder! : DEFAULT_ORDER;
   const page = parsePositiveNumber(rawPage, 1);
@@ -161,6 +181,24 @@ export function ChatsPage() {
         }
       }
 
+      if (update.createdAfter !== undefined) {
+        const nextCreatedAfter = update.createdAfter.trim();
+        if (nextCreatedAfter) {
+          next.set('createdAfter', nextCreatedAfter);
+        } else {
+          next.delete('createdAfter');
+        }
+      }
+
+      if (update.createdBefore !== undefined) {
+        const nextCreatedBefore = update.createdBefore.trim();
+        if (nextCreatedBefore) {
+          next.set('createdBefore', nextCreatedBefore);
+        } else {
+          next.delete('createdBefore');
+        }
+      }
+
       if (update.scenarioId !== undefined) {
         const nextScenarioId = update.scenarioId.trim();
         if (nextScenarioId) {
@@ -175,6 +213,15 @@ export function ChatsPage() {
           next.set('stage', update.stage);
         } else {
           next.delete('stage');
+        }
+      }
+
+      if (update.userTypeId !== undefined) {
+        const nextUserTypeId = update.userTypeId.trim();
+        if (nextUserTypeId) {
+          next.set('userTypeId', nextUserTypeId);
+        } else {
+          next.delete('userTypeId');
         }
       }
 
@@ -234,6 +281,7 @@ export function ChatsPage() {
 
   const { data: characterDetails, isLoading: isScenariosLoading } =
     useCharacterDetails(characterId || null);
+  const userTypesQuery = useUserTypes({ order: 'ASC', take: 1000 });
 
   const userOptions = useMemo(
     () =>
@@ -264,6 +312,17 @@ export function ChatsPage() {
     [characterDetails?.scenarios],
   );
 
+  const userTypeOptions = useMemo(
+    () => [
+      { value: '', label: 'All user types' },
+      ...(userTypesQuery.data?.data ?? []).map((userType) => ({
+        value: userType.id,
+        label: userType.name,
+      })),
+    ],
+    [userTypesQuery.data?.data],
+  );
+
   const scenarioSelectOptions = useMemo(() => {
     if (!characterId) {
       return [{ label: 'Select character first', value: '', disabled: true }];
@@ -273,6 +332,14 @@ export function ChatsPage() {
     }
     return [{ label: 'Any', value: '' }, ...scenarioOptions];
   }, [characterId, isScenariosLoading, scenarioOptions]);
+
+  useEffect(() => {
+    if ((rawUserTypeId ?? '') === userTypeId) {
+      return;
+    }
+
+    updateSearchParams({ userTypeId }, true);
+  }, [rawUserTypeId, updateSearchParams, userTypeId]);
 
   useEffect(() => {
     if (!scenarioId) return;
@@ -292,13 +359,27 @@ export function ChatsPage() {
     () => ({
       userId: userId || undefined,
       characterId: characterId || undefined,
+      createdAfter: createdAfter || undefined,
+      createdBefore: createdBefore || undefined,
       scenarioId: scenarioId || undefined,
       stage: stage || undefined,
+      userTypeId: userTypeId || undefined,
       order,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    [userId, characterId, scenarioId, stage, order, page, pageSize],
+    [
+      userId,
+      characterId,
+      createdAfter,
+      createdBefore,
+      scenarioId,
+      stage,
+      userTypeId,
+      order,
+      page,
+      pageSize,
+    ],
   );
 
   const { data, error, isLoading, refetch } = useChats(queryParams);
@@ -320,6 +401,7 @@ export function ChatsPage() {
     () => [
       { key: 'chat', label: 'Chat' },
       { key: 'user', label: 'User' },
+      { key: 'userType', label: 'User type' },
       { key: 'context', label: 'Character / Scenario' },
       { key: 'stage', label: 'Stage' },
       { key: 'history', label: 'History' },
@@ -347,6 +429,11 @@ export function ChatsPage() {
               {formatUserMeta(chat.user)}
             </Typography>
           </div>
+        ),
+        userType: (
+          <Typography variant="body" tone={chat.userType?.name ? undefined : 'muted'}>
+            {chat.userType?.name ?? '-'}
+          </Typography>
         ),
         context: (
           <div className={s.contextCell}>
@@ -395,6 +482,7 @@ export function ChatsPage() {
             <Skeleton width={120} height={10} />
           </div>
         ),
+        userType: <Skeleton width={120} height={12} />,
         context: (
           <div className={s.contextCell}>
             <Skeleton width={140} height={12} />
@@ -506,6 +594,23 @@ export function ChatsPage() {
                 disabled={!characterId || isScenariosLoading}
               />
             </Field>
+            <Field
+              className={s.filterFieldSm}
+              label="User type"
+              labelFor="chat-user-type"
+            >
+              <Select
+                id="chat-user-type"
+                options={userTypeOptions}
+                value={userTypeId}
+                size="sm"
+                variant="ghost"
+                onChange={(value) =>
+                  updateSearchParams({ userTypeId: value, page: 1 })
+                }
+                disabled={userTypesQuery.isLoading && !userTypesQuery.data}
+              />
+            </Field>
             <Field className={s.filterFieldSm} label="Stage" labelFor="chat-stage">
               <Select
                 id="chat-stage"
@@ -525,6 +630,44 @@ export function ChatsPage() {
                     page: 1,
                   })
                 }
+              />
+            </Field>
+            <Field
+              className={s.filterFieldSm}
+              label="Created after"
+              labelFor="chat-created-after"
+            >
+              <Input
+                id="chat-created-after"
+                type="date"
+                size="sm"
+                value={createdAfter}
+                onChange={(event) =>
+                  updateSearchParams({
+                    createdAfter: event.target.value,
+                    page: 1,
+                  })
+                }
+                fullWidth
+              />
+            </Field>
+            <Field
+              className={s.filterFieldSm}
+              label="Created before"
+              labelFor="chat-created-before"
+            >
+              <Input
+                id="chat-created-before"
+                type="date"
+                size="sm"
+                value={createdBefore}
+                onChange={(event) =>
+                  updateSearchParams({
+                    createdBefore: event.target.value,
+                    page: 1,
+                  })
+                }
+                fullWidth
               />
             </Field>
             <Field className={s.filterFieldSm} label="Order" labelFor="chat-order">

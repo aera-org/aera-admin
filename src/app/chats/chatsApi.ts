@@ -23,8 +23,11 @@ export async function getChats(params: ChatsListParams) {
   const query = new URLSearchParams();
   if (params.userId) query.set('userId', params.userId);
   if (params.characterId) query.set('characterId', params.characterId);
+  if (params.createdAfter) query.set('createdAfter', params.createdAfter);
+  if (params.createdBefore) query.set('createdBefore', params.createdBefore);
   if (params.scenarioId) query.set('scenarioId', params.scenarioId);
   if (params.stage) query.set('stage', params.stage);
+  if (params.userTypeId) query.set('userTypeId', params.userTypeId);
   if (params.order) query.set('order', params.order);
   if (typeof params.skip === 'number') query.set('skip', String(params.skip));
   if (typeof params.take === 'number') query.set('take', String(params.take));

@@ -12,6 +12,10 @@ export interface IChat {
   stage: RoleplayStage;
   historyLength: number;
   photosSent: number;
+  userType?: {
+    id: string;
+    name: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -77,10 +81,9 @@ interface HistoryItemEvent extends HistoryItemBase {
 
 export type HistoryItem = HistoryItemHuman | HistoryItemAi | HistoryItemEvent;
 
-
 export interface IChatDetails extends IChat {
   history: IChatMessage[];
-  historyItems: HistoryItem[]
+  historyItems: HistoryItem[];
 }
 
 export type UpdateChatStageDto = {
@@ -89,7 +92,10 @@ export type UpdateChatStageDto = {
 
 export interface ChatSearchParams {
   characterId?: string;
+  createdAfter?: string;
+  createdBefore?: string;
   scenarioId?: string;
   stage?: RoleplayStage;
   userId?: string;
+  userTypeId?: string;
 }

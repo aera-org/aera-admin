@@ -441,7 +441,7 @@ export function ChatDetailsPage() {
         >
           {showSkeleton ? (
             <Grid columns={3} className={s.overviewGrid}>
-              {Array.from({ length: 8 }, (_, index) => (
+              {Array.from({ length: 9 }, (_, index) => (
                 <Skeleton key={`overview-${index}`} width={180} height={14} />
               ))}
             </Grid>
@@ -453,6 +453,14 @@ export function ChatDetailsPage() {
                 </Typography>
                 <Typography variant="caption" tone="muted">
                   {formatUserMeta(data.user)}
+                </Typography>
+              </Field>
+              <Field label="User type">
+                <Typography variant="body">
+                  {data.userType?.name ?? '-'}
+                </Typography>
+                <Typography variant="caption" tone="muted">
+                  {data.userType?.id ?? '-'}
                 </Typography>
               </Field>
               <Field label="Character">
