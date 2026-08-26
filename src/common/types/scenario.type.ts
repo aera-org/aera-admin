@@ -101,6 +101,7 @@ export interface IScenario {
     id: string;
     content: ChatContent;
     name: string;
+    nameWeb: string;
     emoji: string;
     slug: string;
     description: string;
@@ -111,6 +112,7 @@ export interface IScenario {
     startMessage?: string;
     promoImgHorizontal?: IFile | null;
     isActive: boolean;
+    isActiveWeb: boolean;
     isNew: boolean;
     personality: string;
     messagingStyle: string;

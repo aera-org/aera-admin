@@ -128,6 +128,8 @@ export type ScenarioUpdateDto = ScenarioCreateDto & {
   content?: ChatContent;
   level?: number;
   liveGenerations?: ScenarioLiveGenerations;
+  nameWeb?: string;
+  isActiveWeb?: boolean;
   promoVideoId?: string | null;
 };
 export type AddScenarioI18nDto = {

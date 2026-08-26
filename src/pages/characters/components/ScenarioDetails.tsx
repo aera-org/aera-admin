@@ -181,11 +181,13 @@ function buildScenarioPayload(
 
   return {
     name: scenario.name.trim(),
+    nameWeb: scenario.nameWeb?.trim() ?? '',
     emoji: scenario.emoji.trim(),
     slug: scenario.slug?.trim() || undefined,
     level: scenario.level,
     description: scenario.description.trim(),
     isActive: scenario.isActive,
+    isActiveWeb: scenario.isActiveWeb,
     shortDescription: scenario.shortDescription?.trim() || undefined,
     isNew: scenario.isNew,
     isPromoted: scenario.isPromoted,
@@ -849,6 +851,14 @@ export function ScenarioDetails({
           </Typography>
           <Typography variant="body">{scenario.slug || '-'}</Typography>
         </div>
+        {isX ? (
+          <div className={s.detailBlock}>
+            <Typography variant="caption" tone="muted">
+              Web name
+            </Typography>
+            <Typography variant="body">{scenario.nameWeb || '-'}</Typography>
+          </div>
+        ) : null}
         <div className={s.detailBlock}>
           <Typography variant="caption" tone="muted">
             Level
@@ -930,7 +940,7 @@ export function ScenarioDetails({
             </div>
           </>
         ) : null}
-        {showStatus || showIsNew || showIsPromoted || showIsTop ? (
+        {showStatus || isX || showIsNew || showIsPromoted || showIsTop ? (
           <FormRow columns={3}>
             {showStatus ? (
               <div className={s.detailBlock}>
@@ -940,6 +950,18 @@ export function ScenarioDetails({
                 <div>
                   <Badge tone={scenario.isActive ? 'success' : 'warning'}>
                     {scenario.isActive ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+              </div>
+            ) : null}
+            {isX ? (
+              <div className={s.detailBlock}>
+                <Typography variant="caption" tone="muted">
+                  Web status
+                </Typography>
+                <div>
+                  <Badge tone={scenario.isActiveWeb ? 'success' : 'warning'}>
+                    {scenario.isActiveWeb ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
               </div>

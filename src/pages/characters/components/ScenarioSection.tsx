@@ -35,6 +35,7 @@ import {
   Textarea,
   Typography,
 } from '@/atoms';
+import { isX } from '@/common/is-x';
 import {
   type CreateCustomScenarioDto,
   FileDir,
@@ -144,6 +145,7 @@ export function ScenarioSection({
   const [editShowErrors, setEditShowErrors] = useState(false);
   const [formValues, setFormValues] = useState({
     name: '',
+    nameWeb: '',
     emoji: '',
     slug: '',
     level: String(BASE_SCENARIO_LEVEL),
@@ -151,6 +153,7 @@ export function ScenarioSection({
     opensAfterId: '',
     description: '',
     isActive: true,
+    isActiveWeb: true,
     shortDescription: '',
     isNew: false,
     isPromoted: false,
@@ -352,6 +355,7 @@ export function ScenarioSection({
   const openCreateModal = () => {
     setFormValues({
       name: '',
+      nameWeb: '',
       emoji: '',
       slug: '',
       level: String(BASE_SCENARIO_LEVEL),
@@ -359,6 +363,7 @@ export function ScenarioSection({
       opensAfterId: '',
       description: '',
       isActive: true,
+      isActiveWeb: true,
       shortDescription: '',
       isNew: false,
       isPromoted: false,
@@ -394,6 +399,7 @@ export function ScenarioSection({
     if (!selectedScenario) return;
     setEditValues({
       name: selectedScenario.name ?? '',
+      nameWeb: selectedScenario.nameWeb ?? '',
       emoji: selectedScenario.emoji ?? '',
       slug: selectedScenario.slug ?? '',
       level: String(selectedScenario.level ?? ''),
@@ -401,6 +407,7 @@ export function ScenarioSection({
       opensAfterId: selectedScenario.opensAfterId ?? '',
       description: selectedScenario.description ?? '',
       isActive: Boolean(selectedScenario.isActive),
+      isActiveWeb: Boolean(selectedScenario.isActiveWeb),
       shortDescription: selectedScenario.shortDescription ?? '',
       isNew: showIsNew ? Boolean(selectedScenario.isNew) : false,
       isPromoted: showIsPromoted ? Boolean(selectedScenario.isPromoted) : false,
@@ -539,11 +546,15 @@ export function ScenarioSection({
       scenarioId: selectedScenario.id,
       payload: {
         name: editValues.name.trim(),
+        nameWeb: isX ? editValues.nameWeb.trim() : selectedScenario.nameWeb,
         emoji: editValues.emoji.trim(),
         slug: editValues.slug.trim() || undefined,
         level: levelValue,
         description: editValues.description.trim(),
         isActive: showStatus ? editValues.isActive : selectedScenario.isActive,
+        isActiveWeb: isX
+          ? editValues.isActiveWeb
+          : selectedScenario.isActiveWeb,
         shortDescription: editValues.shortDescription.trim() || undefined,
         isNew: showIsNew ? editValues.isNew : selectedScenario.isNew,
         isPromoted: showIsPromoted
@@ -1564,6 +1575,38 @@ export function ScenarioSection({
               />
             </Field>
           </FormRow>
+
+          {isX ? (
+            <FormRow columns={2}>
+              <Field label="Web name" labelFor="scenario-edit-name-web">
+                <Input
+                  id="scenario-edit-name-web"
+                  size="sm"
+                  value={editValues.nameWeb}
+                  onChange={(event) =>
+                    setEditValues((prev) => ({
+                      ...prev,
+                      nameWeb: event.target.value,
+                    }))
+                  }
+                  fullWidth
+                />
+              </Field>
+              <Field label="Web status" labelFor="scenario-edit-is-active-web">
+                <Switch
+                  id="scenario-edit-is-active-web"
+                  checked={editValues.isActiveWeb}
+                  onChange={(event) =>
+                    setEditValues((prev) => ({
+                      ...prev,
+                      isActiveWeb: event.target.checked,
+                    }))
+                  }
+                  label={editValues.isActiveWeb ? 'Active' : 'Inactive'}
+                />
+              </Field>
+            </FormRow>
+          ) : null}
 
           <FormRow columns={2}>
             <Field label="Slug" labelFor="scenario-edit-slug">
