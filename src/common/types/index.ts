@@ -7,6 +7,7 @@ export * from './character-image.type';
 export * from './chat.type';
 export * from './conversions.type';
 export * from './dataset.type';
+export * from './feature.type';
 export * from './file.type';
 export * from './gift.type';
 export * from './img-generation.type';

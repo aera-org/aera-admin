@@ -1,3 +1,13 @@
-export { getChatDetails, getChats, updateChatStage } from './chatsApi';
+export {
+  getChatDetails,
+  getChats,
+  updateChatFeatures,
+  updateChatStage,
+} from './chatsApi';
 export type { ChatsListParams } from './chatsApi';
-export { useChatDetails, useChats, useUpdateChatStage } from './queries';
+export {
+  useChatDetails,
+  useChats,
+  useUpdateChatFeatures,
+  useUpdateChatStage,
+} from './queries';

@@ -1,6 +1,7 @@
 import type { ITgUser } from '@/common/types/tg-user.type.ts';
 
 import { type ICharacter } from './character.type.ts';
+import type { Feature } from './feature.type.ts';
 import type { Pose } from './pose-prompt.type.ts';
 import type { IScenario, RoleplayStage } from './scenario.type.ts';
 
@@ -82,12 +83,17 @@ interface HistoryItemEvent extends HistoryItemBase {
 export type HistoryItem = HistoryItemHuman | HistoryItemAi | HistoryItemEvent;
 
 export interface IChatDetails extends IChat {
+  features: Partial<Record<Feature, boolean>>;
   history: IChatMessage[];
   historyItems: HistoryItem[];
 }
 
 export type UpdateChatStageDto = {
   stage: RoleplayStage;
+};
+
+export type UpdateChatFeaturesDto = {
+  features: Record<Feature, boolean>;
 };
 
 export interface ChatSearchParams {

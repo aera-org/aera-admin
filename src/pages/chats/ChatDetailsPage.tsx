@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { useChatDetails, useUpdateChatStage } from '@/app/chats';
+import {
+  useChatDetails,
+  useUpdateChatFeatures,
+  useUpdateChatStage,
+} from '@/app/chats';
 import {
   Alert,
   Badge,
@@ -15,11 +19,13 @@ import {
   Select,
   Skeleton,
   Stack,
+  Switch,
   Table,
   Typography,
 } from '@/atoms';
 import {
   type ChatLlmResponse,
+  Feature,
   type HistoryItem,
   HistoryItemEventType,
   HistoryItemType,
@@ -33,6 +39,8 @@ import { AppShell } from '@/components/templates';
 import s from './ChatDetailsPage.module.scss';
 
 type ChatLlmPhoto = NonNullable<ChatLlmResponse['photo']>;
+
+const CHAT_FEATURES = Object.values(Feature);
 
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -56,6 +64,10 @@ function formatEnumLabel(value: string) {
 
 function formatStage(stage: RoleplayStage) {
   return formatEnumLabel(stage);
+}
+
+function formatFeature(feature: Feature) {
+  return formatEnumLabel(feature);
 }
 
 function formatUserName(user: ITgUser) {
@@ -244,6 +256,7 @@ export function ChatDetailsPage() {
   const chatId = id ?? '';
   const { data, error, isLoading, refetch } = useChatDetails(chatId || null);
   const updateStageMutation = useUpdateChatStage();
+  const updateFeaturesMutation = useUpdateChatFeatures();
   const [stageDraft, setStageDraft] = useState<{
     chatId: string;
     value: RoleplayStage | '';
@@ -364,6 +377,7 @@ export function ChatDetailsPage() {
     [],
   );
   const isUpdatingStage = updateStageMutation.isPending;
+  const isUpdatingFeatures = updateFeaturesMutation.isPending;
   const canUpdateStage =
     Boolean(data?.id) && Boolean(selectedStage) && selectedStage !== data?.stage;
 
@@ -373,6 +387,26 @@ export function ChatDetailsPage() {
     await updateStageMutation.mutateAsync({
       id: data.id,
       payload: { stage: selectedStage },
+    });
+  };
+
+  const handleUpdateFeature = async (feature: Feature, checked: boolean) => {
+    if (!data) return;
+    const currentFeatures = data.features as Record<string, boolean | undefined>;
+    const nextFeatures = {
+      ...currentFeatures,
+    } as Record<Feature, boolean> & Record<string, boolean | undefined>;
+
+    CHAT_FEATURES.forEach((knownFeature) => {
+      nextFeatures[knownFeature] =
+        knownFeature === feature ? checked : Boolean(currentFeatures[knownFeature]);
+    });
+
+    await updateFeaturesMutation.mutateAsync({
+      id: data.id,
+      payload: {
+        features: nextFeatures,
+      },
     });
   };
 
@@ -534,6 +568,44 @@ export function ChatDetailsPage() {
                 </Typography>
               </Field>
             </Grid>
+          ) : null}
+        </Section>
+
+        <Section
+          title="Features"
+          description={data ? `${CHAT_FEATURES.length} known features` : undefined}
+        >
+          {showSkeleton ? (
+            <Stack gap="12px">
+              {CHAT_FEATURES.map((feature) => (
+                <Skeleton key={feature} width={220} height={20} />
+              ))}
+            </Stack>
+          ) : data ? (
+            <div className={s.featuresList}>
+              {CHAT_FEATURES.map((feature) => {
+                const checked = Boolean(data.features?.[feature]);
+
+                return (
+                  <Field
+                    key={feature}
+                    label={formatFeature(feature)}
+                    labelFor={`chat-feature-${feature}`}
+                    hint={feature}
+                  >
+                    <Switch
+                      id={`chat-feature-${feature}`}
+                      checked={checked}
+                      disabled={isUpdatingFeatures}
+                      onChange={(event) => {
+                        void handleUpdateFeature(feature, event.target.checked);
+                      }}
+                      label={checked ? 'Enabled' : 'Disabled'}
+                    />
+                  </Field>
+                );
+              })}
+            </div>
           ) : null}
         </Section>
 

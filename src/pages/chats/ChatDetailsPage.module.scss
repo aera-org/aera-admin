@@ -36,6 +36,13 @@
   align-items: start;
 }
 
+.featuresList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
 .messageContent {
   white-space: pre-wrap;
   word-break: break-word;

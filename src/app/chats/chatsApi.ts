@@ -4,6 +4,7 @@ import type {
   ChatSearchParams,
   IChat,
   IChatDetails,
+  UpdateChatFeaturesDto,
   UpdateChatStageDto,
 } from '@/common/types';
 
@@ -18,6 +19,7 @@ export type ChatsListParams = ChatSearchParams & {
 const fallbackError = 'Unable to load chats.';
 const detailsFallbackError = 'Unable to load chat.';
 const updateStageFallbackError = 'Unable to update the chat stage.';
+const updateFeaturesFallbackError = 'Unable to update the chat features.';
 
 export async function getChats(params: ChatsListParams) {
   const query = new URLSearchParams();
@@ -56,6 +58,21 @@ export async function updateChatStage(id: string, payload: UpdateChatStageDto) {
   });
   if (!res.ok) {
     throw await buildApiError(res, updateStageFallbackError);
+  }
+  return (await res.json()) as IChatDetails;
+}
+
+export async function updateChatFeatures(
+  id: string,
+  payload: UpdateChatFeaturesDto,
+) {
+  const res = await apiFetch(`/admin/chats/${id}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, updateFeaturesFallbackError);
   }
   return (await res.json()) as IChatDetails;
 }
