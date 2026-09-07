@@ -3,12 +3,16 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Container, Stack, Typography } from '@/atoms';
 
 import { useAuth } from './AuthProvider';
+import { canAccessPath, getHomePath } from './roleAccess';
 
 export function AuthGuard() {
-  const { status } = useAuth();
+  const { status, user, userStatus } = useAuth();
   const location = useLocation();
 
-  if (status === 'loading') {
+  if (
+    status === 'loading' ||
+    (status === 'authenticated' && userStatus === 'loading')
+  ) {
     return (
       <Container size="narrow">
         <Stack gap="12px">
@@ -23,6 +27,10 @@ export function AuthGuard() {
 
   if (status === 'unauthenticated') {
     return <Navigate to="/auth" replace state={{ from: location }} />;
+  }
+
+  if (user && !canAccessPath(user.role, location.pathname)) {
+    return <Navigate to={getHomePath(user.role)} replace />;
   }
 
   return <Outlet />;

@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
-import { useAuth } from '@/app/auth';
+import { isNavItemVisible, useAuth } from '@/app/auth';
 import {
   AudioLinesIcon,
   BananaIcon,
@@ -22,7 +22,6 @@ import {
   UsersRoundIcon,
 } from '@/assets/icons';
 import { Button } from '@/atoms';
-import { UserRole } from '@/common/types';
 
 import s from './Navigation.module.scss';
 
@@ -67,10 +66,9 @@ const navItems: NavItem[] = [
 export function Navigation() {
   const location = useLocation();
   const { user } = useAuth();
-  const isTargetUser = user?.role === UserRole.Target;
-  const visibleItems = isTargetUser
-    ? navItems.filter((item) => item.to === '/')
-    : navItems;
+  const visibleItems = navItems.filter((item) =>
+    isNavItemVisible(user?.role, item.to),
+  );
   const activeItem = visibleItems
     .filter(
       (item) =>

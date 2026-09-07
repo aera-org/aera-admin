@@ -3,6 +3,7 @@ export enum UserRole {
   Moderator = 'moderator',
   Developer = 'developer',
   Target = 'target',
+  AI = 'ai',
 }
 
 export interface IUser {
