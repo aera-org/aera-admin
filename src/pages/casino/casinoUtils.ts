@@ -2,6 +2,7 @@ import type { CasinoChat } from '@/common/types';
 
 export const CASINO_PAGE_SIZE_OPTIONS = [20, 50, 100];
 export const CASINO_DEFAULT_PAGE_SIZE = 20;
+export const CASINO_DEFAULT_ORDER_BY = 'createdAt';
 export const CASINO_DEFAULT_ORDER = 'DESC';
 export const CASINO_DEFAULT_FROM_UTC_INSTANT = '2026-08-31T07:00:00.000Z';
 

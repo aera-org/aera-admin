@@ -17,11 +17,12 @@ import {
   Table,
   Typography,
 } from '@/atoms';
-import type { CasinoOrder } from '@/common/types';
+import type { CasinoOrder, CasinoOrderBy } from '@/common/types';
 
 import s from './CasinoPages.module.scss';
 import {
   CASINO_DEFAULT_ORDER,
+  CASINO_DEFAULT_ORDER_BY,
   CASINO_DEFAULT_PAGE_SIZE,
   CASINO_PAGE_SIZE_OPTIONS,
   formatCasinoDate,
@@ -42,10 +43,17 @@ type QueryUpdate = {
   level?: string;
   from?: string;
   to?: string;
+  orderBy?: string;
   order?: string;
   page?: number;
   pageSize?: number;
 };
+
+const ORDER_BY_OPTIONS = [
+  { label: 'Created', value: 'createdAt' },
+  { label: 'Messages', value: 'messagesCount' },
+];
+const ORDER_BY_VALUES = new Set(ORDER_BY_OPTIONS.map((option) => option.value));
 
 const ORDER_OPTIONS = [
   { label: 'Descending', value: 'DESC' },
@@ -61,6 +69,7 @@ export function CasinoChatsPage() {
   const rawLevel = searchParams.get('level');
   const rawFrom = searchParams.get('from');
   const rawTo = searchParams.get('to');
+  const rawOrderBy = searchParams.get('orderBy');
   const rawOrder = searchParams.get('order');
   const rawPage = searchParams.get('page');
   const rawPageSize = searchParams.get('pageSize');
@@ -71,6 +80,9 @@ export function CasinoChatsPage() {
   const from = normalizeCasinoFromDateTime(rawFrom);
   const fromInputValue = formatCasinoFromDateTimeInput(from);
   const to = normalizeCasinoDate(rawTo);
+  const orderBy = ORDER_BY_VALUES.has(rawOrderBy ?? '')
+    ? (rawOrderBy as CasinoOrderBy)
+    : CASINO_DEFAULT_ORDER_BY;
   const order = ORDER_VALUES.has(rawOrder ?? '')
     ? (rawOrder as CasinoOrder)
     : CASINO_DEFAULT_ORDER;
@@ -101,6 +113,17 @@ export function CasinoChatsPage() {
         const nextTo = normalizeCasinoDate(update.to);
         if (nextTo) next.set('to', nextTo);
         else next.delete('to');
+      }
+
+      if (update.orderBy !== undefined) {
+        if (
+          ORDER_BY_VALUES.has(update.orderBy) &&
+          update.orderBy !== CASINO_DEFAULT_ORDER_BY
+        ) {
+          next.set('orderBy', update.orderBy);
+        } else {
+          next.delete('orderBy');
+        }
       }
 
       if (update.order !== undefined) {
@@ -135,19 +158,25 @@ export function CasinoChatsPage() {
       (rawLevel ?? '') === levelValue &&
       rawFrom === from &&
       (rawTo ?? '') === to &&
+      (rawOrderBy ?? CASINO_DEFAULT_ORDER_BY) === orderBy &&
       (rawOrder ?? CASINO_DEFAULT_ORDER) === order
     ) {
       return;
     }
 
-    updateSearchParams({ username, level: levelValue, from, to, order }, true);
+    updateSearchParams(
+      { username, level: levelValue, from, to, orderBy, order },
+      true,
+    );
   }, [
     from,
     levelValue,
     order,
+    orderBy,
     rawFrom,
     rawLevel,
     rawOrder,
+    rawOrderBy,
     rawTo,
     rawUsername,
     to,
@@ -161,11 +190,12 @@ export function CasinoChatsPage() {
       level,
       from: formatCasinoFromDateTimeForApi(from),
       to: to || undefined,
+      orderBy,
       order,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    [from, level, order, page, pageSize, to, username],
+    [from, level, order, orderBy, page, pageSize, to, username],
   );
 
   const { data, error, isLoading, refetch } = useCasinoChats(queryParams);
@@ -187,6 +217,10 @@ export function CasinoChatsPage() {
       { key: 'chat', label: 'Chat' },
       { key: 'user', label: 'User' },
       { key: 'level', label: 'Level' },
+      {
+        key: 'messages',
+        label: <span className={s.alignRight}>Messages</span>,
+      },
       { key: 'created', label: <span className={s.alignRight}>Created</span> },
     ],
     [],
@@ -213,6 +247,11 @@ export function CasinoChatsPage() {
             {chat.level}
           </Badge>
         ),
+        messages: (
+          <Typography variant="caption" tone="muted" className={s.alignRight}>
+            {chat.messagesCount.toLocaleString()}
+          </Typography>
+        ),
         created: (
           <Typography variant="caption" tone="muted" className={s.alignRight}>
             {formatCasinoDate(chat.createdAt)}
@@ -233,6 +272,11 @@ export function CasinoChatsPage() {
           </div>
         ),
         level: <Skeleton width={56} height={20} />,
+        messages: (
+          <div className={s.alignRight}>
+            <Skeleton width={48} height={12} />
+          </div>
+        ),
         created: (
           <div className={s.alignRight}>
             <Skeleton width={120} height={12} />
@@ -323,7 +367,20 @@ export function CasinoChatsPage() {
           From uses local date and time and is sent to the API as UTC. To
           remains date-only.
         </Typography>
-        <FormRow columns={2}>
+        <FormRow columns={3}>
+          <Field label="Order by" labelFor="casino-order-by">
+            <Select
+              id="casino-order-by"
+              options={ORDER_BY_OPTIONS}
+              value={orderBy}
+              size="sm"
+              variant="ghost"
+              onChange={(value) =>
+                updateSearchParams({ orderBy: value, page: 1 })
+              }
+              fullWidth
+            />
+          </Field>
           <Field label="Order" labelFor="casino-order">
             <Select
               id="casino-order"
@@ -382,7 +439,7 @@ export function CasinoChatsPage() {
             columns={columns}
             rows={showSkeleton ? skeletonRows : rows}
             scrollable
-            minWidth={760}
+            minWidth={860}
             getRowProps={
               showSkeleton
                 ? undefined

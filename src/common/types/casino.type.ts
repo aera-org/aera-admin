@@ -51,6 +51,7 @@ export type CasinoChatItem =
   | CasinoChatItemEvent;
 
 export type CasinoOrder = 'ASC' | 'DESC';
+export type CasinoOrderBy = 'createdAt' | 'messagesCount';
 
 export interface CasinoChatsQuery {
   level?: number;
@@ -62,6 +63,7 @@ export interface CasinoChatsQuery {
 export type ChatsQuery = CasinoChatsQuery;
 
 export interface CasinoChatsListParams extends CasinoChatsQuery {
+  orderBy?: CasinoOrderBy;
   order?: CasinoOrder;
   skip?: number;
   take?: number;
@@ -91,6 +93,7 @@ export interface CasinoChat {
     username?: string | null;
   };
   createdAt: string;
+  messagesCount: number;
 }
 
 export interface CasinoChatDetails extends CasinoChat {

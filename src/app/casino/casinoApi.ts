@@ -57,6 +57,7 @@ export async function getCasinoChats(params: CasinoChatsListParams) {
   const query = new URLSearchParams();
   appendCasinoFilters(query, params);
   if (params.username) query.set('username', params.username);
+  if (params.orderBy) query.set('orderBy', params.orderBy);
   if (params.order) query.set('order', params.order);
   if (typeof params.skip === 'number') query.set('skip', String(params.skip));
   if (typeof params.take === 'number') query.set('take', String(params.take));
