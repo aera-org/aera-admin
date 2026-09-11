@@ -374,7 +374,7 @@ const PAYMENTS_METRICS: AnalyticsMetricDefinition[] = [
   },
   {
     key: 'uniqueAll',
-    label: 'Unique All',
+    label: 'Unique All (starts)',
     description: 'Users registered in the month.',
     format: 'count',
     section: 'payments',
