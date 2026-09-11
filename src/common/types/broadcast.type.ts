@@ -15,11 +15,11 @@ interface BroadcastMessage {
   imgId?: string;
   videoId?: string;
   text: string;
-  action?: {
+  actions?: {
     text: string;
     value: string;
     type: MessageActionType;
-  };
+  }[];
 }
 
 export interface BroadcastDto {

@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useBroadcastCount, useCreateBroadcast } from '@/app/broadcast';
 import { notifyError } from '@/app/toast';
 import { useUsers } from '@/app/users';
-import { SendIcon } from '@/assets/icons';
+import { PlusIcon, SendIcon } from '@/assets/icons';
 import {
   Alert,
   Button,
+  ButtonGroup,
   Checkbox,
   Container,
   Field,
@@ -17,7 +18,6 @@ import {
   Popover,
   Select,
   Stack,
-  Switch,
   Tag,
   Textarea,
   Typography,
@@ -37,13 +37,19 @@ import s from './BroadcastPage.module.scss';
 type AudienceMode = 'all' | 'filters' | 'users';
 type SubscriptionFilter = 'any' | 'subscribed' | 'unsubscribed';
 
+type MessageActionDraft = {
+  text: string;
+  value: string;
+  type: MessageActionType;
+};
+
 type ValidationErrors = {
   audience?: string;
   messageText?: string;
   lastVisitedAfter?: string;
   lastVisitedBefore?: string;
-  actionText?: string;
-  actionValue?: string;
+  actionTexts?: Record<number, string>;
+  actionValues?: Record<number, string>;
 };
 
 const USER_SEARCH_DEBOUNCE_MS = 300;
@@ -120,6 +126,14 @@ function isHttpUrl(value: string) {
   }
 }
 
+function createEmptyMessageAction(): MessageActionDraft {
+  return {
+    text: '',
+    value: '',
+    type: MessageActionType.Callback,
+  };
+}
+
 export function BroadcastPage() {
   const createMutation = useCreateBroadcast();
   const countMutation = useBroadcastCount();
@@ -142,12 +156,9 @@ export function BroadcastPage() {
   const [imageFile, setImageFile] = useState<IFile | null>(null);
   const [videoFile, setVideoFile] = useState<IFile | null>(null);
 
-  const [isActionEnabled, setIsActionEnabled] = useState(false);
-  const [actionText, setActionText] = useState('');
-  const [actionType, setActionType] = useState<MessageActionType>(
-    MessageActionType.Callback,
+  const [messageActions, setMessageActions] = useState<MessageActionDraft[]>(
+    [],
   );
-  const [actionValue, setActionValue] = useState('');
 
   const [showErrors, setShowErrors] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -240,32 +251,38 @@ export function BroadcastPage() {
       }
     }
 
-    if (isActionEnabled) {
-      const nextActionText = actionText.trim();
-      const nextActionValue = actionValue.trim();
+    messageActions.forEach((action, index) => {
+      const nextActionText = action.text.trim();
+      const nextActionValue = action.value.trim();
 
       if (!nextActionText) {
-        errors.actionText = 'Enter action text.';
+        errors.actionTexts = {
+          ...errors.actionTexts,
+          [index]: 'Enter action text.',
+        };
       }
       if (!nextActionValue) {
-        errors.actionValue = 'Enter action value.';
+        errors.actionValues = {
+          ...errors.actionValues,
+          [index]: 'Enter action value.',
+        };
       } else if (
-        actionType === MessageActionType.Url &&
+        action.type === MessageActionType.Url &&
         !isHttpUrl(nextActionValue)
       ) {
-        errors.actionValue = 'Enter a valid http/https URL.';
+        errors.actionValues = {
+          ...errors.actionValues,
+          [index]: 'Enter a valid http/https URL.',
+        };
       }
-    }
+    });
 
     return errors;
   }, [
-    actionText,
-    actionType,
-    actionValue,
     audienceMode,
-    isActionEnabled,
     lastVisitedAfter,
     lastVisitedBefore,
+    messageActions,
     messageText,
     selectedUserIds.length,
     subscriptionFilter,
@@ -292,10 +309,7 @@ export function BroadcastPage() {
     setMessageText('');
     setImageFile(null);
     setVideoFile(null);
-    setIsActionEnabled(false);
-    setActionText('');
-    setActionType(MessageActionType.Callback);
-    setActionValue('');
+    setMessageActions([]);
     setShowErrors(false);
     setIsConfirmOpen(false);
     setAllUsersConfirmed(false);
@@ -372,12 +386,12 @@ export function BroadcastPage() {
       text: messageText.trim(),
       imgId: imageFile?.id || undefined,
       videoId: videoFile?.id || undefined,
-      action: isActionEnabled
-        ? {
-            text: actionText.trim(),
-            value: actionValue.trim(),
-            type: actionType,
-          }
+      actions: messageActions.length
+        ? messageActions.map((item) => ({
+            text: item.text.trim(),
+            value: item.value.trim(),
+            type: item.type,
+          }))
         : undefined,
     },
     filters: buildFilters(),
@@ -697,61 +711,132 @@ export function BroadcastPage() {
                 }
               />
 
-              <Field label="Action button">
-                <Switch
-                  checked={isActionEnabled}
-                  onChange={(event) => setIsActionEnabled(event.target.checked)}
-                  label={isActionEnabled ? 'Enabled' : 'Disabled'}
-                  disabled={createMutation.isPending}
-                />
-              </Field>
+              <Field
+                label="Actions"
+                hint="Optional message buttons. Leave empty to send without actions."
+              >
+                <Stack gap="12px">
+                  {messageActions.length ? (
+                    messageActions.map((action, index) => (
+                      <div
+                        key={`broadcast-action-${index}`}
+                        className={s.actionEditorItem}
+                      >
+                        <FormRow columns={3}>
+                          <Field
+                            label={`Text ${index + 1}`}
+                            error={errors.actionTexts?.[index]}
+                            labelFor={`broadcast-action-text-${index}`}
+                          >
+                            <Input
+                              id={`broadcast-action-text-${index}`}
+                              size="sm"
+                              value={action.text}
+                              onChange={(event) =>
+                                setMessageActions((prev) =>
+                                  prev.map((item, itemIndex) =>
+                                    itemIndex === index
+                                      ? { ...item, text: event.target.value }
+                                      : item,
+                                  ),
+                                )
+                              }
+                              invalid={Boolean(errors.actionTexts?.[index])}
+                              disabled={createMutation.isPending}
+                              fullWidth
+                            />
+                          </Field>
+                          <Field
+                            label={`Type ${index + 1}`}
+                            labelFor={`broadcast-action-type-${index}`}
+                          >
+                            <Select
+                              id={`broadcast-action-type-${index}`}
+                              value={action.type}
+                              options={actionTypeOptions}
+                              onChange={(value) =>
+                                setMessageActions((prev) =>
+                                  prev.map((item, itemIndex) =>
+                                    itemIndex === index
+                                      ? {
+                                          ...item,
+                                          type: value as MessageActionType,
+                                        }
+                                      : item,
+                                  ),
+                                )
+                              }
+                              disabled={createMutation.isPending}
+                              fullWidth
+                            />
+                          </Field>
+                          <Field
+                            label={`Value ${index + 1}`}
+                            error={errors.actionValues?.[index]}
+                            labelFor={`broadcast-action-value-${index}`}
+                          >
+                            <Input
+                              id={`broadcast-action-value-${index}`}
+                              size="sm"
+                              value={action.value}
+                              onChange={(event) =>
+                                setMessageActions((prev) =>
+                                  prev.map((item, itemIndex) =>
+                                    itemIndex === index
+                                      ? { ...item, value: event.target.value }
+                                      : item,
+                                  ),
+                                )
+                              }
+                              invalid={Boolean(errors.actionValues?.[index])}
+                              disabled={createMutation.isPending}
+                              fullWidth
+                            />
+                          </Field>
+                        </FormRow>
+                        <div className={s.actionEditorActions}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            tone="danger"
+                            onClick={() =>
+                              setMessageActions((prev) =>
+                                prev.filter(
+                                  (_, itemIndex) => itemIndex !== index,
+                                ),
+                              )
+                            }
+                            disabled={createMutation.isPending}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <Typography variant="caption" tone="muted">
+                      No actions added.
+                    </Typography>
+                  )}
 
-              {isActionEnabled ? (
-                <FormRow columns={3}>
-                  <Field
-                    label="Action text"
-                    error={errors.actionText}
-                    labelFor="broadcast-action-text"
-                  >
-                    <Input
-                      id="broadcast-action-text"
+                  <ButtonGroup>
+                    <Button
+                      variant="ghost"
                       size="sm"
-                      value={actionText}
-                      onChange={(event) => setActionText(event.target.value)}
-                      invalid={Boolean(errors.actionText)}
-                      disabled={createMutation.isPending}
-                      fullWidth
-                    />
-                  </Field>
-                  <Field label="Action type" labelFor="broadcast-action-type">
-                    <Select
-                      id="broadcast-action-type"
-                      value={actionType}
-                      options={actionTypeOptions}
-                      onChange={(value) =>
-                        setActionType(value as MessageActionType)
+                      iconLeft={<PlusIcon />}
+                      onClick={() =>
+                        setMessageActions((prev) => [
+                          ...prev,
+                          createEmptyMessageAction(),
+                        ])
                       }
                       disabled={createMutation.isPending}
-                      fullWidth
-                    />
-                  </Field>
-                  <Field
-                    label="Action value"
-                    error={errors.actionValue}
-                    labelFor="broadcast-action-value"
-                  >
-                    <Input
-                      id="broadcast-action-value"
-                      size="sm"
-                      value={actionValue}
-                      onChange={(event) => setActionValue(event.target.value)}
-                      invalid={Boolean(errors.actionValue)}
-                      disabled={createMutation.isPending}
-                      fullWidth
-                    />
-                  </Field>
-                </FormRow>
-              ) : null}
+                    >
+                      Add action
+                    </Button>
+                  </ButtonGroup>
+                </Stack>
+              </Field>
             </Stack>
           </div>
         </Stack>
