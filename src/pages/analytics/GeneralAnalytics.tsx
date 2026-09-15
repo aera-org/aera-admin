@@ -9,6 +9,7 @@ import {
 } from '@/app/analytics';
 import {
   calculateGeneralMetrics,
+  GENERAL_CPA_USD,
   getGeneralDateRange,
 } from '@/app/analytics/generalMetrics';
 import {
@@ -80,8 +81,13 @@ export function GeneralAnalytics({
       value: metrics.roas,
       loading: payments.isPending || deeplinks.isPending,
       format: 'ratio',
-      description:
-        'Revenue Payments ÷ (Paid starts unique × CPA). CPA = $0.05.',
+      description: 'Revenue Payments ÷ (Paid starts unique × CPA).',
+    },
+    {
+      label: 'CPA',
+      value: GENERAL_CPA_USD,
+      loading: false,
+      format: 'currency',
     },
   ];
 
