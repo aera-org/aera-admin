@@ -1,5 +1,6 @@
 export type AnalyticsSection =
   | 'overview'
+  | 'general'
   | 'main'
   | 'payments'
   | 'technical'
@@ -105,7 +106,7 @@ const MAIN_METRICS: AnalyticsMetricDefinition[] = [
   },
   {
     key: 'unique',
-    label: 'Total uniqie active users',
+    label: 'Total unique active users',
     description: 'Distinct active users with at least one chat session in the month.',
     format: 'count',
     section: 'main',
@@ -506,6 +507,13 @@ const SECTIONS: AnalyticsSectionConfig[] = [
     defaultMetric: null,
   },
   {
+    key: 'general',
+    label: 'General',
+    available: true,
+    metrics: [],
+    defaultMetric: null,
+  },
+  {
     key: 'main',
     label: 'Main',
     available: true,
@@ -574,6 +582,7 @@ export function isValidSection(
 ): value is AnalyticsSection {
   return (
     value === 'overview' ||
+    value === 'general' ||
     value === 'main' ||
     value === 'payments' ||
     value === 'technical' ||

@@ -70,6 +70,7 @@ import { cn } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 
 import s from './AnalyticsPage.module.scss';
+import { GeneralAnalytics } from './GeneralAnalytics';
 
 type QueryUpdate = {
   section?: string;
@@ -425,7 +426,7 @@ const DAILY_METRIC_OPTIONS: Array<{
     value: 'unique',
     label:
       DAILY_UNIQUE_ACTIVE_USERS_METRIC?.label ??
-      'Total uniqie active users',
+      'Total unique active users',
     description: 'Distinct active users with at least one chat session in the day.',
   },
   {
@@ -600,6 +601,7 @@ export function AnalyticsPage() {
       ? rawSection
       : 'overview';
   const isOverviewSection = section === 'overview';
+  const isGeneralSection = section === 'general';
   const isDeeplinksSection = section === 'deeplinks';
   const isDailySection = section === 'daily';
   const isCountriesSection = section === 'countries';
@@ -868,6 +870,8 @@ export function AnalyticsPage() {
       if (metricKey && rawMetric !== metricKey) updates.metric = metricKey;
       if (!metricKey && rawMetric) updates.metric = '';
       if (rawKpi !== kpiMonth) updates.kpi = kpiMonth;
+    } else if (isGeneralSection) {
+      if (rawKpi !== kpiMonth) updates.kpi = kpiMonth;
     } else if (isDeeplinksSection || isDailySection || isCountriesSection) {
       const nextStart =
         isDailySection || isCountriesSection ? dailyStart : deeplinkStart;
@@ -918,6 +922,7 @@ export function AnalyticsPage() {
     isCountriesSection,
     isMonthlySection,
     isOverviewSection,
+    isGeneralSection,
     dailyStart,
     dailyEnd,
     dailyMetricKey,
@@ -2264,7 +2269,7 @@ export function AnalyticsPage() {
               className={cn(s.tableHeader, [s.alignRight])}
             >
               {DAILY_UNIQUE_ACTIVE_USERS_METRIC?.label ??
-                'Total uniqie active users'}
+                'Total unique active users'}
             </Typography>
           </Tooltip>
         ),
@@ -3349,7 +3354,7 @@ export function AnalyticsPage() {
       ? isDailyLoading
       : isMainLoading;
   const canExport =
-    isSectionAvailable && !isOverviewSection && !isActiveSectionLoading;
+    isSectionAvailable && !isOverviewSection && !isGeneralSection && !isActiveSectionLoading;
 
   const handleExportCsv = useCallback(() => {
     if (!canExport || isExporting) return;
@@ -3395,7 +3400,7 @@ export function AnalyticsPage() {
               DAILY_USER_VISITS_METRIC?.label ?? 'User visits',
               DAILY_TOTAL_ACTIVE_USERS_METRIC?.label ?? 'Total active users',
               DAILY_UNIQUE_ACTIVE_USERS_METRIC?.label ??
-                'Total uniqie active users',
+                'Total unique active users',
               DAILY_UNIQUE_ALL_METRIC?.label ?? 'Unique All',
               DAILY_ORGANIC_ACTIVE_USERS_METRIC?.label ??
                 'Organic active users',
@@ -3534,6 +3539,11 @@ export function AnalyticsPage() {
             <EmptyState
               title="Section not available yet"
               description="The backend does not provide this section yet."
+            />
+          ) : isGeneralSection ? (
+            <GeneralAnalytics
+              month={kpiMonth}
+              onMonthChange={(kpi) => updateSearchParams({ kpi })}
             />
           ) : isOverviewSection ? (
             <EmptyState
@@ -3912,7 +3922,7 @@ export function AnalyticsPage() {
                       <Card className={s.kpiCard} padding="md">
                         <Typography variant="meta" tone="muted">
                           {DAILY_UNIQUE_ACTIVE_USERS_METRIC?.label ??
-                            'Total uniqie active users'}
+                            'Total unique active users'}
                         </Typography>
                         <Typography variant="h3">
                           {dailyTotals ? formatCount(dailyTotals.unique) : '—'}
