@@ -11,6 +11,7 @@ import {
   Input,
   Select,
   Stack,
+  Switch,
   Textarea,
   Typography,
 } from '@/atoms';
@@ -33,6 +34,7 @@ type FormValues = {
   chatPrompt: string;
   photoCoolDown: string;
   resistance: string;
+  full: boolean;
 };
 
 type FormErrors = {
@@ -59,6 +61,7 @@ export function UserTypeCreatePage() {
     chatPrompt: '',
     photoCoolDown: '',
     resistance: '',
+    full: false,
   });
   const [showErrors, setShowErrors] = useState(false);
 
@@ -122,6 +125,7 @@ export function UserTypeCreatePage() {
       chatPrompt: values.chatPrompt,
       photoCoolDown: photoCoolDown as number,
       resistance: values.resistance,
+      full: values.full,
     });
     navigate('/user-types');
   };
@@ -242,6 +246,21 @@ export function UserTypeCreatePage() {
               />
             </Field>
           </FormRow>
+
+          <Field label="Full" labelFor="user-type-create-full">
+            <Switch
+              id="user-type-create-full"
+              checked={values.full}
+              onChange={(event) =>
+                setValues((prev) => ({
+                  ...prev,
+                  full: event.target.checked,
+                }))
+              }
+              disabled={createMutation.isPending}
+              label={values.full ? 'Yes' : 'No'}
+            />
+          </Field>
 
           <Field label="Chat prompt" labelFor="user-type-create-chat-prompt">
             <Textarea

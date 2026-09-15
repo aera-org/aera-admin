@@ -175,6 +175,7 @@ export function UserTypesPage() {
       { key: 'paywallStage', label: 'Paywall stage' },
       { key: 'stageLength', label: 'Stage length' },
       { key: 'photoCoolDown', label: 'Photo cooldown' },
+      { key: 'full', label: 'Full' },
       {
         key: 'created',
         label: <span className={s.alignRight}>Created</span>,
@@ -209,6 +210,11 @@ export function UserTypesPage() {
             {userType.photoCoolDown}
           </Typography>
         ),
+        full: (
+          <Typography variant="body" tone="muted">
+            {userType.full ? 'Yes' : 'No'}
+          </Typography>
+        ),
         created: (
           <Typography variant="caption" tone="muted" className={s.alignRight}>
             {formatDate(userType.createdAt)}
@@ -230,6 +236,7 @@ export function UserTypesPage() {
         paywallStage: <Skeleton width={100} height={12} />,
         stageLength: <Skeleton width={48} height={12} />,
         photoCoolDown: <Skeleton width={48} height={12} />,
+        full: <Skeleton width={32} height={12} />,
         created: (
           <div className={s.alignRight}>
             <Skeleton width={120} height={12} />

@@ -12,6 +12,7 @@ import {
   Select,
   Skeleton,
   Stack,
+  Switch,
   Textarea,
   Typography,
 } from '@/atoms';
@@ -34,6 +35,7 @@ type FormValues = {
   chatPrompt: string;
   photoCoolDown: string;
   resistance: string;
+  full: boolean;
 };
 
 type FormErrors = {
@@ -69,6 +71,7 @@ export function UserTypeUpdatePage() {
     chatPrompt: '',
     photoCoolDown: '',
     resistance: '',
+    full: false,
   });
   const [showErrors, setShowErrors] = useState(false);
 
@@ -82,6 +85,7 @@ export function UserTypeUpdatePage() {
       chatPrompt: data.chatPrompt ?? '',
       photoCoolDown: String(data.photoCoolDown ?? ''),
       resistance: data.resistance ?? '',
+      full: Boolean(data.full),
     });
     setShowErrors(false);
   }, [data]);
@@ -149,6 +153,7 @@ export function UserTypeUpdatePage() {
         chatPrompt: values.chatPrompt,
         photoCoolDown: photoCoolDown as number,
         resistance: values.resistance,
+        full: values.full,
       },
     });
   };
@@ -301,6 +306,21 @@ export function UserTypeUpdatePage() {
                 />
               </Field>
             </FormRow>
+
+            <Field label="Full" labelFor="user-type-edit-full">
+              <Switch
+                id="user-type-edit-full"
+                checked={values.full}
+                onChange={(event) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    full: event.target.checked,
+                  }))
+                }
+                disabled={isBusy}
+                label={values.full ? 'Yes' : 'No'}
+              />
+            </Field>
 
             <Field label="Chat prompt" labelFor="user-type-edit-chat-prompt">
               <Textarea

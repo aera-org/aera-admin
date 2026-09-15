@@ -6,6 +6,7 @@ export interface IUserType {
   paywallStage: RoleplayStage;
   stageLength: number;
   photoCoolDown: number;
+  full: boolean;
   createdAt: string;
 }
 
@@ -23,6 +24,7 @@ export type CreateUserTypeDto = {
   chatPrompt: string;
   photoCoolDown: number;
   resistance: string;
+  full: boolean;
 };
 
 export type UpdateUserTypeDto = CreateUserTypeDto;
