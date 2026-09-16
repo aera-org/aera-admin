@@ -69,6 +69,7 @@ export function GeneralAnalytics({
       value: metrics.arpuu,
       loading: payments.isPending || deeplinks.isPending,
       format: 'currency',
+      precision: 4,
     },
     {
       label: 'ROAS',
@@ -132,7 +133,14 @@ export function GeneralAnalytics({
                 {card.value === null
                   ? '—'
                   : card.format === 'currency'
-                    ? formatMetricValue(currencyMetric, card.value, 'card')
+                    ? formatMetricValue(
+                        {
+                          ...currencyMetric,
+                          precision: card.precision ?? currencyMetric.precision,
+                        },
+                        card.value,
+                        'card',
+                      )
                     : card.format === 'ratio'
                       ? `${formatCount(card.value, 2)}×`
                       : formatCount(card.value)}
