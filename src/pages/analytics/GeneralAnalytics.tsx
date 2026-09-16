@@ -65,15 +65,9 @@ export function GeneralAnalytics({
       format: 'count',
     },
     {
-      label: 'ARPUU All',
-      value: metrics.arpuuAll,
-      loading: daily.isPending,
-      format: 'currency',
-    },
-    {
-      label: 'ARPUU All (paid)',
-      value: metrics.arpuuAllPaid,
-      loading: deeplinks.isPending,
+      label: 'ARPUU',
+      value: metrics.arpuu,
+      loading: payments.isPending || deeplinks.isPending,
       format: 'currency',
     },
     {

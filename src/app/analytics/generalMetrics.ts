@@ -13,7 +13,7 @@ export function getGeneralDateRange(month: string) {
   };
 }
 
-type GeneralSourceRow = { uniqueAll: number; revenue: number };
+type GeneralSourceRow = { uniqueAll: number };
 
 function sumField(
   rows: GeneralSourceRow[] | undefined,
@@ -40,8 +40,7 @@ export function calculateGeneralMetrics(
   return {
     startsUnique,
     paidStartsUnique,
-    arpuuAll: divide(sumField(daily, 'revenue'), startsUnique),
-    arpuuAllPaid: divide(sumField(deeplinks, 'revenue'), paidStartsUnique),
+    arpuu: divide(paymentsRevenue ?? null, paidStartsUnique),
     roas: divide(
       paymentsRevenue ?? null,
       paidStartsUnique === null ? null : paidStartsUnique * GENERAL_CPA_USD,
