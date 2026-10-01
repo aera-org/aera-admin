@@ -23,6 +23,7 @@ export interface IPost {
     video?: IFile;
     isActive: boolean;
     isCustomCharacter: boolean;
+    isStart: boolean;
     scenario: IScenario | null;
     updatedAt: string;
     createdAt: string;

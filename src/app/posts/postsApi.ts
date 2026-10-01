@@ -14,6 +14,7 @@ export type PostsListParams = {
   search?: string;
   scenarioId?: string;
   isActive?: boolean;
+  isStart?: boolean;
   skip?: number;
   take?: number;
 };
@@ -21,37 +22,37 @@ export type PostsListParams = {
 type PostBaseDto = {
   text: string;
   isActive: boolean;
-  isCustomCharacter: boolean;
 };
 
-type RegularPostDto = PostBaseDto & {
+type RegularPostDto = {
+  isStart: false;
   isCustomCharacter: false;
   scenarioId: string;
 };
 
-type CustomCharacterPostDto = PostBaseDto & {
+type CustomCharacterPostDto = {
+  isStart: false;
   isCustomCharacter: true;
+  scenarioId?: never;
 };
 
-export type CreatePostDto =
-  | (RegularPostDto & {
-      type: PostType.Img;
-      imgId: string;
-    })
-  | (RegularPostDto & {
-      type: PostType.Video;
-      videoId: string;
-    })
-  | (CustomCharacterPostDto & {
-      type: PostType.Img;
-      imgId: string;
-    })
-  | (CustomCharacterPostDto & {
-      type: PostType.Video;
-      videoId: string;
-    });
+type StartPostDto = {
+  isStart: true;
+  isCustomCharacter: false;
+  scenarioId?: never;
+};
 
-export type UpdatePostDto = CreatePostDto & {
+type PostMediaDto =
+  | { type: PostType.Img; imgId: string }
+  | { type: PostType.Video; videoId: string };
+
+export type CreatePostDto = PostBaseDto &
+  (RegularPostDto | CustomCharacterPostDto | StartPostDto) &
+  PostMediaDto;
+
+export type UpdatePostDto = PostBaseDto & {
+  imgId?: string;
+  videoId?: string;
   localizations: Partial<Record<Language, string>>;
 };
 export type LocalizePostDto = {
@@ -76,6 +77,9 @@ function buildListQuery(params: PostsListParams) {
   if (params.scenarioId) query.set('scenarioId', params.scenarioId);
   if (typeof params.isActive === 'boolean') {
     query.set('isActive', String(params.isActive));
+  }
+  if (typeof params.isStart === 'boolean') {
+    query.set('isStart', String(params.isStart));
   }
   if (typeof params.skip === 'number') query.set('skip', String(params.skip));
   if (typeof params.take === 'number') query.set('take', String(params.take));

@@ -70,6 +70,7 @@ type Values = {
   characterId: string;
   scenarioId: string;
   isCustomCharacter: boolean;
+  isStart: boolean;
   type: PostType;
   text: string;
   isActive: boolean;
@@ -232,6 +233,7 @@ export function PostUpsertDrawer({
     characterId: '',
     scenarioId: '',
     isCustomCharacter: false,
+    isStart: false,
     type: PostType.Img,
     text: '',
     isActive: true,
@@ -312,6 +314,7 @@ export function PostUpsertDrawer({
       characterId: initialCharacterId,
       scenarioId: post?.scenario?.id ?? initialScenarioId,
       isCustomCharacter: post?.isCustomCharacter ?? false,
+      isStart: post?.isStart ?? false,
       type: postType,
       text: post?.text ?? '',
       isActive: post?.isActive ?? true,
@@ -332,13 +335,16 @@ export function PostUpsertDrawer({
   }, [open, resetState]);
 
   useEffect(() => {
-    if (values.isCustomCharacter) {
+    if (values.isCustomCharacter || values.isStart) {
       if (!values.characterId && !values.scenarioId) return;
       setValues((prev) => ({ ...prev, characterId: '', scenarioId: '' }));
       return;
     }
     if (!values.scenarioId) return;
-    if (values.characterId && (isScenariosLoading || !selectedCharacterDetails)) {
+    if (
+      values.characterId &&
+      (isScenariosLoading || !selectedCharacterDetails)
+    ) {
       return;
     }
     const exists = scenarioOptions.some(
@@ -350,6 +356,7 @@ export function PostUpsertDrawer({
   }, [
     isScenariosLoading,
     values.isCustomCharacter,
+    values.isStart,
     scenarioOptions,
     selectedCharacterDetails,
     values.characterId,
@@ -361,11 +368,11 @@ export function PostUpsertDrawer({
 
     return {
       characterId:
-        values.isCustomCharacter || values.characterId
+        values.isCustomCharacter || values.isStart || values.characterId
           ? undefined
           : 'Select a character.',
       scenarioId:
-        values.isCustomCharacter || values.scenarioId
+        values.isCustomCharacter || values.isStart || values.scenarioId
           ? undefined
           : 'Select a scenario.',
       text: values.text.trim() ? undefined : 'Enter text.',
@@ -382,6 +389,7 @@ export function PostUpsertDrawer({
     showErrors,
     values.characterId,
     values.isCustomCharacter,
+    values.isStart,
     values.scenarioId,
     values.text,
   ]);
@@ -469,8 +477,8 @@ export function PostUpsertDrawer({
 
   const handleSave = async () => {
     if (
-      (!values.isCustomCharacter && !values.characterId) ||
-      (!values.isCustomCharacter && !values.scenarioId) ||
+      (!values.isCustomCharacter && !values.isStart && !values.characterId) ||
+      (!values.isCustomCharacter && !values.isStart && !values.scenarioId) ||
       !values.text.trim() ||
       !resolvedMedia
     ) {
@@ -481,46 +489,37 @@ export function PostUpsertDrawer({
     setIsSubmitting(true);
 
     try {
-      const payload: CreatePostDto = values.isCustomCharacter
-        ? values.type === PostType.Video
-          ? {
-              text: values.text.trim(),
-              isActive: values.isActive,
-              isCustomCharacter: true,
-              type: PostType.Video,
-              videoId: resolvedMedia.id,
-            }
-          : {
-              text: values.text.trim(),
-              isActive: values.isActive,
-              isCustomCharacter: true,
-              type: PostType.Img,
-              imgId: resolvedMedia.id,
-            }
-        : values.type === PostType.Video
-          ? {
-              text: values.text.trim(),
-              isActive: values.isActive,
+      const content = {
+        text: values.text.trim(),
+        isActive: values.isActive,
+      };
+      const media =
+        values.type === PostType.Video
+          ? { type: PostType.Video as const, videoId: resolvedMedia.id }
+          : { type: PostType.Img as const, imgId: resolvedMedia.id };
+      const mode = values.isStart
+        ? ({ isStart: true, isCustomCharacter: false } as const)
+        : values.isCustomCharacter
+          ? ({ isStart: false, isCustomCharacter: true } as const)
+          : ({
+              isStart: false,
               isCustomCharacter: false,
               scenarioId: values.scenarioId,
-              type: PostType.Video,
-              videoId: resolvedMedia.id,
-            }
-          : {
-              text: values.text.trim(),
-              isActive: values.isActive,
-              isCustomCharacter: false,
-              scenarioId: values.scenarioId,
-              type: PostType.Img,
-              imgId: resolvedMedia.id,
-            };
+            } as const);
+      const payload: CreatePostDto = { ...content, ...mode, ...media };
 
       if (post) {
         const updatePayload: UpdatePostDto = {
-          ...payload,
+          ...content,
+          ...(media.type === PostType.Video
+            ? { videoId: media.videoId }
+            : { imgId: media.imgId }),
           localizations: values.localizations,
         };
-        await updateMutation.mutateAsync({ id: post.id, payload: updatePayload });
+        await updateMutation.mutateAsync({
+          id: post.id,
+          payload: updatePayload,
+        });
       } else {
         await createMutation.mutateAsync(payload);
       }
@@ -563,7 +562,7 @@ export function PostUpsertDrawer({
         ) : null}
 
         <FormRow columns={2}>
-          {!values.isCustomCharacter ? (
+          {!values.isCustomCharacter && !values.isStart ? (
             <Field
               label="Character"
               labelFor="post-upsert-character"
@@ -584,7 +583,9 @@ export function PostUpsertDrawer({
                   }))
                 }
                 placeholder={
-                  isCharactersLoading ? 'Loading characters...' : 'Select character'
+                  isCharactersLoading
+                    ? 'Loading characters...'
+                    : 'Select character'
                 }
                 loading={isCharactersLoading}
                 invalid={Boolean(errors.characterId)}
@@ -593,15 +594,39 @@ export function PostUpsertDrawer({
             </Field>
           ) : null}
 
-          <Field label="Custom character" labelFor="post-upsert-is-custom-character">
+          <Field label="Start" labelFor="post-upsert-is-start">
+            <Switch
+              id="post-upsert-is-start"
+              checked={values.isStart}
+              disabled={isBusy || Boolean(post)}
+              onChange={(event) =>
+                setValues((prev) => ({
+                  ...prev,
+                  isStart: event.target.checked,
+                  isCustomCharacter: event.target.checked
+                    ? false
+                    : prev.isCustomCharacter,
+                  characterId: event.target.checked ? '' : prev.characterId,
+                  scenarioId: event.target.checked ? '' : prev.scenarioId,
+                }))
+              }
+              label={values.isStart ? 'Enabled' : 'Disabled'}
+            />
+          </Field>
+
+          <Field
+            label="Custom character"
+            labelFor="post-upsert-is-custom-character"
+          >
             <Switch
               id="post-upsert-is-custom-character"
               checked={values.isCustomCharacter}
-              disabled={isBusy}
+              disabled={isBusy || Boolean(post?.isStart)}
               onChange={(event) =>
                 setValues((prev) => ({
                   ...prev,
                   isCustomCharacter: event.target.checked,
+                  isStart: event.target.checked ? false : prev.isStart,
                   characterId: event.target.checked ? '' : prev.characterId,
                   scenarioId: event.target.checked ? '' : prev.scenarioId,
                 }))
@@ -611,7 +636,7 @@ export function PostUpsertDrawer({
           </Field>
         </FormRow>
 
-        {!values.isCustomCharacter ? (
+        {!values.isCustomCharacter && !values.isStart ? (
           <Field
             label="Scenario"
             labelFor="post-upsert-scenario"
@@ -714,7 +739,9 @@ export function PostUpsertDrawer({
               }}
               disabled={isBusy}
             >
-              {resolvedMedia ? mediaConfig.replaceLabel : mediaConfig.actionLabel}
+              {resolvedMedia
+                ? mediaConfig.replaceLabel
+                : mediaConfig.actionLabel}
             </Button>
             <Typography variant="meta" tone="muted">
               {isUploadingFile
@@ -851,11 +878,7 @@ export function PostUpsertDrawer({
           >
             Cancel
           </Button>
-          <Button
-            onClick={handleSave}
-            loading={isBusy}
-            disabled={isBusy}
-          >
+          <Button onClick={handleSave} loading={isBusy} disabled={isBusy}>
             {post ? 'Save' : 'Create'}
           </Button>
         </div>

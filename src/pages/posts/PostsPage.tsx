@@ -40,6 +40,7 @@ type QueryUpdate = {
   page?: number;
   pageSize?: number;
   isActive?: string;
+  isStart?: string;
 };
 
 type ScenarioOption = {
@@ -112,6 +113,7 @@ export function PostsPage() {
   const rawPage = searchParams.get('page');
   const rawPageSize = searchParams.get('pageSize');
   const rawIsActive = searchParams.get('isActive');
+  const rawIsStart = searchParams.get('isStart');
 
   const [searchInput, setSearchInput] = useState(rawSearch);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -128,6 +130,7 @@ export function PostsPage() {
   const page = parsePositiveNumber(rawPage, 1);
   const pageSize = parsePageSize(rawPageSize);
   const activeFilter = resolveBooleanFilter(rawIsActive);
+  const startFilter = resolveBooleanFilter(rawIsStart);
 
   const updateSearchParams = useCallback(
     (update: QueryUpdate, replace = false) => {
@@ -184,10 +187,28 @@ export function PostsPage() {
         }
       }
 
+      if (update.isStart !== undefined) {
+        if (update.isStart === 'true' || update.isStart === 'false') {
+          next.set('isStart', update.isStart);
+        } else {
+          next.delete('isStart');
+        }
+      }
+
       setSearchParams(next, { replace });
     },
     [searchParams, setSearchParams],
   );
+
+  useEffect(() => {
+    if (
+      rawIsStart !== null &&
+      rawIsStart !== 'true' &&
+      rawIsStart !== 'false'
+    ) {
+      updateSearchParams({ isStart: 'all', page: 1 }, true);
+    }
+  }, [rawIsStart, updateSearchParams]);
 
   useEffect(() => {
     setSearchInput(rawSearch);
@@ -270,7 +291,7 @@ export function PostsPage() {
   );
 
   const derivedCharacterId = scenarioFilter
-    ? scenarioOptionData.lookup.get(scenarioFilter)?.characterId ?? ''
+    ? (scenarioOptionData.lookup.get(scenarioFilter)?.characterId ?? '')
     : '';
   const effectiveCharacterId = characterFilter || derivedCharacterId;
   const scenarioOptions = useMemo(
@@ -282,7 +303,11 @@ export function PostsPage() {
           scenarioOptionData.lookup.get(option.value)?.characterId ===
             effectiveCharacterId,
       ),
-    [effectiveCharacterId, scenarioOptionData.lookup, scenarioOptionData.options],
+    [
+      effectiveCharacterId,
+      scenarioOptionData.lookup,
+      scenarioOptionData.options,
+    ],
   );
   const areScenarioOptionsLoading =
     isCharactersLoading ||
@@ -297,12 +322,19 @@ export function PostsPage() {
     if (!exists) {
       updateSearchParams({ characterId: '', scenarioId: '', page: 1 }, true);
     }
-  }, [characterData?.data, characterFilter, isCharactersLoading, updateSearchParams]);
+  }, [
+    characterData?.data,
+    characterFilter,
+    isCharactersLoading,
+    updateSearchParams,
+  ]);
 
   useEffect(() => {
     if (!scenarioFilter || areScenarioOptionsLoading) return;
 
-    const exists = scenarioOptions.some((option) => option.value === scenarioFilter);
+    const exists = scenarioOptions.some(
+      (option) => option.value === scenarioFilter,
+    );
     if (!exists) {
       updateSearchParams({ scenarioId: '', page: 1 }, true);
     }
@@ -321,10 +353,18 @@ export function PostsPage() {
       search: normalizedSearch || undefined,
       scenarioId: scenarioFilter || undefined,
       isActive,
+      isStart: startFilter === 'all' ? undefined : startFilter === 'true',
       skip: (page - 1) * pageSize,
       take: pageSize,
     };
-  }, [activeFilter, normalizedSearch, page, pageSize, scenarioFilter]);
+  }, [
+    activeFilter,
+    startFilter,
+    normalizedSearch,
+    page,
+    pageSize,
+    scenarioFilter,
+  ]);
 
   const { data, error, isLoading, refetch } = usePosts(queryParams);
   const deleteMutation = useDeletePost();
@@ -346,7 +386,8 @@ export function PostsPage() {
 
   useEffect(() => {
     if (!editingPost) return;
-    const nextEditingPost = posts.find((post) => post.id === editingPost.id) ?? null;
+    const nextEditingPost =
+      posts.find((post) => post.id === editingPost.id) ?? null;
     if (nextEditingPost && nextEditingPost !== editingPost) {
       setEditingPost(nextEditingPost);
     }
@@ -366,11 +407,12 @@ export function PostsPage() {
   const showFooter = showContent && !showSkeleton;
 
   const rangeStart = total === 0 ? 0 : effectiveSkip + 1;
-  const rangeEnd = total === 0 ? 0 : Math.min(effectiveSkip + effectiveTake, total);
+  const rangeEnd =
+    total === 0 ? 0 : Math.min(effectiveSkip + effectiveTake, total);
 
   const drawerScenarioId = editingPost?.scenario?.id ?? scenarioFilter;
   const drawerScenarioLookup = drawerScenarioId
-    ? scenarioOptionData.lookup.get(drawerScenarioId) ?? null
+    ? (scenarioOptionData.lookup.get(drawerScenarioId) ?? null)
     : null;
 
   const handleCreate = () => {
@@ -438,7 +480,11 @@ export function PostsPage() {
 
         <div className={s.filters}>
           <div className={s.filterRow}>
-            <Field className={s.filterField} label="Search" labelFor="posts-search">
+            <Field
+              className={s.filterField}
+              label="Search"
+              labelFor="posts-search"
+            >
               <Input
                 id="posts-search"
                 placeholder="Search posts"
@@ -449,14 +495,22 @@ export function PostsPage() {
               />
             </Field>
 
-            <Field className={s.characterField} label="Character" labelFor="posts-character">
+            <Field
+              className={s.characterField}
+              label="Character"
+              labelFor="posts-character"
+            >
               <Select
                 id="posts-character"
                 options={characterOptions}
                 value={effectiveCharacterId}
                 size="sm"
                 variant="ghost"
-                placeholder={isCharactersLoading ? 'Loading characters...' : 'All characters'}
+                placeholder={
+                  isCharactersLoading
+                    ? 'Loading characters...'
+                    : 'All characters'
+                }
                 disabled={isCharactersLoading}
                 onChange={(value) =>
                   updateSearchParams({
@@ -468,7 +522,11 @@ export function PostsPage() {
               />
             </Field>
 
-            <Field className={s.scenarioField} label="Scenario" labelFor="posts-scenario">
+            <Field
+              className={s.scenarioField}
+              label="Scenario"
+              labelFor="posts-scenario"
+            >
               <Select
                 id="posts-scenario"
                 options={scenarioOptions}
@@ -483,7 +541,26 @@ export function PostsPage() {
                     : 'Select character first'
                 }
                 disabled={!effectiveCharacterId || areScenarioOptionsLoading}
-                onChange={(value) => updateSearchParams({ scenarioId: value, page: 1 })}
+                onChange={(value) =>
+                  updateSearchParams({ scenarioId: value, page: 1 })
+                }
+              />
+            </Field>
+
+            <Field
+              className={s.booleanField}
+              label="Start"
+              labelFor="posts-start"
+            >
+              <Select
+                id="posts-start"
+                options={BOOLEAN_FILTER_OPTIONS}
+                value={startFilter}
+                size="sm"
+                variant="ghost"
+                onChange={(value) =>
+                  updateSearchParams({ isStart: value, page: 1 })
+                }
               />
             </Field>
 
@@ -510,7 +587,9 @@ export function PostsPage() {
           <Stack className={s.state} gap="12px">
             <Alert
               title="Unable to load posts"
-              description={error instanceof Error ? error.message : 'Please try again.'}
+              description={
+                error instanceof Error ? error.message : 'Please try again.'
+              }
               tone="warning"
             />
             <Button variant="secondary" onClick={() => refetch()}>
@@ -575,7 +654,9 @@ export function PostsPage() {
                 <Pagination
                   page={page}
                   totalPages={totalPages}
-                  onChange={(nextPage) => updateSearchParams({ page: nextPage })}
+                  onChange={(nextPage) =>
+                    updateSearchParams({ page: nextPage })
+                  }
                 />
               ) : null}
             </div>
