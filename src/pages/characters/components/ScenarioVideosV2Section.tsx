@@ -18,7 +18,6 @@ import {
   Switch,
   Typography,
 } from '@/atoms';
-import { isX } from '@/common/is-x';
 import {
   FileDir,
   type IFile,
@@ -497,7 +496,7 @@ export function ScenarioVideosV2Section({
             />
           </Field>
 
-          {isX && <Switch
+          <Switch
             checked={createValues.forFeed}
             onChange={(event) =>
               setCreateValues((prev) => ({
@@ -507,7 +506,7 @@ export function ScenarioVideosV2Section({
             }
             label="Feed"
             disabled={createMutation.isPending}
-          />}
+          />
 
           <div className={s.storyDrawerActions}>
             <Button
@@ -580,11 +579,11 @@ export function ScenarioVideosV2Section({
                 <Typography variant="body">-</Typography>
               )}
             </Field>
-            {isX && <Field label="Feed">
+            <Field label="Feed">
               <Typography variant="body">
                 {detailsTarget.forFeed ? 'Yes' : 'No'}
               </Typography>
-            </Field>}
+            </Field>
             <Field label="Status">
               <Badge tone={detailsTarget.isActive ? 'success' : 'warning'}>
                 {detailsTarget.isActive ? 'Active' : 'Inactive'}
@@ -672,7 +671,7 @@ export function ScenarioVideosV2Section({
             />
           </Field>
 
-          {isX && <Switch
+          <Switch
             checked={editValues.forFeed}
             onChange={(event) =>
               setEditValues((prev) => ({
@@ -682,7 +681,7 @@ export function ScenarioVideosV2Section({
             }
             label="Feed"
             disabled={updateMutation.isPending}
-          />}
+          />
 
           <Switch
             checked={editValues.isActive}

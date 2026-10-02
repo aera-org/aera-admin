@@ -552,9 +552,7 @@ export function ScenarioSection({
         level: levelValue,
         description: editValues.description.trim(),
         isActive: showStatus ? editValues.isActive : selectedScenario.isActive,
-        isActiveWeb: isX
-          ? editValues.isActiveWeb
-          : selectedScenario.isActiveWeb,
+        isActiveWeb: editValues.isActiveWeb,
         shortDescription: editValues.shortDescription.trim() || undefined,
         isNew: showIsNew ? editValues.isNew : selectedScenario.isNew,
         isPromoted: showIsPromoted
