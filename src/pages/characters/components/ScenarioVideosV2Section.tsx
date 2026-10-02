@@ -359,7 +359,7 @@ export function ScenarioVideosV2Section({
                     <Badge tone={video.isActive ? 'success' : 'warning'}>
                       {video.isActive ? 'Active' : 'Inactive'}
                     </Badge>
-                    {video.forFeed && isX ? <Badge>Feed</Badge> : null}
+                    {video.forFeed ? <Badge>Feed</Badge> : null}
                   </div>
                   <div className={s.scenarioVideoHoverActions}>
                     <IconButton

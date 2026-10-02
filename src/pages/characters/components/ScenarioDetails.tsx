@@ -807,7 +807,6 @@ export function ScenarioDetails({
             loading={addScenarioActionsMutation.isPending}
             disabled={!characterId || addScenarioActionsMutation.isPending}
           />
-          {isX ? (
             <IconButton
               aria-label="Promo video"
               icon={<UploadIcon />}
@@ -818,7 +817,6 @@ export function ScenarioDetails({
               loading={updatePromoVideoMutation.isPending}
               disabled={!characterId || updatePromoVideoMutation.isPending}
             />
-          ) : null}
           {allowEdit ? (
             <IconButton
               aria-label="Edit scenario"
@@ -954,7 +952,6 @@ export function ScenarioDetails({
                 </div>
               </div>
             ) : null}
-            {isX ? (
               <div className={s.detailBlock}>
                 <Typography variant="caption" tone="muted">
                   Web status
@@ -965,7 +962,6 @@ export function ScenarioDetails({
                   </Badge>
                 </div>
               </div>
-            ) : null}
             {showIsNew ? (
               <div className={s.detailBlock}>
                 <Typography variant="caption" tone="muted">
@@ -1296,21 +1292,12 @@ export function ScenarioDetails({
         </div>
         {showVideos ? (
           <>
-            {/* {isX ? ( */}
               <ScenarioVideosV2Section
                 characterId={characterId}
                 scenarioId={scenario.id}
                 videos={scenario.videos ?? []}
                 formatDate={formatDate}
               />
-            {/* // ) : (
-            //   <ScenarioVideosSection
-            //     characterId={characterId}
-            //     scenarioId={scenario.id}
-            //     videos={scenario.videos ?? []}
-            //     formatDate={formatDate}
-            //   />
-            )} */}
           </>
         ) : null}
       </Stack>
