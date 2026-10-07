@@ -22,6 +22,11 @@ const AI_NAV_PATHS = new Set([
   '/broadcast',
 ]);
 
+const TARGET_NAV_PATHS = new Set([
+  '/',
+  '/posts',
+]);
+
 function matchesPrefix(pathname: string, prefix: string) {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
@@ -40,7 +45,7 @@ export function getHomePath(role: UserRole | undefined) {
 
 export function isNavItemVisible(role: UserRole | undefined, to: string) {
   if (role === UserRole.Target) {
-    return to === '/';
+    return TARGET_NAV_PATHS.has(to);
   }
 
   if (role === UserRole.AI) {
