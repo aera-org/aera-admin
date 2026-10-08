@@ -40,7 +40,6 @@ import {
   usePaymentsConversionBreakdown,
   usePaymentsRevenueBreakdown,
 } from '@/app/analytics';
-import { useAuth } from '@/app/auth';
 import { useCharacters } from '@/app/characters';
 import { notifyError, notifySuccess } from '@/app/toast';
 import { DownloadIcon } from '@/assets/icons';
@@ -64,8 +63,6 @@ import {
   Tooltip,
   Typography,
 } from '@/atoms';
-import { isX } from '@/common/is-x';
-import { UserRole } from '@/common/types';
 import { cn } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 
@@ -565,7 +562,6 @@ const COUNTRY_METRIC_OPTIONS: Array<{
 ];
 
 export function AnalyticsPage() {
-  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSection = searchParams.get('section');
   const rawStart = searchParams.get('start');
@@ -594,10 +590,8 @@ export function AnalyticsPage() {
   const [deeplinkExcludeInput, setDeeplinkExcludeInput] = useState(
     rawExclude ?? '',
   );
-  const isTargetUser = user?.role === UserRole.Target;
-  const section = isTargetUser && !isX
-    ? 'deeplinks'
-    : isValidSection(rawSection)
+  const section = 
+    isValidSection(rawSection)
       ? rawSection
       : 'overview';
   const isOverviewSection = section === 'overview';
@@ -1262,9 +1256,8 @@ export function AnalyticsPage() {
 
   const sectionOptions = useMemo(() => {
     const options = getSectionOptions();
-    if (!isTargetUser || isX) return options;
     return options.filter((option) => option.value === 'deeplinks');
-  }, [isTargetUser]);
+  }, []);
   const conversionMetric = useMemo(
     () => getMetricDefinition('conversionRate'),
     [],
@@ -3493,7 +3486,7 @@ export function AnalyticsPage() {
                   </Button>
                 );
               })}
-              {!isTargetUser || isX ? (
+              
                 <>
                   <Button
                     as={Link}
@@ -3520,7 +3513,7 @@ export function AnalyticsPage() {
                     Scenario Analytics
                   </Button>
                 </>
-              ) : null}
+              
             </ButtonGroup>
             <IconButton
               aria-label="Export CSV"
