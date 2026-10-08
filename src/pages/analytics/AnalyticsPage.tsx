@@ -40,6 +40,7 @@ import {
   usePaymentsConversionBreakdown,
   usePaymentsRevenueBreakdown,
 } from '@/app/analytics';
+import { useAuth } from '@/app/auth';
 import { useCharacters } from '@/app/characters';
 import { notifyError, notifySuccess } from '@/app/toast';
 import { DownloadIcon } from '@/assets/icons';
@@ -63,6 +64,7 @@ import {
   Tooltip,
   Typography,
 } from '@/atoms';
+import { isX } from '@/common/is-x';
 import { cn } from '@/common/utils';
 import { AppShell } from '@/components/templates';
 
@@ -562,6 +564,7 @@ const COUNTRY_METRIC_OPTIONS: Array<{
 ];
 
 export function AnalyticsPage() {
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSection = searchParams.get('section');
   const rawStart = searchParams.get('start');
@@ -1255,8 +1258,7 @@ export function AnalyticsPage() {
   }, [chartSeries]);
 
   const sectionOptions = useMemo(() => {
-    const options = getSectionOptions();
-    return options.filter((option) => option.value === 'deeplinks');
+    return getSectionOptions();
   }, []);
   const conversionMetric = useMemo(
     () => getMetricDefinition('conversionRate'),
