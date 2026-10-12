@@ -24,7 +24,7 @@ export interface ITgUser {
   updatedAt: string;
 }
 
-export interface IPayment {
+export interface IUserPayment {
   id: string;
   amount: number;
   scenario?: IScenario | null;
@@ -36,6 +36,6 @@ export interface IPayment {
 export interface ITgUserDetails extends ITgUser {
   activeChat?: IChat | null;
   chats: IChat[];
-  payments: IPayment[];
+  payments: IUserPayment[];
   gifts: IGift[];
 }

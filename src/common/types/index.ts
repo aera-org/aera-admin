@@ -15,6 +15,7 @@ export * from './img-generation.type';
 export * from './in-app-purchase.entity';
 export * from './logs.type';
 export * from './lora.type';
+export * from './payment.type';
 export * from './plan.type';
 export * from './pose-prompt.type';
 export * from './post.type';

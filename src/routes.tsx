@@ -47,6 +47,7 @@ import {
   GiftsPage,
   LogsPage,
   LorasPage,
+  PaymentsPage,
   PlansPage,
   PoseCreatePage,
   PosesPage,
@@ -151,6 +152,7 @@ export function AppRoutes() {
           />
           <Route path="/custom-characters" element={<CustomCharactersPage />} />
           <Route path="/air-purchases" element={<AirPurchasesPage />} />
+          <Route path="/payments" element={<PaymentsPage />} />
           <Route path="/character-images" element={<CharacterImagesPage />} />
           <Route
             path="/character-images/vector-search"

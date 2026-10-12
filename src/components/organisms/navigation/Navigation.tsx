@@ -56,6 +56,7 @@ const navItems: NavItem[] = [
   { label: 'Activations', to: '/activations', icon: <ChartIcon /> },
   { label: 'Conversions', to: '/conversions', icon: <ChartIcon /> },
   { label: 'Air Purchases', to: '/air-purchases', icon: <DollarSignIcon /> },
+  { label: 'Payments', to: '/payments', icon: <DollarSignIcon /> },
   { label: 'Chats', to: '/chats', icon: <SendIcon /> },
   { label: 'LoRAs', to: '/loras', icon: <LayersIcon /> },
   { label: 'Plans', to: '/plans', icon: <DollarSignIcon /> },

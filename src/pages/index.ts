@@ -40,6 +40,7 @@ export { GiftDetailsPage } from './gifts/GiftDetailsPage';
 export { GiftsPage } from './gifts/GiftsPage';
 export { LogsPage } from './logs/LogsPage';
 export { LorasPage } from './loras/LorasPage';
+export { PaymentsPage } from './payments/PaymentsPage';
 export { PlansPage } from './plans/PlansPage';
 export { PoseCreatePage } from './poses/PoseCreatePage';
 export { PosesPage } from './poses/PosesPage';
