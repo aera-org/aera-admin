@@ -25,6 +25,7 @@ const AI_NAV_PATHS = new Set([
 const TARGET_NAV_PATHS = new Set([
   '/',
   '/posts',
+  '/payments'
 ]);
 
 function matchesPrefix(pathname: string, prefix: string) {
