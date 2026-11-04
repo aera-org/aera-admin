@@ -1,6 +1,17 @@
-import { MagnifyingGlassIcon, Pencil1Icon, TrashIcon } from '@radix-ui/react-icons';
+import {
+  MagnifyingGlassIcon,
+  Pencil1Icon,
+  TrashIcon,
+} from '@radix-ui/react-icons';
 import { useQueryClient } from '@tanstack/react-query';
-import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type ChangeEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import {
@@ -31,9 +42,16 @@ import {
   Stack,
   Switch,
   Table,
+  Textarea,
   Typography,
 } from '@/atoms';
-import { type IPlan, type PlanItem, PlanPeriod, PlanType } from '@/common/types';
+import {
+  type IPlan,
+  type PlanBundle,
+  type PlanItem,
+  PlanPeriod,
+  PlanType,
+} from '@/common/types';
 import { capitalize } from '@/common/utils';
 import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
 import { AppShell } from '@/components/templates';
@@ -68,6 +86,7 @@ type CreatePlanValues = {
   isActive: boolean;
   isRecommended: boolean;
   items: PlanItemDraft[];
+  gifts: string;
 };
 
 type EditPlanValues = {
@@ -75,6 +94,7 @@ type EditPlanValues = {
   isActive: boolean;
   isRecommended: boolean;
   items: PlanItemDraft[];
+  gifts: string;
 };
 
 const ORDER_OPTIONS = [
@@ -88,6 +108,8 @@ const DEFAULT_ORDER = 'ASC';
 const DEFAULT_PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 400;
 const CODE_PATTERN = /^[a-z0-9-]+$/;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const PERIOD_OPTIONS = [
   { label: 'Day', value: PlanPeriod.Day },
@@ -98,7 +120,14 @@ const PERIOD_OPTIONS = [
 const PLAN_TYPE_OPTIONS = [
   { label: 'Subscription', value: PlanType.Subscription },
   { label: 'Air', value: PlanType.Air },
+  { label: 'Bundle', value: PlanType.Bundle },
 ];
+
+const ONE_TIME_PLAN_TYPES = new Set<PlanType>([PlanType.Air, PlanType.Bundle]);
+
+function isOneTimePlanType(type: PlanType | undefined) {
+  return Boolean(type && ONE_TIME_PLAN_TYPES.has(type));
+}
 
 function getInitialCreateValues(): CreatePlanValues {
   return {
@@ -111,6 +140,7 @@ function getInitialCreateValues(): CreatePlanValues {
     isActive: true,
     isRecommended: false,
     items: [],
+    gifts: '',
   };
 }
 
@@ -181,11 +211,40 @@ function normalizePlanItems(items: PlanItemDraft[]) {
   return { completeItems, hasIncomplete };
 }
 
+function parseGiftIds(value: string) {
+  const ids = value
+    .split(/[\s,;]+/)
+    .map((id) => id.trim())
+    .filter(Boolean);
+  const unique = Array.from(new Set(ids));
+  const invalid = unique.filter((id) => !UUID_PATTERN.test(id));
+  return { ids: unique, invalid };
+}
+
+function getGiftsError(value: string) {
+  const { ids, invalid } = parseGiftIds(value);
+  if (ids.length === 0) return 'Enter at least one gift id.';
+  if (invalid.length > 0) {
+    return `Invalid gift ids: ${invalid.join(', ')}.`;
+  }
+  return undefined;
+}
+
+function toGiftsDraft(bundle: IPlan['bundle']) {
+  return (bundle?.gifts ?? []).join('\n');
+}
+
 function toPlanItemDrafts(items: IPlan['items']) {
   return (items ?? []).map((item) => ({
     emoji: item.emoji ?? '',
     value: item.value ?? '',
   }));
+}
+
+function formatPlanGiftsCount(bundle: IPlan['bundle']) {
+  const count = bundle?.gifts?.length ?? 0;
+  if (count === 0) return '-';
+  return `${count} ${count === 1 ? 'gift' : 'gifts'}`;
 }
 
 function formatPlanItemsCount(items: IPlan['items']) {
@@ -299,18 +358,28 @@ export function PlansPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<IPlan | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IPlan | null>(null);
-  const [createValues, setCreateValues] =
-    useState<CreatePlanValues>(getInitialCreateValues);
+  const [createValues, setCreateValues] = useState<CreatePlanValues>(
+    getInitialCreateValues,
+  );
   const [editValues, setEditValues] = useState<EditPlanValues>({
     price: '',
     isActive: false,
     isRecommended: false,
     items: [],
+    gifts: '',
   });
   const [createShowErrors, setCreateShowErrors] = useState(false);
   const [editShowErrors, setEditShowErrors] = useState(false);
-  const isAirPlan = createValues.type === PlanType.Air;
-  const isEditAirPlan = editTarget?.type === PlanType.Air;
+  const isAirPlan = isOneTimePlanType(createValues.type);
+  const isBundlePlan = createValues.type === PlanType.Bundle;
+  const isEditAirPlan = isOneTimePlanType(editTarget?.type);
+  const isEditBundlePlan = editTarget?.type === PlanType.Bundle;
+  const createGiftsError = isBundlePlan
+    ? getGiftsError(createValues.gifts)
+    : undefined;
+  const editGiftsError = isEditBundlePlan
+    ? getGiftsError(editValues.gifts)
+    : undefined;
   const createItemsHasIncomplete = useMemo(
     () =>
       isAirPlan ? false : normalizePlanItems(createValues.items).hasIncomplete,
@@ -324,7 +393,8 @@ export function PlansPage() {
         return {
           emoji:
             createShowErrors && !emoji && value ? 'Enter an emoji.' : undefined,
-          value: createShowErrors && emoji && !value ? 'Enter text.' : undefined,
+          value:
+            createShowErrors && emoji && !value ? 'Enter text.' : undefined,
         };
       }),
     [createShowErrors, createValues.items],
@@ -342,7 +412,8 @@ export function PlansPage() {
         const emoji = item.emoji.trim();
         const value = item.value.trim();
         return {
-          emoji: editShowErrors && !emoji && value ? 'Enter an emoji.' : undefined,
+          emoji:
+            editShowErrors && !emoji && value ? 'Enter an emoji.' : undefined,
           value: editShowErrors && emoji && !value ? 'Enter text.' : undefined,
         };
       }),
@@ -357,6 +428,7 @@ export function PlansPage() {
       price?: string;
       air?: string;
       items?: string;
+      gifts?: string;
     } = {};
     const code = createValues.code.trim();
     if (!code) {
@@ -376,6 +448,9 @@ export function PlansPage() {
     if (createItemsHasIncomplete) {
       errors.items = 'Complete or remove partially filled plan items.';
     }
+    if (createGiftsError) {
+      errors.gifts = createGiftsError;
+    }
     return errors;
   }, [
     createShowErrors,
@@ -385,6 +460,7 @@ export function PlansPage() {
     createValues.air,
     isAirPlan,
     createItemsHasIncomplete,
+    createGiftsError,
   ]);
 
   const createIsValid = useMemo(() => {
@@ -395,7 +471,8 @@ export function PlansPage() {
       (isAirPlan || parsePositiveInteger(createValues.periodCount)) &&
       parsePositiveInteger(createValues.price) &&
       parsePositiveInteger(createValues.air) &&
-      !createItemsHasIncomplete,
+      !createItemsHasIncomplete &&
+      !createGiftsError,
     );
   }, [
     createValues.air,
@@ -404,6 +481,7 @@ export function PlansPage() {
     createValues.price,
     isAirPlan,
     createItemsHasIncomplete,
+    createGiftsError,
   ]);
   const editErrors = useMemo(() => {
     if (!editShowErrors || !editTarget) return {};
@@ -415,6 +493,7 @@ export function PlansPage() {
         isEditAirPlan || !editItemsHasIncomplete
           ? undefined
           : 'Complete or remove partially filled plan items.',
+      gifts: editGiftsError,
     };
   }, [
     editShowErrors,
@@ -422,16 +501,18 @@ export function PlansPage() {
     editValues.price,
     isEditAirPlan,
     editItemsHasIncomplete,
+    editGiftsError,
   ]);
 
   const editIsValid = useMemo(
     () =>
       Boolean(
         editTarget &&
-          parsePositiveInteger(editValues.price) &&
-          !editItemsHasIncomplete,
+        parsePositiveInteger(editValues.price) &&
+        !editItemsHasIncomplete &&
+        !editGiftsError,
       ),
-    [editTarget, editValues.price, editItemsHasIncomplete],
+    [editTarget, editValues.price, editItemsHasIncomplete, editGiftsError],
   );
 
   const openCreateModal = () => {
@@ -452,6 +533,7 @@ export function PlansPage() {
       isActive: plan.isActive,
       isRecommended: plan.isRecommended,
       items: toPlanItemDrafts(plan.items),
+      gifts: toGiftsDraft(plan.bundle),
     });
     setEditShowErrors(false);
   }, []);
@@ -539,11 +621,22 @@ export function PlansPage() {
       items: hasIncomplete
         ? 'Complete or remove partially filled plan items.'
         : undefined,
+      gifts: createGiftsError,
     };
-    if (errors.code || errors.periodCount || errors.price || errors.air || errors.items) {
+    if (
+      errors.code ||
+      errors.periodCount ||
+      errors.price ||
+      errors.air ||
+      errors.items ||
+      errors.gifts
+    ) {
       setCreateShowErrors(true);
       return;
     }
+    const bundle: PlanBundle | undefined = isBundlePlan
+      ? { gifts: parseGiftIds(createValues.gifts).ids }
+      : undefined;
     await createMutation.mutateAsync({
       code,
       ...(isAirPlan
@@ -558,6 +651,7 @@ export function PlansPage() {
       isActive: createValues.isActive,
       isRecommended: createValues.isRecommended,
       ...(completeItems.length > 0 ? { items: completeItems } : {}),
+      ...(bundle ? { bundle } : {}),
     });
     setIsCreateOpen(false);
   };
@@ -568,7 +662,7 @@ export function PlansPage() {
     const { completeItems, hasIncomplete } = isEditAirPlan
       ? { completeItems: [] as PlanItem[], hasIncomplete: false }
       : normalizePlanItems(editValues.items);
-    if (!price || hasIncomplete) {
+    if (!price || hasIncomplete || editGiftsError) {
       setEditShowErrors(true);
       return;
     }
@@ -580,6 +674,9 @@ export function PlansPage() {
         isActive: editValues.isActive,
         isRecommended: editValues.isRecommended,
         ...(isEditAirPlan ? {} : { items: completeItems }),
+        ...(isEditBundlePlan
+          ? { bundle: { gifts: parseGiftIds(editValues.gifts).ids } }
+          : {}),
       },
       successTitle: 'Plan updated.',
       successDescription: 'Plan updated.',
@@ -636,7 +733,9 @@ export function PlansPage() {
     importInputRef.current?.click();
   };
 
-  const handleImportFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleImportFileChange = async (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0] ?? null;
     event.target.value = '';
     if (!file) return;
@@ -660,10 +759,11 @@ export function PlansPage() {
       }
 
       for (const plan of imported.plans) {
+        const isOneTime = isOneTimePlanType(plan.type);
         await createPlanApi({
           code: normalizePlanCode(plan.code),
           type: plan.type,
-          ...(plan.type === PlanType.Air
+          ...(isOneTime
             ? {}
             : {
                 period: plan.period!,
@@ -673,11 +773,14 @@ export function PlansPage() {
           air: plan.air,
           isActive: plan.isActive,
           isRecommended: plan.isRecommended,
-          ...(plan.type === PlanType.Air
+          ...(isOneTime
             ? {}
             : plan.items && plan.items.length > 0
               ? { items: plan.items }
               : {}),
+          ...(plan.type === PlanType.Bundle && plan.bundle
+            ? { bundle: plan.bundle }
+            : {}),
         });
       }
 
@@ -736,7 +839,9 @@ export function PlansPage() {
           ),
           items: (
             <Typography variant="body" tone="muted">
-              {formatPlanItemsCount(plan.items)}
+              {plan.type === PlanType.Bundle
+                ? formatPlanGiftsCount(plan.bundle)
+                : formatPlanItemsCount(plan.items)}
             </Typography>
           ),
           air: (
@@ -1007,10 +1112,11 @@ export function PlansPage() {
                 createMutation.isPending ||
                 Boolean(
                   createErrors.code ||
-                    createErrors.periodCount ||
-                    createErrors.price ||
-                    createErrors.air ||
-                    createErrors.items,
+                  createErrors.periodCount ||
+                  createErrors.price ||
+                  createErrors.air ||
+                  createErrors.items ||
+                  createErrors.gifts,
                 )
               }
             >
@@ -1053,11 +1159,11 @@ export function PlansPage() {
                     return {
                       ...prev,
                       type: nextType,
-                      periodCount:
-                        nextType === PlanType.Air
-                          ? ''
-                          : prev.periodCount || '1',
-                      items: nextType === PlanType.Air ? [] : prev.items,
+                      periodCount: isOneTimePlanType(nextType)
+                        ? ''
+                        : prev.periodCount || '1',
+                      items: isOneTimePlanType(nextType) ? [] : prev.items,
+                      gifts: nextType === PlanType.Bundle ? prev.gifts : '',
                     };
                   })
                 }
@@ -1242,6 +1348,30 @@ export function PlansPage() {
             </div>
           ) : null}
 
+          {isBundlePlan ? (
+            <Field
+              label="Gift ids"
+              labelFor="plan-create-gifts"
+              hint="One id per line or comma-separated"
+              error={createErrors.gifts}
+            >
+              <Textarea
+                id="plan-create-gifts"
+                size="sm"
+                rows={4}
+                value={createValues.gifts}
+                onChange={(event) =>
+                  setCreateValues((prev) => ({
+                    ...prev,
+                    gifts: event.target.value,
+                  }))
+                }
+                invalid={Boolean(createErrors.gifts)}
+                fullWidth
+              />
+            </Field>
+          ) : null}
+
           <FormRow columns={2}>
             <Field label="Recommended" labelFor="plan-create-recommended">
               <Switch
@@ -1295,7 +1425,8 @@ export function PlansPage() {
                 !editIsValid ||
                 updateStatusMutation.isPending ||
                 Boolean(editErrors.price) ||
-                Boolean(editErrors.items)
+                Boolean(editErrors.items) ||
+                Boolean(editErrors.gifts)
               }
             >
               Update
@@ -1334,7 +1465,9 @@ export function PlansPage() {
                     isRecommended: event.target.checked,
                   }))
                 }
-                label={editValues.isRecommended ? 'Recommended' : 'Not recommended'}
+                label={
+                  editValues.isRecommended ? 'Recommended' : 'Not recommended'
+                }
               />
             </Field>
             <Field label="Status" labelFor="plan-edit-status">
@@ -1381,7 +1514,11 @@ export function PlansPage() {
                           placeholder=":sparkles:"
                           value={item.emoji}
                           onChange={(event) =>
-                            handleChangeEditItem(index, 'emoji', event.target.value)
+                            handleChangeEditItem(
+                              index,
+                              'emoji',
+                              event.target.value,
+                            )
                           }
                           fullWidth
                         />
@@ -1397,7 +1534,11 @@ export function PlansPage() {
                           placeholder="Unlimited chats"
                           value={item.value}
                           onChange={(event) =>
-                            handleChangeEditItem(index, 'value', event.target.value)
+                            handleChangeEditItem(
+                              index,
+                              'value',
+                              event.target.value,
+                            )
                           }
                           fullWidth
                         />
@@ -1432,8 +1573,34 @@ export function PlansPage() {
                 </Typography>
               ) : null}
             </div>
+          ) : isEditBundlePlan ? (
+            <Field
+              label="Gift ids"
+              labelFor="plan-edit-gifts"
+              hint="One id per line or comma-separated"
+              error={editErrors.gifts}
+            >
+              <Textarea
+                id="plan-edit-gifts"
+                size="sm"
+                rows={4}
+                value={editValues.gifts}
+                onChange={(event) =>
+                  setEditValues((prev) => ({
+                    ...prev,
+                    gifts: event.target.value,
+                  }))
+                }
+                invalid={Boolean(editErrors.gifts)}
+                fullWidth
+              />
+            </Field>
           ) : (
-            <Typography variant="caption" tone="muted" className={s.itemsEmptyHint}>
+            <Typography
+              variant="caption"
+              tone="muted"
+              className={s.itemsEmptyHint}
+            >
               Items are available for subscription plans only.
             </Typography>
           )}

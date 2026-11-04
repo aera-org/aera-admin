@@ -9,6 +9,10 @@ export interface PlanItem {
   value: string;
 }
 
+export interface PlanBundle {
+  gifts: string[];
+}
+
 export type PlanCreateDto = {
   code: string;
   period?: PlanPeriod;
@@ -19,6 +23,7 @@ export type PlanCreateDto = {
   isRecommended: boolean;
   type: PlanType;
   items?: PlanItem[];
+  bundle?: PlanBundle;
 };
 
 export type PlanUpdateDto = {
@@ -26,11 +31,13 @@ export type PlanUpdateDto = {
   isRecommended: boolean;
   price: number;
   items?: PlanItem[];
+  bundle?: PlanBundle;
 };
 
 export enum PlanType {
   Subscription = 'subscription',
   Air = 'air',
+  Bundle = 'bundle',
 }
 
 export interface IPlan {
@@ -46,4 +53,5 @@ export interface IPlan {
   updatedAt: string;
   type: PlanType;
   items?: PlanItem[];
+  bundle?: PlanBundle | null;
 }

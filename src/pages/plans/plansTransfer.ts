@@ -1,5 +1,6 @@
 import {
   type IPlan,
+  type PlanBundle,
   type PlanItem,
   PlanPeriod,
   PlanType,
@@ -20,6 +21,7 @@ export type PlanTransferItem = {
   isActive: boolean;
   isRecommended: boolean;
   items?: PlanItem[];
+  bundle?: PlanBundle;
 };
 
 export type PlansTransferPayload = {
@@ -108,6 +110,18 @@ function parsePlanItems(value: unknown, path: string): PlanItem[] | undefined {
   });
 }
 
+function parsePlanBundle(value: unknown, path: string): PlanBundle | undefined {
+  if (value === undefined || value === null) return undefined;
+  const obj = ensureRecord(value, path);
+  if (!Array.isArray(obj.gifts)) {
+    throw new Error(`Invalid import file: "${path}.gifts" must be an array.`);
+  }
+  const gifts = obj.gifts.map((gift, index) =>
+    ensureNonEmptyString(gift, `${path}.gifts[${index}]`),
+  );
+  return { gifts: Array.from(new Set(gifts)) };
+}
+
 function validateTransferPlan(plan: PlanTransferItem, path: string) {
   if (!PLAN_CODE_PATTERN.test(plan.code)) {
     throw new Error(
@@ -125,6 +139,11 @@ function validateTransferPlan(plan: PlanTransferItem, path: string) {
         `Invalid import file: "${path}.periodCount" is required for subscription plans.`,
       );
     }
+  }
+  if (plan.type === PlanType.Bundle && !plan.bundle?.gifts.length) {
+    throw new Error(
+      `Invalid import file: "${path}.bundle.gifts" must contain at least one gift id for bundle plans.`,
+    );
   }
 }
 
@@ -155,6 +174,7 @@ function parseTransferPlan(value: unknown, path: string): PlanTransferItem {
     isActive: ensureBoolean(obj.isActive, `${path}.isActive`),
     isRecommended: ensureBoolean(obj.isRecommended, `${path}.isRecommended`),
     items: parsePlanItems(obj.items, `${path}.items`),
+    bundle: parsePlanBundle(obj.bundle, `${path}.bundle`),
   };
 
   validateTransferPlan(parsed, path);
@@ -169,6 +189,14 @@ function sanitizeItems(items: IPlan['items']) {
     }))
     .filter((item) => item.emoji && item.value);
   return next.length > 0 ? next : undefined;
+}
+
+function sanitizeBundle(plan: IPlan): PlanBundle | undefined {
+  if (plan.type !== PlanType.Bundle) return undefined;
+  const gifts = (plan.bundle?.gifts ?? [])
+    .map((gift) => gift?.trim() ?? '')
+    .filter(Boolean);
+  return { gifts: Array.from(new Set(gifts)) };
 }
 
 function ensureUniquePlanCodes(plans: PlanTransferItem[], path: string) {
@@ -205,6 +233,7 @@ export function buildPlansTransferPayload(plans: IPlan[]) {
       isActive: Boolean(plan.isActive),
       isRecommended: Boolean(plan.isRecommended),
       items: sanitizeItems(plan.items),
+      bundle: sanitizeBundle(plan),
     };
     validateTransferPlan(mappedPlan, `plans[${index}]`);
     return mappedPlan;
