@@ -14,6 +14,7 @@ import {
 } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import { useGifts } from '@/app/gifts';
 import {
   createPlan as createPlanApi,
   getPlans,
@@ -42,7 +43,7 @@ import {
   Stack,
   Switch,
   Table,
-  Textarea,
+  Tag,
   Typography,
 } from '@/atoms';
 import {
@@ -55,6 +56,7 @@ import {
 import { capitalize } from '@/common/utils';
 import { ConfirmModal } from '@/components/molecules/confirm-modal/ConfirmModal';
 import { AppShell } from '@/components/templates';
+import { SearchSelect, type SearchSelectOption } from '@/molecules';
 
 import s from './PlansPage.module.scss';
 import {
@@ -86,7 +88,7 @@ type CreatePlanValues = {
   isActive: boolean;
   isRecommended: boolean;
   items: PlanItemDraft[];
-  gifts: string;
+  gifts: string[];
 };
 
 type EditPlanValues = {
@@ -94,7 +96,7 @@ type EditPlanValues = {
   isActive: boolean;
   isRecommended: boolean;
   items: PlanItemDraft[];
-  gifts: string;
+  gifts: string[];
 };
 
 const ORDER_OPTIONS = [
@@ -108,8 +110,7 @@ const DEFAULT_ORDER = 'ASC';
 const DEFAULT_PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 400;
 const CODE_PATTERN = /^[a-z0-9-]+$/;
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const GIFTS_ERROR = 'Select at least one gift.';
 
 const PERIOD_OPTIONS = [
   { label: 'Day', value: PlanPeriod.Day },
@@ -123,12 +124,6 @@ const PLAN_TYPE_OPTIONS = [
   { label: 'Bundle', value: PlanType.Bundle },
 ];
 
-const ONE_TIME_PLAN_TYPES = new Set<PlanType>([PlanType.Air, PlanType.Bundle]);
-
-function isOneTimePlanType(type: PlanType | undefined) {
-  return Boolean(type && ONE_TIME_PLAN_TYPES.has(type));
-}
-
 function getInitialCreateValues(): CreatePlanValues {
   return {
     code: '',
@@ -140,7 +135,7 @@ function getInitialCreateValues(): CreatePlanValues {
     isActive: true,
     isRecommended: false,
     items: [],
-    gifts: '',
+    gifts: [],
   };
 }
 
@@ -211,27 +206,78 @@ function normalizePlanItems(items: PlanItemDraft[]) {
   return { completeItems, hasIncomplete };
 }
 
-function parseGiftIds(value: string) {
-  const ids = value
-    .split(/[\s,;]+/)
-    .map((id) => id.trim())
-    .filter(Boolean);
-  const unique = Array.from(new Set(ids));
-  const invalid = unique.filter((id) => !UUID_PATTERN.test(id));
-  return { ids: unique, invalid };
-}
-
-function getGiftsError(value: string) {
-  const { ids, invalid } = parseGiftIds(value);
-  if (ids.length === 0) return 'Enter at least one gift id.';
-  if (invalid.length > 0) {
-    return `Invalid gift ids: ${invalid.join(', ')}.`;
-  }
-  return undefined;
-}
-
 function toGiftsDraft(bundle: IPlan['bundle']) {
-  return (bundle?.gifts ?? []).join('\n');
+  return Array.from(new Set(bundle?.gifts ?? []));
+}
+
+type GiftsPickerProps = {
+  id: string;
+  value: string[];
+  onChange: (next: string[]) => void;
+  error?: string;
+  disabled?: boolean;
+  options: SearchSelectOption[];
+  search: string;
+  onSearchChange: (value: string) => void;
+  loading: boolean;
+  giftNames: Map<string, string>;
+};
+
+function GiftsPicker({
+  id,
+  value,
+  onChange,
+  error,
+  disabled,
+  options,
+  search,
+  onSearchChange,
+  loading,
+  giftNames,
+}: GiftsPickerProps) {
+  const availableOptions = useMemo(
+    () => options.filter((option) => !value.includes(option.id)),
+    [options, value],
+  );
+
+  return (
+    <Field label="Gifts" labelFor={id} error={error}>
+      <Stack gap="8px">
+        <SearchSelect
+          id={id}
+          value=""
+          options={availableOptions}
+          search={search}
+          onSearchChange={onSearchChange}
+          onSelect={(giftId) => {
+            if (!giftId || value.includes(giftId)) return;
+            onChange([...value, giftId]);
+          }}
+          placeholder={loading ? 'Loading gifts...' : 'Add gift'}
+          loading={loading}
+          disabled={disabled}
+          invalid={Boolean(error)}
+          emptyLabel="No gifts found."
+        />
+        {value.length > 0 ? (
+          <div className={s.tagList}>
+            {value.map((giftId) => (
+              <Tag
+                key={giftId}
+                onRemove={
+                  disabled
+                    ? undefined
+                    : () => onChange(value.filter((item) => item !== giftId))
+                }
+              >
+                {giftNames.get(giftId) ?? giftId}
+              </Tag>
+            ))}
+          </div>
+        ) : null}
+      </Stack>
+    </Field>
+  );
 }
 
 function toPlanItemDrafts(items: IPlan['items']) {
@@ -366,20 +412,52 @@ export function PlansPage() {
     isActive: false,
     isRecommended: false,
     items: [],
-    gifts: '',
+    gifts: [],
   });
   const [createShowErrors, setCreateShowErrors] = useState(false);
   const [editShowErrors, setEditShowErrors] = useState(false);
-  const isAirPlan = isOneTimePlanType(createValues.type);
+  const isAirPlan = createValues.type === PlanType.Air;
   const isBundlePlan = createValues.type === PlanType.Bundle;
-  const isEditAirPlan = isOneTimePlanType(editTarget?.type);
+  const isEditAirPlan = editTarget?.type === PlanType.Air;
   const isEditBundlePlan = editTarget?.type === PlanType.Bundle;
-  const createGiftsError = isBundlePlan
-    ? getGiftsError(createValues.gifts)
-    : undefined;
-  const editGiftsError = isEditBundlePlan
-    ? getGiftsError(editValues.gifts)
-    : undefined;
+  const createGiftsError =
+    isBundlePlan && createValues.gifts.length === 0 ? GIFTS_ERROR : undefined;
+  const editGiftsError =
+    isEditBundlePlan && editValues.gifts.length === 0 ? GIFTS_ERROR : undefined;
+
+  const [giftSearch, setGiftSearch] = useState('');
+  const debouncedGiftSearch = useDebouncedValue(giftSearch, SEARCH_DEBOUNCE_MS);
+  const giftQueryParams = useMemo(
+    () => ({
+      search: debouncedGiftSearch.trim() || undefined,
+      order: 'ASC',
+      skip: 0,
+      take: 20,
+    }),
+    [debouncedGiftSearch],
+  );
+  const { data: giftsData, isLoading: isGiftsLoading } =
+    useGifts(giftQueryParams);
+  const giftOptions = useMemo<SearchSelectOption[]>(
+    () =>
+      (giftsData?.data ?? []).map((gift) => ({
+        id: gift.id,
+        label: gift.name,
+        meta: gift.id,
+      })),
+    [giftsData?.data],
+  );
+  const [giftNames, setGiftNames] = useState<Map<string, string>>(
+    () => new Map(),
+  );
+  useEffect(() => {
+    if (giftOptions.length === 0) return;
+    setGiftNames((prev) => {
+      const next = new Map(prev);
+      for (const option of giftOptions) next.set(option.id, option.label);
+      return next;
+    });
+  }, [giftOptions]);
   const createItemsHasIncomplete = useMemo(
     () =>
       isAirPlan ? false : normalizePlanItems(createValues.items).hasIncomplete,
@@ -635,7 +713,7 @@ export function PlansPage() {
       return;
     }
     const bundle: PlanBundle | undefined = isBundlePlan
-      ? { gifts: parseGiftIds(createValues.gifts).ids }
+      ? { gifts: createValues.gifts }
       : undefined;
     await createMutation.mutateAsync({
       code,
@@ -674,9 +752,7 @@ export function PlansPage() {
         isActive: editValues.isActive,
         isRecommended: editValues.isRecommended,
         ...(isEditAirPlan ? {} : { items: completeItems }),
-        ...(isEditBundlePlan
-          ? { bundle: { gifts: parseGiftIds(editValues.gifts).ids } }
-          : {}),
+        ...(isEditBundlePlan ? { bundle: { gifts: editValues.gifts } } : {}),
       },
       successTitle: 'Plan updated.',
       successDescription: 'Plan updated.',
@@ -759,11 +835,10 @@ export function PlansPage() {
       }
 
       for (const plan of imported.plans) {
-        const isOneTime = isOneTimePlanType(plan.type);
         await createPlanApi({
           code: normalizePlanCode(plan.code),
           type: plan.type,
-          ...(isOneTime
+          ...(plan.type === PlanType.Air
             ? {}
             : {
                 period: plan.period!,
@@ -773,7 +848,7 @@ export function PlansPage() {
           air: plan.air,
           isActive: plan.isActive,
           isRecommended: plan.isRecommended,
-          ...(isOneTime
+          ...(plan.type === PlanType.Air
             ? {}
             : plan.items && plan.items.length > 0
               ? { items: plan.items }
@@ -1159,11 +1234,12 @@ export function PlansPage() {
                     return {
                       ...prev,
                       type: nextType,
-                      periodCount: isOneTimePlanType(nextType)
-                        ? ''
-                        : prev.periodCount || '1',
-                      items: isOneTimePlanType(nextType) ? [] : prev.items,
-                      gifts: nextType === PlanType.Bundle ? prev.gifts : '',
+                      periodCount:
+                        nextType === PlanType.Air
+                          ? ''
+                          : prev.periodCount || '1',
+                      items: nextType === PlanType.Air ? [] : prev.items,
+                      gifts: nextType === PlanType.Bundle ? prev.gifts : [],
                     };
                   })
                 }
@@ -1349,27 +1425,20 @@ export function PlansPage() {
           ) : null}
 
           {isBundlePlan ? (
-            <Field
-              label="Gift ids"
-              labelFor="plan-create-gifts"
-              hint="One id per line or comma-separated"
+            <GiftsPicker
+              id="plan-create-gifts"
+              value={createValues.gifts}
+              onChange={(gifts) =>
+                setCreateValues((prev) => ({ ...prev, gifts }))
+              }
               error={createErrors.gifts}
-            >
-              <Textarea
-                id="plan-create-gifts"
-                size="sm"
-                rows={4}
-                value={createValues.gifts}
-                onChange={(event) =>
-                  setCreateValues((prev) => ({
-                    ...prev,
-                    gifts: event.target.value,
-                  }))
-                }
-                invalid={Boolean(createErrors.gifts)}
-                fullWidth
-              />
-            </Field>
+              disabled={createMutation.isPending}
+              options={giftOptions}
+              search={giftSearch}
+              onSearchChange={setGiftSearch}
+              loading={isGiftsLoading}
+              giftNames={giftNames}
+            />
           ) : null}
 
           <FormRow columns={2}>
@@ -1573,28 +1642,6 @@ export function PlansPage() {
                 </Typography>
               ) : null}
             </div>
-          ) : isEditBundlePlan ? (
-            <Field
-              label="Gift ids"
-              labelFor="plan-edit-gifts"
-              hint="One id per line or comma-separated"
-              error={editErrors.gifts}
-            >
-              <Textarea
-                id="plan-edit-gifts"
-                size="sm"
-                rows={4}
-                value={editValues.gifts}
-                onChange={(event) =>
-                  setEditValues((prev) => ({
-                    ...prev,
-                    gifts: event.target.value,
-                  }))
-                }
-                invalid={Boolean(editErrors.gifts)}
-                fullWidth
-              />
-            </Field>
           ) : (
             <Typography
               variant="caption"
@@ -1604,6 +1651,23 @@ export function PlansPage() {
               Items are available for subscription plans only.
             </Typography>
           )}
+
+          {isEditBundlePlan ? (
+            <GiftsPicker
+              id="plan-edit-gifts"
+              value={editValues.gifts}
+              onChange={(gifts) =>
+                setEditValues((prev) => ({ ...prev, gifts }))
+              }
+              error={editErrors.gifts}
+              disabled={updateStatusMutation.isPending}
+              options={giftOptions}
+              search={giftSearch}
+              onSearchChange={setGiftSearch}
+              loading={isGiftsLoading}
+              giftNames={giftNames}
+            />
+          ) : null}
         </Stack>
       </Modal>
 
