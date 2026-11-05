@@ -35,7 +35,6 @@ import {
   Textarea,
   Typography,
 } from '@/atoms';
-import { isX } from '@/common/is-x';
 import {
   type CreateCustomScenarioDto,
   FileDir,
@@ -546,7 +545,7 @@ export function ScenarioSection({
       scenarioId: selectedScenario.id,
       payload: {
         name: editValues.name.trim(),
-        nameWeb: isX ? editValues.nameWeb.trim() : selectedScenario.nameWeb,
+        nameWeb: editValues.nameWeb.trim(),
         emoji: editValues.emoji.trim(),
         slug: editValues.slug.trim() || undefined,
         level: levelValue,
@@ -1574,7 +1573,6 @@ export function ScenarioSection({
             </Field>
           </FormRow>
 
-          {isX ? (
             <FormRow columns={2}>
               <Field label="Web name" labelFor="scenario-edit-name-web">
                 <Input
@@ -1604,7 +1602,6 @@ export function ScenarioSection({
                 />
               </Field>
             </FormRow>
-          ) : null}
 
           <FormRow columns={2}>
             <Field label="Slug" labelFor="scenario-edit-slug">

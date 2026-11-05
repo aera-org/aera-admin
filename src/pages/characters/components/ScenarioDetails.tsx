@@ -849,14 +849,12 @@ export function ScenarioDetails({
           </Typography>
           <Typography variant="body">{scenario.slug || '-'}</Typography>
         </div>
-        {isX ? (
           <div className={s.detailBlock}>
             <Typography variant="caption" tone="muted">
               Web name
             </Typography>
             <Typography variant="body">{scenario.nameWeb || '-'}</Typography>
           </div>
-        ) : null}
         <div className={s.detailBlock}>
           <Typography variant="caption" tone="muted">
             Level
