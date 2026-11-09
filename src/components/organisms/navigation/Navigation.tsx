@@ -20,6 +20,7 @@ import {
   UserCogIcon,
   UserIcon,
   UsersRoundIcon,
+  VideoIcon,
 } from '@/assets/icons';
 import { Button } from '@/atoms';
 import { isX } from '@/common/is-x';
@@ -46,6 +47,9 @@ const navItems: NavItem[] = [
   { label: 'Batch Images', to: '/batch-images', icon: <ImageIcon /> },
   { label: 'Prompts', to: '/prompts', icon: <MessageSquareQuoteIcon /> },
   { label: 'Poses', to: '/poses', icon: <CircleDotIcon /> },
+  ...(isX
+    ? [{ label: 'Video Prompts', to: '/video-prompts', icon: <VideoIcon /> }]
+    : []),
   { label: 'Broadcast', to: '/broadcast', icon: <RadioIcon /> },
   { label: 'Scenario Gen', to: '/scenario-gen', icon: <AudioLinesIcon /> },
   { label: 'Datasets', to: '/datasets', icon: <CircleDotIcon /> },

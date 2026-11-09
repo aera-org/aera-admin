@@ -235,7 +235,17 @@ export function VideoDetailsPage() {
     const scenario = data.scenario ?? null;
     return {
       name: data.name ?? '',
-      prompt: data.posePrompt?.id ? '' : (data.prompt ?? ''),
+      prompt:
+        data.posePrompt?.id || data.videoPrompt?.id ? '' : (data.prompt ?? ''),
+      model: data.model,
+      videoPromptId: data.videoPrompt?.id ?? '',
+      videoPromptOption: data.videoPrompt
+        ? {
+            id: data.videoPrompt.id,
+            label: data.videoPrompt.name,
+            meta: data.videoPrompt.id,
+          }
+        : undefined,
       characterId: scenario?.character.id ?? '',
       scenarioId: scenario?.id ?? '',
       posePromptId: scenario && data.posePrompt?.id ? data.posePrompt.id : '',

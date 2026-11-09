@@ -1,0 +1,90 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-bottom: var(--space-8);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.filterRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.filterField {
+  flex-grow: 1;
+  min-width: 220px;
+}
+
+.flags {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.tableWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.alignRight {
+  display: block;
+  width: 100%;
+  text-align: right;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.paginationRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.clickableRow {
+  cursor: pointer;
+
+  &:hover td {
+    transition: background var(--transition);
+  }
+}
+
+.clickableRow:hover td {
+  background: var(--color-bg-soft);
+}
+
+.clickableRow:focus-visible td {
+  background: var(--color-bg-soft);
+  outline: 2px solid hsl(var(--accent));
+  outline-offset: -2px;
+}

@@ -19,6 +19,7 @@ import {
   type IFile,
   type IVideoGenerationCreateDto,
   VideoAspectRatio,
+  type VideoModel,
   VideoQuality,
   VideoResolution,
 } from '@/common/types';
@@ -27,6 +28,15 @@ import { Drawer, FileUpload } from '@/components/molecules';
 import { SearchSelect } from '@/pages/generations/components/SearchSelect';
 
 import s from './VideoCreateDrawer.module.scss';
+import {
+  buildVideoModelPayload,
+  buildVideoModelValues,
+  getVideoModelErrors,
+  hasPromptSource,
+  type VideoModelValues,
+  type VideoPromptOption,
+} from './videoModel.utils';
+import { VideoModelFields } from './VideoModelFields';
 
 type VideoCreateDrawerProps = {
   onClose: () => void;
@@ -62,6 +72,9 @@ export type VideoCreateInitialValues = Partial<CreateVideoValues> & {
   characterOption?: SelectOption;
   scenarioOption?: ScenarioOption;
   posePromptOption?: SelectOption;
+  model?: VideoModel;
+  videoPromptId?: string;
+  videoPromptOption?: VideoPromptOption;
 };
 
 const QUALITY_OPTIONS = [
@@ -160,6 +173,12 @@ export function VideoCreateDrawer({
   const [values, setValues] = useState<CreateVideoValues>(() =>
     buildInitialValues(initialValues),
   );
+  const [videoModel, setVideoModel] = useState<VideoModelValues>(() =>
+    buildVideoModelValues({
+      model: initialValues?.model,
+      videoPromptId: initialValues?.videoPromptId,
+    }),
+  );
   const [showErrors, setShowErrors] = useState(false);
   const [startFrame, setStartFrame] = useState<IFile | null>(
     () => initialValues?.startFrame ?? null,
@@ -192,7 +211,13 @@ export function VideoCreateDrawer({
   const parsedDuration = parsePositiveInteger(values.duration);
   const selectedPosePromptId =
     values.scenarioId && values.posePromptId ? values.posePromptId : '';
-  const requiresPrompt = !selectedPosePromptId;
+  const requiresPrompt = !hasPromptSource(videoModel, selectedPosePromptId);
+  const videoModelErrors = useMemo(
+    () => getVideoModelErrors(videoModel),
+    [videoModel],
+  );
+  const hasVideoModelErrors = Object.keys(videoModelErrors).length > 0;
+  const visibleVideoModelErrors = showErrors ? videoModelErrors : undefined;
 
   const validationErrors = useMemo(() => {
     if (!showErrors) return {};
@@ -229,6 +254,7 @@ export function VideoCreateDrawer({
   const isValid = useMemo(
     () =>
       Boolean(
+        !hasVideoModelErrors &&
         values.name.trim() &&
           (!requiresPrompt || values.prompt.trim()) &&
           startFrame?.id &&
@@ -247,6 +273,7 @@ export function VideoCreateDrawer({
       values.quality,
       values.resolution,
       requiresPrompt,
+      hasVideoModelErrors,
     ],
   );
 
@@ -312,7 +339,7 @@ export function VideoCreateDrawer({
     const payload: IVideoGenerationCreateDto = {
       name: values.name.trim(),
       scenarioId: values.scenarioId || undefined,
-      posePromptId: selectedPosePromptId || undefined,
+      ...buildVideoModelPayload(videoModel, selectedPosePromptId),
       quality: values.quality,
       resolution: values.resolution,
       aspectRatio: values.aspectRatio,
@@ -320,7 +347,7 @@ export function VideoCreateDrawer({
       startFrameId: startFrame!.id,
     };
 
-    if (!selectedPosePromptId) {
+    if (requiresPrompt) {
       payload.prompt = values.prompt.trim();
     }
 
@@ -502,30 +529,39 @@ export function VideoCreateDrawer({
           </Field>
         </FormRow>
 
-        <Field label="Pose prompt" labelFor="video-create-pose-prompt">
-          <SearchSelect
-            id="video-create-pose-prompt"
-            value={values.scenarioId ? values.posePromptId : ''}
-            valueLabel={initialPosePromptOption?.label}
-            options={posePromptOptions}
-            search={posePromptSearch}
-            onSearchChange={setPosePromptSearch}
-            onSelect={(value) =>
-              setValues((prev) => ({ ...prev, posePromptId: value }))
-            }
-            placeholder={
-              values.scenarioId
-                ? isPosePromptsLoading
-                  ? 'Loading pose prompts...'
-                  : 'Select pose prompt'
-                : 'Select scenario first'
-            }
-            loading={isPosePromptsLoading}
-            loadingLabel="Loading pose prompts..."
-            emptyLabel="No pose prompts found."
-            disabled={!values.scenarioId || createMutation.isPending}
-          />
-        </Field>
+        <VideoModelFields
+          idPrefix="video-create"
+          values={videoModel}
+          errors={visibleVideoModelErrors}
+          initialVideoPromptOption={initialValues?.videoPromptOption}
+          onChange={setVideoModel}
+          disabled={createMutation.isPending}
+        >
+          <Field label="Pose prompt" labelFor="video-create-pose-prompt">
+            <SearchSelect
+              id="video-create-pose-prompt"
+              value={values.scenarioId ? values.posePromptId : ''}
+              valueLabel={initialPosePromptOption?.label}
+              options={posePromptOptions}
+              search={posePromptSearch}
+              onSearchChange={setPosePromptSearch}
+              onSelect={(value) =>
+                setValues((prev) => ({ ...prev, posePromptId: value }))
+              }
+              placeholder={
+                values.scenarioId
+                  ? isPosePromptsLoading
+                    ? 'Loading pose prompts...'
+                    : 'Select pose prompt'
+                  : 'Select scenario first'
+              }
+              loading={isPosePromptsLoading}
+              loadingLabel="Loading pose prompts..."
+              emptyLabel="No pose prompts found."
+              disabled={!values.scenarioId || createMutation.isPending}
+            />
+          </Field>
+        </VideoModelFields>
 
         <Field
           label="Prompt"

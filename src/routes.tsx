@@ -72,6 +72,9 @@ import {
   UserTypesPage,
   UserTypeUpdatePage,
   VideoDetailsPage,
+  VideoPromptCreatePage,
+  VideoPromptsPage,
+  VideoPromptUpdatePage,
   VideosPage,
   VoicesPage,
 } from '@/pages';
@@ -199,6 +202,9 @@ export function AppRoutes() {
           <Route path="/poses" element={<PosesPage />} />
           <Route path="/poses/new" element={<PoseCreatePage />} />
           <Route path="/poses/:id" element={<PoseUpdatePage />} />
+          <Route path="/video-prompts" element={<VideoPromptsPage />} />
+          <Route path="/video-prompts/new" element={<VideoPromptCreatePage />} />
+          <Route path="/video-prompts/:id" element={<VideoPromptUpdatePage />} />
           <Route path="/posts/analytics" element={<PostAnalyticsPage />} />
           <Route path="/posts" element={<PostsPage />} />
           <Route path="/prompts" element={<PromptsPage />} />

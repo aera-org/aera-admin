@@ -13,6 +13,14 @@ import { Drawer } from '@/components/molecules';
 import { SearchSelect } from '@/pages/generations/components/SearchSelect';
 
 import s from './ImageToVideoDrawer.module.scss';
+import {
+  buildVideoModelPayload,
+  buildVideoModelValues,
+  getVideoModelErrors,
+  hasPromptSource,
+  type VideoModelValues,
+} from './videoModel.utils';
+import { VideoModelFields } from './VideoModelFields';
 
 export type ImageToVideoSource = {
   startFrameId: string;
@@ -131,6 +139,9 @@ export function ImageToVideoDrawer({
   const [values, setValues] = useState<ImageToVideoValues>(() =>
     buildInitialValues(source),
   );
+  const [videoModel, setVideoModel] = useState<VideoModelValues>(() =>
+    buildVideoModelValues(),
+  );
   const [showErrors, setShowErrors] = useState(false);
   const [posePromptSearch, setPosePromptSearch] = useState('');
   const createMutation = useCreateVideoGeneration();
@@ -172,7 +183,13 @@ export function ImageToVideoDrawer({
 
   const parsedDuration = parsePositiveInteger(values.duration);
   const selectedPosePromptId = values.posePromptId;
-  const requiresPrompt = !selectedPosePromptId;
+  const requiresPrompt = !hasPromptSource(videoModel, selectedPosePromptId);
+  const videoModelErrors = useMemo(
+    () => getVideoModelErrors(videoModel),
+    [videoModel],
+  );
+  const hasVideoModelErrors = Object.keys(videoModelErrors).length > 0;
+  const visibleVideoModelErrors = showErrors ? videoModelErrors : undefined;
 
   const validationErrors = useMemo(() => {
     if (!showErrors) return {};
@@ -203,6 +220,7 @@ export function ImageToVideoDrawer({
   ]);
 
   const isValid = Boolean(
+    !hasVideoModelErrors &&
     values.name.trim() &&
     (!requiresPrompt || values.prompt.trim()) &&
     isVideoQuality(values.quality) &&
@@ -229,7 +247,7 @@ export function ImageToVideoDrawer({
     const payload: IVideoGenerationCreateDto = {
       name: values.name.trim(),
       scenarioId: source.scenarioId || undefined,
-      posePromptId: selectedPosePromptId || undefined,
+      ...buildVideoModelPayload(videoModel, selectedPosePromptId),
       quality: values.quality,
       resolution: values.resolution,
       aspectRatio: values.aspectRatio,
@@ -237,7 +255,7 @@ export function ImageToVideoDrawer({
       startFrameId: source.startFrameId,
     };
 
-    if (!selectedPosePromptId) {
+    if (requiresPrompt) {
       payload.prompt = values.prompt.trim();
     }
 
@@ -369,28 +387,39 @@ export function ImageToVideoDrawer({
           </Field>
         </FormRow>
 
-        <Field label="Pose prompt" labelFor="image-to-video-pose-prompt">
-          <SearchSelect
-            id="image-to-video-pose-prompt"
-            value={values.posePromptId}
-            valueLabel={initialPosePromptOption?.label}
-            options={[{ id: '', label: 'No pose prompt' }, ...posePromptOptions]}
-            search={posePromptSearch}
-            onSearchChange={setPosePromptSearch}
-            onSelect={(value) =>
-              setValues((prev) => ({ ...prev, posePromptId: value }))
-            }
-            placeholder={
-              isPosePromptsLoading
-                ? 'Loading pose prompts...'
-                : 'Select pose prompt'
-            }
-            loading={isPosePromptsLoading}
-            loadingLabel="Loading pose prompts..."
-            emptyLabel="No pose prompts found."
-            disabled={createMutation.isPending}
-          />
-        </Field>
+        <VideoModelFields
+          idPrefix="image-to-video"
+          values={videoModel}
+          errors={visibleVideoModelErrors}
+          onChange={setVideoModel}
+          disabled={createMutation.isPending}
+        >
+          <Field label="Pose prompt" labelFor="image-to-video-pose-prompt">
+            <SearchSelect
+              id="image-to-video-pose-prompt"
+              value={values.posePromptId}
+              valueLabel={initialPosePromptOption?.label}
+              options={[
+                { id: '', label: 'No pose prompt' },
+                ...posePromptOptions,
+              ]}
+              search={posePromptSearch}
+              onSearchChange={setPosePromptSearch}
+              onSelect={(value) =>
+                setValues((prev) => ({ ...prev, posePromptId: value }))
+              }
+              placeholder={
+                isPosePromptsLoading
+                  ? 'Loading pose prompts...'
+                  : 'Select pose prompt'
+              }
+              loading={isPosePromptsLoading}
+              loadingLabel="Loading pose prompts..."
+              emptyLabel="No pose prompts found."
+              disabled={createMutation.isPending}
+            />
+          </Field>
+        </VideoModelFields>
 
         <Field
           label="Prompt"

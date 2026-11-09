@@ -1,6 +1,12 @@
 import type { CharacterType } from './character.type.ts';
 import type { IFile } from './file.type.ts';
 import type { IPosePrompt } from './pose-prompt.type.ts';
+import type { IVideoPrompt, VideoPromptVars } from './video-prompt.type.ts';
+
+export enum VideoModel {
+  Ltx2_3 = 'ltx2_3',
+  MH3 = 'mh3',
+}
 
 export enum VideoQuality {
   Low = '24',
@@ -35,6 +41,8 @@ export interface IVideoGenerationSet {
     }
   } | null;
   posePrompt?: IPosePrompt | null;
+  videoPrompt?: IVideoPrompt | null;
+  model?: VideoModel;
   resolution: VideoResolution;
   aspectRatio: VideoAspectRatio;
   duration: number;
@@ -73,6 +81,11 @@ export type IVideoGenerationCreateDto = {
   duration: number;
   prompt?: string;
   startFrameId: string;
+
+  // new
+  videoPromptId?: string;
+  vars?: VideoPromptVars;
+  model?: VideoModel;
 };
 
 export type IVideoGenerationUpdateDto = {
