@@ -16,7 +16,6 @@ import {
   Button,
   ButtonGroup,
   Card,
-  Container,
   EmptyState,
   Field,
   FormRow,
@@ -38,7 +37,6 @@ import {
   STAGES_IN_ORDER,
 } from '@/common/types';
 import { formatCharacterType, formatRoleplayStage } from '@/common/utils';
-import { AppShell } from '@/components/templates';
 
 import s from './ConversionsPage.module.scss';
 
@@ -696,7 +694,7 @@ function sortPaywallRows(
   }
 }
 
-export function ConversionsPage() {
+export function ConversionsSection() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [dailyStage, setDailyStage] = useState<DailyStageKey>(DAILY_STAGE_ALL);
   const [dailyLens, setDailyLens] = useState<Lens>('core');
@@ -1252,375 +1250,369 @@ export function ConversionsPage() {
     useElementWidth<HTMLDivElement>();
 
   return (
-    <AppShell>
-      <Container className={s.page} size="wide">
-        <div className={s.header}>
-          <Typography variant="h2">Conversions</Typography>
+    <>
+      <Stack gap="24px">
+        {error ? (
+          <Alert
+            tone="danger"
+            title="Unable to load conversions"
+            description={errorDescription}
+          />
+        ) : null}
+
+        <div className={s.filters}>
+          <FormRow columns={3}>
+            <Field label="Start date" className={s.filterField}>
+              <Input
+                type="date"
+                size="sm"
+                value={start}
+                min={MIN_START_DATE}
+                max={maxSelectableDate}
+                onChange={(event) =>
+                  updateSearchParams({ start: event.target.value })
+                }
+                fullWidth
+              />
+            </Field>
+            <Field label="End date" className={s.filterField}>
+              <Input
+                type="date"
+                size="sm"
+                value={end}
+                min={MIN_START_DATE}
+                max={maxSelectableDate}
+                onChange={(event) =>
+                  updateSearchParams({ end: event.target.value })
+                }
+                fullWidth
+              />
+            </Field>
+            <Field label="User type" className={s.filterField}>
+              <Select
+                options={userTypeOptions}
+                value={userTypeId}
+                onChange={(value) =>
+                  updateSearchParams({ userTypeId: value })
+                }
+                placeholder="All user types"
+                size="sm"
+                fullWidth
+                disabled={
+                  userTypesQuery.isLoading && !userTypesQuery.data
+                }
+              />
+            </Field>
+          </FormRow>
+          <Typography variant="caption" tone="muted" className={s.filterNote}>
+            UTC dates. Start cannot be earlier than June 17, 2026. End cannot
+            be later than the previous UTC day.
+          </Typography>
         </div>
 
-        <Stack gap="24px">
-          {error ? (
-            <Alert
-              tone="danger"
-              title="Unable to load conversions"
-              description={errorDescription}
-            />
-          ) : null}
+        <Section title="Core totals">
+          {isLoading && !data ? (
+            <Grid columns={CORE_METRIC_DEFINITIONS.length} gap={4}>
+              {buildMetricCardSkeletons('core', CORE_METRIC_DEFINITIONS.length)}
+            </Grid>
+          ) : (
+            <Grid columns={CORE_METRIC_DEFINITIONS.length} gap={4}>
+              {coreTotalsCards}
+            </Grid>
+          )}
+        </Section>
 
-          <div className={s.filters}>
+        <Section title="Subscription">
+          {isLoading && !data ? (
+            <Grid columns={PAYWALL_METRIC_DEFINITIONS.length} gap={4}>
+              {buildMetricCardSkeletons(
+                'subscription',
+                PAYWALL_METRIC_DEFINITIONS.length,
+              )}
+            </Grid>
+          ) : (
+            <Grid columns={PAYWALL_METRIC_DEFINITIONS.length} gap={4}>
+              {subscriptionTotalsCards}
+            </Grid>
+          )}
+        </Section>
+
+        <Section title="Air">
+          {isLoading && !data ? (
+            <Grid columns={PAYWALL_METRIC_DEFINITIONS.length} gap={4}>
+              {buildMetricCardSkeletons(
+                'air',
+                PAYWALL_METRIC_DEFINITIONS.length,
+              )}
+            </Grid>
+          ) : (
+            <Grid columns={PAYWALL_METRIC_DEFINITIONS.length} gap={4}>
+              {airTotalsCards}
+            </Grid>
+          )}
+        </Section>
+
+        <Section title="Daily">
+          <div className={s.sectionControls}>
             <FormRow columns={3}>
-              <Field label="Start date" className={s.filterField}>
-                <Input
-                  type="date"
-                  size="sm"
-                  value={start}
-                  min={MIN_START_DATE}
-                  max={maxSelectableDate}
-                  onChange={(event) =>
-                    updateSearchParams({ start: event.target.value })
-                  }
-                  fullWidth
-                />
-              </Field>
-              <Field label="End date" className={s.filterField}>
-                <Input
-                  type="date"
-                  size="sm"
-                  value={end}
-                  min={MIN_START_DATE}
-                  max={maxSelectableDate}
-                  onChange={(event) =>
-                    updateSearchParams({ end: event.target.value })
-                  }
-                  fullWidth
-                />
-              </Field>
-              <Field label="User type" className={s.filterField}>
+              <Field label="Stage" className={s.filterField}>
                 <Select
-                  options={userTypeOptions}
-                  value={userTypeId}
-                  onChange={(value) =>
-                    updateSearchParams({ userTypeId: value })
-                  }
-                  placeholder="All user types"
+                  options={dailyStageOptions}
+                  value={dailyStage}
+                  onChange={(value) => setDailyStage(value as DailyStageKey)}
                   size="sm"
                   fullWidth
-                  disabled={
-                    userTypesQuery.isLoading && !userTypesQuery.data
+                />
+              </Field>
+              <Field label="Lens" className={s.filterField}>
+                <Select
+                  options={LENS_OPTIONS}
+                  value={dailyLens}
+                  onChange={(value) => setDailyLens(value as Lens)}
+                  size="sm"
+                  fullWidth
+                />
+              </Field>
+              <Field label="Metric" className={s.filterField}>
+                <Select
+                  options={
+                    dailyLens === 'core'
+                      ? coreMetricOptions
+                      : paywallMetricOptions
                   }
+                  value={
+                    dailyLens === 'core' ? dailyCoreMetric : dailyPaywallMetric
+                  }
+                  onChange={(value) => {
+                    if (dailyLens === 'core') {
+                      setDailyCoreMetric(value as CoreMetricKey);
+                      return;
+                    }
+
+                    setDailyPaywallMetric(value as PaywallMetricKey);
+                  }}
+                  size="sm"
+                  fullWidth
                 />
               </Field>
             </FormRow>
-            <Typography variant="caption" tone="muted" className={s.filterNote}>
-              UTC dates. Start cannot be earlier than June 17, 2026. End cannot
-              be later than the previous UTC day.
-            </Typography>
           </div>
 
-          <Section title="Core totals">
+          <Card className={s.panel} padding="md">
             {isLoading && !data ? (
-              <Grid columns={CORE_METRIC_DEFINITIONS.length} gap={4}>
-                {buildMetricCardSkeletons('core', CORE_METRIC_DEFINITIONS.length)}
-              </Grid>
-            ) : (
-              <Grid columns={CORE_METRIC_DEFINITIONS.length} gap={4}>
-                {coreTotalsCards}
-              </Grid>
-            )}
-          </Section>
-
-          <Section title="Subscription">
-            {isLoading && !data ? (
-              <Grid columns={PAYWALL_METRIC_DEFINITIONS.length} gap={4}>
-                {buildMetricCardSkeletons(
-                  'subscription',
-                  PAYWALL_METRIC_DEFINITIONS.length,
-                )}
-              </Grid>
-            ) : (
-              <Grid columns={PAYWALL_METRIC_DEFINITIONS.length} gap={4}>
-                {subscriptionTotalsCards}
-              </Grid>
-            )}
-          </Section>
-
-          <Section title="Air">
-            {isLoading && !data ? (
-              <Grid columns={PAYWALL_METRIC_DEFINITIONS.length} gap={4}>
-                {buildMetricCardSkeletons(
-                  'air',
-                  PAYWALL_METRIC_DEFINITIONS.length,
-                )}
-              </Grid>
-            ) : (
-              <Grid columns={PAYWALL_METRIC_DEFINITIONS.length} gap={4}>
-                {airTotalsCards}
-              </Grid>
-            )}
-          </Section>
-
-          <Section title="Daily">
-            <div className={s.sectionControls}>
-              <FormRow columns={3}>
-                <Field label="Stage" className={s.filterField}>
-                  <Select
-                    options={dailyStageOptions}
-                    value={dailyStage}
-                    onChange={(value) => setDailyStage(value as DailyStageKey)}
-                    size="sm"
-                    fullWidth
-                  />
-                </Field>
-                <Field label="Lens" className={s.filterField}>
-                  <Select
-                    options={LENS_OPTIONS}
-                    value={dailyLens}
-                    onChange={(value) => setDailyLens(value as Lens)}
-                    size="sm"
-                    fullWidth
-                  />
-                </Field>
-                <Field label="Metric" className={s.filterField}>
-                  <Select
-                    options={
-                      dailyLens === 'core'
-                        ? coreMetricOptions
-                        : paywallMetricOptions
-                    }
-                    value={
-                      dailyLens === 'core' ? dailyCoreMetric : dailyPaywallMetric
-                    }
-                    onChange={(value) => {
-                      if (dailyLens === 'core') {
-                        setDailyCoreMetric(value as CoreMetricKey);
-                        return;
+              <Skeleton height={260} />
+            ) : dailyChartData.length ? (
+              <div ref={chartRef} className={s.chart}>
+                {chartWidth > 0 ? (
+                  <XYChart
+                    width={chartWidth}
+                    height={260}
+                    xScale={{ type: 'point', padding: 0.1 }}
+                    yScale={{ type: 'linear', nice: true }}
+                  >
+                    <AnimatedGrid columns={false} numTicks={4} />
+                    <AnimatedAxis
+                      orientation="bottom"
+                      tickFormat={(value) =>
+                        formatDayLabel(String(value), 'short')
                       }
+                      numTicks={Math.min(6, dailyChartData.length)}
+                    />
+                    <AnimatedAxis
+                      orientation="left"
+                      numTicks={4}
+                      tickFormat={(value) =>
+                        formatChartAxisValue(Number(value))
+                      }
+                    />
+                    <AnimatedLineSeries
+                      dataKey={activeDailyMetric.label}
+                      data={dailyChartData}
+                      xAccessor={(datum) => datum.day}
+                      yAccessor={(datum) => datum.presentation.value}
+                    />
+                    <ChartTooltip
+                      showVerticalCrosshair
+                      showSeriesGlyphs
+                      renderTooltip={({ tooltipData }) => {
+                        const nearest = tooltipData?.nearestDatum;
+                        if (!nearest) return null;
 
-                      setDailyPaywallMetric(value as PaywallMetricKey);
-                    }}
-                    size="sm"
-                    fullWidth
-                  />
-                </Field>
-              </FormRow>
-            </div>
+                        const datum = nearest.datum as DailyChartDatum;
 
-            <Card className={s.panel} padding="md">
-              {isLoading && !data ? (
-                <Skeleton height={260} />
-              ) : dailyChartData.length ? (
-                <div ref={chartRef} className={s.chart}>
-                  {chartWidth > 0 ? (
-                    <XYChart
-                      width={chartWidth}
-                      height={260}
-                      xScale={{ type: 'point', padding: 0.1 }}
-                      yScale={{ type: 'linear', nice: true }}
-                    >
-                      <AnimatedGrid columns={false} numTicks={4} />
-                      <AnimatedAxis
-                        orientation="bottom"
-                        tickFormat={(value) =>
-                          formatDayLabel(String(value), 'short')
-                        }
-                        numTicks={Math.min(6, dailyChartData.length)}
-                      />
-                      <AnimatedAxis
-                        orientation="left"
-                        numTicks={4}
-                        tickFormat={(value) =>
-                          formatChartAxisValue(Number(value))
-                        }
-                      />
-                      <AnimatedLineSeries
-                        dataKey={activeDailyMetric.label}
-                        data={dailyChartData}
-                        xAccessor={(datum) => datum.day}
-                        yAccessor={(datum) => datum.presentation.value}
-                      />
-                      <ChartTooltip
-                        showVerticalCrosshair
-                        showSeriesGlyphs
-                        renderTooltip={({ tooltipData }) => {
-                          const nearest = tooltipData?.nearestDatum;
-                          if (!nearest) return null;
-
-                          const datum = nearest.datum as DailyChartDatum;
-
-                          return (
-                            <div className={s.chartTooltip}>
-                              <Typography variant="meta" as="div">
-                                {formatDayLabel(datum.day, 'long')}
+                        return (
+                          <div className={s.chartTooltip}>
+                            <Typography variant="meta" as="div">
+                              {formatDayLabel(datum.day, 'long')}
+                            </Typography>
+                            <Typography variant="body" as="div">
+                              {formatPresentationValue(datum.presentation)}
+                            </Typography>
+                            {datum.presentation.meta ? (
+                              <Typography
+                                variant="caption"
+                                as="div"
+                                className={s.tableMeta}
+                              >
+                                {datum.presentation.meta}
                               </Typography>
-                              <Typography variant="body" as="div">
-                                {formatPresentationValue(datum.presentation)}
-                              </Typography>
-                              {datum.presentation.meta ? (
-                                <Typography
-                                  variant="caption"
-                                  as="div"
-                                  className={s.tableMeta}
-                                >
-                                  {datum.presentation.meta}
-                                </Typography>
-                              ) : null}
-                            </div>
-                          );
-                        }}
-                      />
-                    </XYChart>
-                  ) : (
-                    <Skeleton height={260} />
-                  )}
-                </div>
-              ) : (
-                <EmptyState
-                  title="No data for this period"
-                  description="Try adjusting the date range."
-                />
-              )}
-            </Card>
-          </Section>
-
-          <Section
-            title="Stage matrix"
-            actions={
-              <div className={s.stageActions}>
-                <Field className={`${s.filterField} ${s.breakdownField}`}>
-                  <Select
-                    options={stageMatrixScenarioOptions}
-                    value={stageMatrixScenario}
-                    onChange={setStageMatrixScenario}
-                    size="sm"
-                  />
-                </Field>
-
-                <Typography variant="caption" tone="muted">
-                  Lens
-                </Typography>
-                <ButtonGroup attached className={s.toggleGroup}>
-                  {LENS_OPTIONS.map((option) => {
-                    const isActive = option.value === stageMatrixLens;
-
-                    return (
-                      <Button
-                        key={option.value}
-                        size="sm"
-                        variant={isActive ? 'secondary' : 'ghost'}
-                        onClick={() => setStageMatrixLens(option.value)}
-                        disabled={isActive}
-                      >
-                        {option.label}
-                      </Button>
-                    );
-                  })}
-                </ButtonGroup>
+                            ) : null}
+                          </div>
+                        );
+                      }}
+                    />
+                  </XYChart>
+                ) : (
+                  <Skeleton height={260} />
+                )}
               </div>
-            }
-          >
-            {isLoading && !data ? (
-              <Table
-                columns={stageMatrixColumns}
-                rows={stageMatrixSkeletonRows}
-                scrollable
-                minWidth={
-                  stageMatrixLens === 'core'
-                    ? CORE_TABLE_MIN_WIDTH
-                    : PAYWALL_TABLE_MIN_WIDTH
-                }
-              />
-            ) : !hasGlobalData ? (
+            ) : (
               <EmptyState
-                title="No stage data for this period"
+                title="No data for this period"
                 description="Try adjusting the date range."
               />
-            ) : (
-              <Table
-                columns={stageMatrixColumns}
-                rows={stageMatrixRows}
-                scrollable
-                minWidth={
-                  stageMatrixLens === 'core'
-                    ? CORE_TABLE_MIN_WIDTH
-                    : PAYWALL_TABLE_MIN_WIDTH
-                }
-              />
             )}
-          </Section>
+          </Card>
+        </Section>
 
-          <Section title="Scenario breakdown">
-            <div className={s.sectionControls}>
-              <FormRow columns={3}>
-                <Field label="Stage" className={s.filterField}>
-                  <Select
-                    options={scenarioStageOptions}
-                    value={scenarioStage}
-                    onChange={(value) =>
-                      setScenarioStage(value as ScenarioStageKey)
-                    }
-                    size="sm"
-                    fullWidth
-                  />
-                </Field>
-                <Field label="Lens" className={s.filterField}>
-                  <Select
-                    options={LENS_OPTIONS}
-                    value={scenarioLens}
-                    onChange={(value) => setScenarioLens(value as Lens)}
-                    size="sm"
-                    fullWidth
-                  />
-                </Field>
-                <Field label="Sort by" className={s.filterField}>
-                  <Select
-                    options={scenarioSortOptions}
-                    value={activeScenarioSort}
-                    onChange={(value) => {
-                      if (scenarioLens === 'core') {
-                        setScenarioCoreSort(value as CoreSortKey);
-                        return;
-                      }
+        <Section
+          title="Stage matrix"
+          actions={
+            <div className={s.stageActions}>
+              <Field className={`${s.filterField} ${s.breakdownField}`}>
+                <Select
+                  options={stageMatrixScenarioOptions}
+                  value={stageMatrixScenario}
+                  onChange={setStageMatrixScenario}
+                  size="sm"
+                />
+              </Field>
 
-                      setScenarioPaywallSort(value as PaywallSortKey);
-                    }}
-                    size="sm"
-                    fullWidth
-                  />
-                </Field>
-              </FormRow>
+              <Typography variant="caption" tone="muted">
+                Lens
+              </Typography>
+              <ButtonGroup attached className={s.toggleGroup}>
+                {LENS_OPTIONS.map((option) => {
+                  const isActive = option.value === stageMatrixLens;
+
+                  return (
+                    <Button
+                      key={option.value}
+                      size="sm"
+                      variant={isActive ? 'secondary' : 'ghost'}
+                      onClick={() => setStageMatrixLens(option.value)}
+                      disabled={isActive}
+                    >
+                      {option.label}
+                    </Button>
+                  );
+                })}
+              </ButtonGroup>
             </div>
+          }
+        >
+          {isLoading && !data ? (
+            <Table
+              columns={stageMatrixColumns}
+              rows={stageMatrixSkeletonRows}
+              scrollable
+              minWidth={
+                stageMatrixLens === 'core'
+                  ? CORE_TABLE_MIN_WIDTH
+                  : PAYWALL_TABLE_MIN_WIDTH
+              }
+            />
+          ) : !hasGlobalData ? (
+            <EmptyState
+              title="No stage data for this period"
+              description="Try adjusting the date range."
+            />
+          ) : (
+            <Table
+              columns={stageMatrixColumns}
+              rows={stageMatrixRows}
+              scrollable
+              minWidth={
+                stageMatrixLens === 'core'
+                  ? CORE_TABLE_MIN_WIDTH
+                  : PAYWALL_TABLE_MIN_WIDTH
+              }
+            />
+          )}
+        </Section>
 
-            {isLoading && !data ? (
-              <Table
-                columns={scenarioBreakdownColumns}
-                rows={scenarioBreakdownSkeletonRows}
-                scrollable
-                minWidth={
-                  scenarioLens === 'core'
-                    ? CORE_TABLE_MIN_WIDTH
-                    : PAYWALL_TABLE_MIN_WIDTH
-                }
-              />
-            ) : scenarioBreakdownRows.length === 0 ? (
-              <EmptyState
-                title="No conversions found"
-                description="Try another date range."
-              />
-            ) : (
-              <Table
-                columns={scenarioBreakdownColumns}
-                rows={scenarioBreakdownRows}
-                scrollable
-                minWidth={
-                  scenarioLens === 'core'
-                    ? CORE_TABLE_MIN_WIDTH
-                    : PAYWALL_TABLE_MIN_WIDTH
-                }
-              />
-            )}
-          </Section>
-        </Stack>
-      </Container>
-    </AppShell>
+        <Section title="Scenario breakdown">
+          <div className={s.sectionControls}>
+            <FormRow columns={3}>
+              <Field label="Stage" className={s.filterField}>
+                <Select
+                  options={scenarioStageOptions}
+                  value={scenarioStage}
+                  onChange={(value) =>
+                    setScenarioStage(value as ScenarioStageKey)
+                  }
+                  size="sm"
+                  fullWidth
+                />
+              </Field>
+              <Field label="Lens" className={s.filterField}>
+                <Select
+                  options={LENS_OPTIONS}
+                  value={scenarioLens}
+                  onChange={(value) => setScenarioLens(value as Lens)}
+                  size="sm"
+                  fullWidth
+                />
+              </Field>
+              <Field label="Sort by" className={s.filterField}>
+                <Select
+                  options={scenarioSortOptions}
+                  value={activeScenarioSort}
+                  onChange={(value) => {
+                    if (scenarioLens === 'core') {
+                      setScenarioCoreSort(value as CoreSortKey);
+                      return;
+                    }
+
+                    setScenarioPaywallSort(value as PaywallSortKey);
+                  }}
+                  size="sm"
+                  fullWidth
+                />
+              </Field>
+            </FormRow>
+          </div>
+
+          {isLoading && !data ? (
+            <Table
+              columns={scenarioBreakdownColumns}
+              rows={scenarioBreakdownSkeletonRows}
+              scrollable
+              minWidth={
+                scenarioLens === 'core'
+                  ? CORE_TABLE_MIN_WIDTH
+                  : PAYWALL_TABLE_MIN_WIDTH
+              }
+            />
+          ) : scenarioBreakdownRows.length === 0 ? (
+            <EmptyState
+              title="No conversions found"
+              description="Try another date range."
+            />
+          ) : (
+            <Table
+              columns={scenarioBreakdownColumns}
+              rows={scenarioBreakdownRows}
+              scrollable
+              minWidth={
+                scenarioLens === 'core'
+                  ? CORE_TABLE_MIN_WIDTH
+                  : PAYWALL_TABLE_MIN_WIDTH
+              }
+            />
+          )}
+        </Section>
+      </Stack>
+    </>
   );
 }

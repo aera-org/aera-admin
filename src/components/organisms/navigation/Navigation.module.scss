@@ -6,6 +6,15 @@
   overflow-y: auto;
 }
 
+.switcher {
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+
+.divider {
+  margin: 4px 0;
+}
+
 .button {
   justify-content: flex-start;
 }

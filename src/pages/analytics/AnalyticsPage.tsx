@@ -3495,22 +3495,6 @@ export function AnalyticsPage() {
                   >
                     Cohort Revenue
                   </Button>
-                  <Button
-                    as={Link}
-                    to="/analytics/active-users"
-                    size="sm"
-                    variant="ghost"
-                  >
-                    Active Users
-                  </Button>
-                  <Button
-                    as={Link}
-                    to="/analytics/scenarios"
-                    size="sm"
-                    variant="ghost"
-                  >
-                    Scenario Analytics
-                  </Button>
                 </>
               
             </ButtonGroup>

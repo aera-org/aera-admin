@@ -38,7 +38,6 @@ import {
   Alert,
   Badge,
   Card,
-  Container,
   EmptyState,
   Field,
   FormRow,
@@ -49,7 +48,6 @@ import {
   Table,
   Typography,
 } from '@/atoms';
-import { AppShell } from '@/components/templates';
 
 import s from './ScenarioAnalyticsPage.module.scss';
 
@@ -354,7 +352,7 @@ function RightCell({ children }: { children: string }) {
   );
 }
 
-export function ScenarioAnalyticsPage() {
+export function ScenarioAnalyticsSection() {
   const [searchParams, setSearchParams] = useSearchParams();
   const rawMonth = searchParams.get('month');
   const rawGroupBy = searchParams.get('groupBy');
@@ -887,407 +885,402 @@ export function ScenarioAnalyticsPage() {
   );
 
   return (
-    <AppShell>
-      <Container className={s.page} size="wide">
-        <div className={s.header}>
-          <Typography variant="h2">Scenario Analytics</Typography>
-          <Typography variant="meta" tone="muted">
-            Rank {entityLabel} by revenue per active user. Active users is
-            partner traffic allocation, not attractiveness. Month is current
-            efficiency, not lifetime.
-          </Typography>
-        </div>
+    <>
+      <Typography variant="meta" tone="muted">
+        Rank {entityLabel} by revenue per active user. Active users is
+        partner traffic allocation, not attractiveness. Month is current
+        efficiency, not lifetime.
+      </Typography>
 
-        <Stack gap="24px">
-          {error ? (
-            <Alert
-              tone="danger"
-              title="Unable to load scenario analytics"
-              description="Please retry or choose another month."
-            />
-          ) : null}
+      <Stack gap="24px">
+        {error ? (
+          <Alert
+            tone="danger"
+            title="Unable to load scenario analytics"
+            description="Please retry or choose another month."
+          />
+        ) : null}
 
-          {hasJoinWarning ? (
-            <Alert
-              tone="warning"
-              title="Breakdown join is incomplete"
-              description={[
-                ranking.unmatchedRevenue > 0
-                  ? `${ranking.unmatchedRevenue} revenue row${
-                      ranking.unmatchedRevenue === 1 ? '' : 's'
-                    } did not match a conversion row.`
-                  : null,
-                ranking.joinedByName > 0
-                  ? `${ranking.joinedByName} row${
-                      ranking.joinedByName === 1 ? '' : 's'
-                    } joined by name instead of id.`
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            />
-          ) : null}
-
-          <Section title="Filters">
-            <div className={s.filters}>
-              <FormRow columns={3}>
-                <Field
-                  label="Month"
-                  labelFor="scenario-analytics-month"
-                  className={s.filterField}
-                >
-                  <Select
-                    id="scenario-analytics-month"
-                    options={monthOptions}
-                    value={month}
-                    onChange={(value) => updateSearchParams({ month: value })}
-                    size="sm"
-                    fullWidth
-                  />
-                </Field>
-                <Field
-                  label="Group by"
-                  labelFor="scenario-analytics-group-by"
-                  className={s.filterField}
-                >
-                  <Select
-                    id="scenario-analytics-group-by"
-                    options={[...GROUP_BY_OPTIONS]}
-                    value={groupBy}
-                    onChange={(value) => updateSearchParams({ groupBy: value })}
-                    size="sm"
-                    fullWidth
-                  />
-                </Field>
-                <Field
-                  label="Confidence"
-                  labelFor="scenario-analytics-confidence"
-                  className={s.filterField}
-                >
-                  <Select
-                    id="scenario-analytics-confidence"
-                    options={[...CONFIDENCE_OPTIONS]}
-                    value={confidence}
-                    onChange={(value) =>
-                      updateSearchParams({ confidence: value })
-                    }
-                    size="sm"
-                    fullWidth
-                  />
-                </Field>
-              </FormRow>
-            </div>
-          </Section>
-
-          <Section
-            title="Totals"
-            description={`Weighted platform RPAU for ${formatMonthLabel(
-              month,
-              'long',
-            )}.`}
-          >
-            {showSkeleton ? (
-              <div className={s.kpiGrid}>
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <Skeleton key={`kpi-${index}`} height={112} />
-                ))}
-              </div>
-            ) : (
-              <div className={s.kpiGrid}>{kpiCards}</div>
-            )}
-          </Section>
-
-          <Section
-            title="Ranking"
-            description="Sorted by RPAU. Low confidence is a small sample, not a quality score. Efficiency is RPAU versus the weighted platform average (100% = in line)."
-          >
-            {showSkeleton ? (
-              <Table
-                columns={tableColumns}
-                rows={tableSkeletonRows}
-                scrollable
-                minWidth={TABLE_MIN_WIDTH}
-              />
-            ) : showEmpty ? (
-              <EmptyState
-                title="No ranking data"
-                description={
-                  confidence === 'all'
-                    ? 'Try another month.'
-                    : 'Try a wider confidence filter or another month.'
-                }
-              />
-            ) : (
-              <Table
-                columns={tableColumns}
-                rows={tableRows}
-                scrollable
-                minWidth={TABLE_MIN_WIDTH}
-                getRowProps={(_row, index) => ({
-                  className:
-                    rankedItems[index]?.tier === 'low' ? s.mutedRow : undefined,
-                })}
-              />
-            )}
-          </Section>
-
-          <Section
-            title="Traffic vs RPAU"
-            description={
-              ranking.medians
-                ? `Quadrants split at median users (${formatCount(
-                    ranking.medians.users,
-                  )}) and median RPAU (${formatRpau(
-                    ranking.medians.rpau,
-                  )}) among High and Medium confidence rows. Low-confidence rows are excluded. This is not a character × scenario matrix.`
-                : 'Need at least one High or Medium confidence row to split quadrants.'
-            }
-          >
-            {showSkeleton ? (
-              <div className={s.matrix}>
-                {QUADRANT_CONFIG.map((quadrant) => (
-                  <Skeleton key={quadrant.key} height={160} />
-                ))}
-              </div>
-            ) : ranking.medians ? (
-              <div className={s.matrix}>
-                {QUADRANT_CONFIG.map((quadrant) => (
-                  <QuadrantCard
-                    key={quadrant.key}
-                    title={quadrant.title}
-                    description={quadrant.description}
-                    items={ranking.quadrants[quadrant.key]}
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                title="Not enough sample"
-                description="Quadrants use High and Medium confidence rows only."
-              />
-            )}
-          </Section>
-
-          <Section
-            title="Month comparison"
+        {hasJoinWarning ? (
+          <Alert
+            tone="warning"
+            title="Breakdown join is incomplete"
             description={[
-              `One ${groupBy} over the selected months. Ranking above is a single-month snapshot.`,
-              chartRangeAdjusted
-                ? `Range limited to ${MAX_CHART_MONTHS} months. From month adjusted to ${formatMonthLabel(chartStart, 'long')}.`
+              ranking.unmatchedRevenue > 0
+                ? `${ranking.unmatchedRevenue} revenue row${
+                    ranking.unmatchedRevenue === 1 ? '' : 's'
+                  } did not match a conversion row.`
+                : null,
+              ranking.joinedByName > 0
+                ? `${ranking.joinedByName} row${
+                    ranking.joinedByName === 1 ? '' : 's'
+                  } joined by name instead of id.`
                 : null,
             ]
               .filter(Boolean)
               .join(' ')}
-          >
-            <div className={s.filters}>
-              <FormRow columns={4}>
-                <Field
-                  label="From"
-                  labelFor="scenario-analytics-chart-start"
-                  className={s.filterField}
-                >
-                  <Select
-                    id="scenario-analytics-chart-start"
-                    options={monthOptions}
-                    value={chartStart}
-                    onChange={(value) =>
-                      updateSearchParams({ chartStart: value })
-                    }
-                    size="sm"
-                    fullWidth
-                  />
-                </Field>
-                <Field
-                  label="To"
-                  labelFor="scenario-analytics-chart-end"
-                  className={s.filterField}
-                >
-                  <Select
-                    id="scenario-analytics-chart-end"
-                    options={monthOptions}
-                    value={chartEnd}
-                    onChange={(value) =>
-                      updateSearchParams({ chartEnd: value })
-                    }
-                    size="sm"
-                    fullWidth
-                  />
-                </Field>
-                <Field
-                  label="Metric"
-                  labelFor="scenario-analytics-chart-metric"
-                  className={s.filterField}
-                >
-                  <Select
-                    id="scenario-analytics-chart-metric"
-                    options={CHART_METRIC_OPTIONS}
-                    value={chartMetric}
-                    onChange={(value) =>
-                      updateSearchParams({ chartMetric: value })
-                    }
-                    size="sm"
-                    fullWidth
-                  />
-                </Field>
-                <Field
-                  label={groupBy === 'character' ? 'Character' : 'Scenario'}
-                  labelFor="scenario-analytics-chart-entity"
-                  className={s.filterField}
-                >
-                  <Select
-                    id="scenario-analytics-chart-entity"
-                    options={chartEntityOptions.map((option) => ({
-                      value: option.value,
-                      label: option.label,
-                    }))}
-                    value={chartEntity}
-                    onChange={(value) =>
-                      updateSearchParams({ chartEntity: value })
-                    }
-                    placeholder={
-                      groupBy === 'character'
-                        ? 'Select character'
-                        : 'Select scenario'
-                    }
-                    size="sm"
-                    fullWidth
-                    disabled={chartEntityOptions.length === 0}
-                  />
-                </Field>
-              </FormRow>
-            </div>
+          />
+        ) : null}
 
-            <Card className={s.panel} padding="md">
-              {breakdownRange.error ? (
-                <Alert
-                  tone="danger"
-                  title="Unable to load comparison chart"
-                  description="Please retry or choose another range."
+        <Section title="Filters">
+          <div className={s.filters}>
+            <FormRow columns={3}>
+              <Field
+                label="Month"
+                labelFor="scenario-analytics-month"
+                className={s.filterField}
+              >
+                <Select
+                  id="scenario-analytics-month"
+                  options={monthOptions}
+                  value={month}
+                  onChange={(value) => updateSearchParams({ month: value })}
+                  size="sm"
+                  fullWidth
                 />
-              ) : null}
-              {showChartSkeleton ? (
-                <>
-                  <Skeleton height={CHART_HEIGHT} />
+              </Field>
+              <Field
+                label="Group by"
+                labelFor="scenario-analytics-group-by"
+                className={s.filterField}
+              >
+                <Select
+                  id="scenario-analytics-group-by"
+                  options={[...GROUP_BY_OPTIONS]}
+                  value={groupBy}
+                  onChange={(value) => updateSearchParams({ groupBy: value })}
+                  size="sm"
+                  fullWidth
+                />
+              </Field>
+              <Field
+                label="Confidence"
+                labelFor="scenario-analytics-confidence"
+                className={s.filterField}
+              >
+                <Select
+                  id="scenario-analytics-confidence"
+                  options={[...CONFIDENCE_OPTIONS]}
+                  value={confidence}
+                  onChange={(value) =>
+                    updateSearchParams({ confidence: value })
+                  }
+                  size="sm"
+                  fullWidth
+                />
+              </Field>
+            </FormRow>
+          </div>
+        </Section>
+
+        <Section
+          title="Totals"
+          description={`Weighted platform RPAU for ${formatMonthLabel(
+            month,
+            'long',
+          )}.`}
+        >
+          {showSkeleton ? (
+            <div className={s.kpiGrid}>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Skeleton key={`kpi-${index}`} height={112} />
+              ))}
+            </div>
+          ) : (
+            <div className={s.kpiGrid}>{kpiCards}</div>
+          )}
+        </Section>
+
+        <Section
+          title="Ranking"
+          description="Sorted by RPAU. Low confidence is a small sample, not a quality score. Efficiency is RPAU versus the weighted platform average (100% = in line)."
+        >
+          {showSkeleton ? (
+            <Table
+              columns={tableColumns}
+              rows={tableSkeletonRows}
+              scrollable
+              minWidth={TABLE_MIN_WIDTH}
+            />
+          ) : showEmpty ? (
+            <EmptyState
+              title="No ranking data"
+              description={
+                confidence === 'all'
+                  ? 'Try another month.'
+                  : 'Try a wider confidence filter or another month.'
+              }
+            />
+          ) : (
+            <Table
+              columns={tableColumns}
+              rows={tableRows}
+              scrollable
+              minWidth={TABLE_MIN_WIDTH}
+              getRowProps={(_row, index) => ({
+                className:
+                  rankedItems[index]?.tier === 'low' ? s.mutedRow : undefined,
+              })}
+            />
+          )}
+        </Section>
+
+        <Section
+          title="Traffic vs RPAU"
+          description={
+            ranking.medians
+              ? `Quadrants split at median users (${formatCount(
+                  ranking.medians.users,
+                )}) and median RPAU (${formatRpau(
+                  ranking.medians.rpau,
+                )}) among High and Medium confidence rows. Low-confidence rows are excluded. This is not a character × scenario matrix.`
+              : 'Need at least one High or Medium confidence row to split quadrants.'
+          }
+        >
+          {showSkeleton ? (
+            <div className={s.matrix}>
+              {QUADRANT_CONFIG.map((quadrant) => (
+                <Skeleton key={quadrant.key} height={160} />
+              ))}
+            </div>
+          ) : ranking.medians ? (
+            <div className={s.matrix}>
+              {QUADRANT_CONFIG.map((quadrant) => (
+                <QuadrantCard
+                  key={quadrant.key}
+                  title={quadrant.title}
+                  description={quadrant.description}
+                  items={ranking.quadrants[quadrant.key]}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="Not enough sample"
+              description="Quadrants use High and Medium confidence rows only."
+            />
+          )}
+        </Section>
+
+        <Section
+          title="Month comparison"
+          description={[
+            `One ${groupBy} over the selected months. Ranking above is a single-month snapshot.`,
+            chartRangeAdjusted
+              ? `Range limited to ${MAX_CHART_MONTHS} months. From month adjusted to ${formatMonthLabel(chartStart, 'long')}.`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          <div className={s.filters}>
+            <FormRow columns={4}>
+              <Field
+                label="From"
+                labelFor="scenario-analytics-chart-start"
+                className={s.filterField}
+              >
+                <Select
+                  id="scenario-analytics-chart-start"
+                  options={monthOptions}
+                  value={chartStart}
+                  onChange={(value) =>
+                    updateSearchParams({ chartStart: value })
+                  }
+                  size="sm"
+                  fullWidth
+                />
+              </Field>
+              <Field
+                label="To"
+                labelFor="scenario-analytics-chart-end"
+                className={s.filterField}
+              >
+                <Select
+                  id="scenario-analytics-chart-end"
+                  options={monthOptions}
+                  value={chartEnd}
+                  onChange={(value) =>
+                    updateSearchParams({ chartEnd: value })
+                  }
+                  size="sm"
+                  fullWidth
+                />
+              </Field>
+              <Field
+                label="Metric"
+                labelFor="scenario-analytics-chart-metric"
+                className={s.filterField}
+              >
+                <Select
+                  id="scenario-analytics-chart-metric"
+                  options={CHART_METRIC_OPTIONS}
+                  value={chartMetric}
+                  onChange={(value) =>
+                    updateSearchParams({ chartMetric: value })
+                  }
+                  size="sm"
+                  fullWidth
+                />
+              </Field>
+              <Field
+                label={groupBy === 'character' ? 'Character' : 'Scenario'}
+                labelFor="scenario-analytics-chart-entity"
+                className={s.filterField}
+              >
+                <Select
+                  id="scenario-analytics-chart-entity"
+                  options={chartEntityOptions.map((option) => ({
+                    value: option.value,
+                    label: option.label,
+                  }))}
+                  value={chartEntity}
+                  onChange={(value) =>
+                    updateSearchParams({ chartEntity: value })
+                  }
+                  placeholder={
+                    groupBy === 'character'
+                      ? 'Select character'
+                      : 'Select scenario'
+                  }
+                  size="sm"
+                  fullWidth
+                  disabled={chartEntityOptions.length === 0}
+                />
+              </Field>
+            </FormRow>
+          </div>
+
+          <Card className={s.panel} padding="md">
+            {breakdownRange.error ? (
+              <Alert
+                tone="danger"
+                title="Unable to load comparison chart"
+                description="Please retry or choose another range."
+              />
+            ) : null}
+            {showChartSkeleton ? (
+              <>
+                <Skeleton height={CHART_HEIGHT} />
+                <Table
+                  columns={comparisonColumns}
+                  rows={comparisonSkeletonRows}
+                  scrollable
+                  minWidth={Math.max(640, 220 + chartMonths.length * 120)}
+                />
+              </>
+            ) : (
+              <>
+                {showChartEmpty ? (
+                  <EmptyState
+                    title="No comparison data"
+                    description={`Try another ${
+                      groupBy === 'character' ? 'character' : 'scenario'
+                    }, range, or metric.`}
+                  />
+                ) : (
+                  <div ref={chartRef} className={s.chart}>
+                    {chartWidth > 0 ? (
+                      <XYChart
+                        width={chartWidth}
+                        height={CHART_HEIGHT}
+                        xScale={{ type: 'point', padding: 0.1 }}
+                        yScale={{ type: 'linear', nice: true }}
+                      >
+                        <AnimatedGrid columns={false} numTicks={4} />
+                        <AnimatedAxis
+                          orientation="bottom"
+                          tickFormat={(value) =>
+                            formatMonthLabel(String(value), 'short')
+                          }
+                          numTicks={Math.min(6, chartMonths.length)}
+                        />
+                        <AnimatedAxis
+                          orientation="left"
+                          numTicks={4}
+                          tickFormat={(value) =>
+                            formatChartMetricValue(
+                              chartMetric,
+                              Number(value),
+                              'axis',
+                            )
+                          }
+                        />
+                        {chartSeries.map((series) => (
+                          <AnimatedLineSeries
+                            key={series.id}
+                            dataKey={series.id}
+                            data={series.data}
+                            color={CHART_LINE_COLOR}
+                            xAccessor={(datum) => datum.month}
+                            yAccessor={(datum) => datum.value}
+                          />
+                        ))}
+                        <ChartTooltip
+                          showVerticalCrosshair
+                          showSeriesGlyphs
+                          renderTooltip={({ tooltipData }) => {
+                            const nearest = tooltipData?.nearestDatum;
+                            if (!nearest) return null;
+                            const datum = nearest.datum as ChartPoint;
+                            return (
+                              <div className={s.chartTooltip}>
+                                <Typography variant="meta" as="div">
+                                  {formatMonthLabel(datum.month, 'long')}
+                                </Typography>
+                                {chartSeries.map((series) => {
+                                  const point = series.data.find(
+                                    (item) => item.month === datum.month,
+                                  );
+                                  return (
+                                    <div
+                                      key={series.id}
+                                      className={s.chartTooltipRow}
+                                    >
+                                      <span className={s.legendSwatch} />
+                                      <Typography variant="caption">
+                                        {series.label}
+                                      </Typography>
+                                      <Typography variant="body">
+                                        {formatChartMetricValue(
+                                          chartMetric,
+                                          point?.value ?? null,
+                                          'tooltip',
+                                        )}
+                                      </Typography>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          }}
+                        />
+                      </XYChart>
+                    ) : (
+                      <Skeleton height={CHART_HEIGHT} />
+                    )}
+                  </div>
+                )}
+                {showComparisonTable ? (
                   <Table
                     columns={comparisonColumns}
-                    rows={comparisonSkeletonRows}
+                    rows={comparisonRows}
                     scrollable
                     minWidth={Math.max(640, 220 + chartMonths.length * 120)}
+                    getRowProps={(_row, index) => ({
+                      className:
+                        chartEntityOptions[index]?.value === chartEntity
+                          ? s.selectedRow
+                          : undefined,
+                    })}
                   />
-                </>
-              ) : (
-                <>
-                  {showChartEmpty ? (
-                    <EmptyState
-                      title="No comparison data"
-                      description={`Try another ${
-                        groupBy === 'character' ? 'character' : 'scenario'
-                      }, range, or metric.`}
-                    />
-                  ) : (
-                    <div ref={chartRef} className={s.chart}>
-                      {chartWidth > 0 ? (
-                        <XYChart
-                          width={chartWidth}
-                          height={CHART_HEIGHT}
-                          xScale={{ type: 'point', padding: 0.1 }}
-                          yScale={{ type: 'linear', nice: true }}
-                        >
-                          <AnimatedGrid columns={false} numTicks={4} />
-                          <AnimatedAxis
-                            orientation="bottom"
-                            tickFormat={(value) =>
-                              formatMonthLabel(String(value), 'short')
-                            }
-                            numTicks={Math.min(6, chartMonths.length)}
-                          />
-                          <AnimatedAxis
-                            orientation="left"
-                            numTicks={4}
-                            tickFormat={(value) =>
-                              formatChartMetricValue(
-                                chartMetric,
-                                Number(value),
-                                'axis',
-                              )
-                            }
-                          />
-                          {chartSeries.map((series) => (
-                            <AnimatedLineSeries
-                              key={series.id}
-                              dataKey={series.id}
-                              data={series.data}
-                              color={CHART_LINE_COLOR}
-                              xAccessor={(datum) => datum.month}
-                              yAccessor={(datum) => datum.value}
-                            />
-                          ))}
-                          <ChartTooltip
-                            showVerticalCrosshair
-                            showSeriesGlyphs
-                            renderTooltip={({ tooltipData }) => {
-                              const nearest = tooltipData?.nearestDatum;
-                              if (!nearest) return null;
-                              const datum = nearest.datum as ChartPoint;
-                              return (
-                                <div className={s.chartTooltip}>
-                                  <Typography variant="meta" as="div">
-                                    {formatMonthLabel(datum.month, 'long')}
-                                  </Typography>
-                                  {chartSeries.map((series) => {
-                                    const point = series.data.find(
-                                      (item) => item.month === datum.month,
-                                    );
-                                    return (
-                                      <div
-                                        key={series.id}
-                                        className={s.chartTooltipRow}
-                                      >
-                                        <span className={s.legendSwatch} />
-                                        <Typography variant="caption">
-                                          {series.label}
-                                        </Typography>
-                                        <Typography variant="body">
-                                          {formatChartMetricValue(
-                                            chartMetric,
-                                            point?.value ?? null,
-                                            'tooltip',
-                                          )}
-                                        </Typography>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              );
-                            }}
-                          />
-                        </XYChart>
-                      ) : (
-                        <Skeleton height={CHART_HEIGHT} />
-                      )}
-                    </div>
-                  )}
-                  {showComparisonTable ? (
-                    <Table
-                      columns={comparisonColumns}
-                      rows={comparisonRows}
-                      scrollable
-                      minWidth={Math.max(640, 220 + chartMonths.length * 120)}
-                      getRowProps={(_row, index) => ({
-                        className:
-                          chartEntityOptions[index]?.value === chartEntity
-                            ? s.selectedRow
-                            : undefined,
-                      })}
-                    />
-                  ) : null}
-                </>
-              )}
-            </Card>
-          </Section>
-        </Stack>
-      </Container>
-    </AppShell>
+                ) : null}
+              </>
+            )}
+          </Card>
+        </Section>
+      </Stack>
+    </>
   );
 }
 

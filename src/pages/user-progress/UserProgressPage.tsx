@@ -5,7 +5,6 @@ import { useUserProgressStats } from '@/app/user-progress';
 import {
   Alert,
   Card,
-  Container,
   EmptyState,
   Field,
   FormRow,
@@ -19,7 +18,6 @@ import {
 } from '@/atoms';
 import type { ScenarioProgressStats } from '@/common/types';
 import { formatCharacterType } from '@/common/utils';
-import { AppShell } from '@/components/templates';
 
 import s from './UserProgressPage.module.scss';
 
@@ -183,7 +181,7 @@ function MetricCard({ label, value, meta }: MetricCardProps) {
   );
 }
 
-export function UserProgressPage() {
+export function UserProgressSection() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const rawAfter = searchParams.get('after') ?? '';
@@ -314,99 +312,93 @@ export function UserProgressPage() {
   );
 
   return (
-    <AppShell>
-      <Container className={s.page} size="wide">
-        <div className={s.header}>
-          <Typography variant="h2">User Progress</Typography>
+    <>
+      <Stack gap="24px">
+        {error ? (
+          <Alert
+            tone="danger"
+            title="Unable to load user progress"
+            description="Please retry or adjust the filters."
+          />
+        ) : null}
+
+        <div className={s.filters}>
+          <FormRow columns={2}>
+            <Field label="From" className={s.filterField}>
+              <Input
+                type="date"
+                size="sm"
+                value={after}
+                onChange={(event) =>
+                  updateSearchParams({ after: event.target.value })
+                }
+                fullWidth
+              />
+            </Field>
+            <Field label="To" className={s.filterField}>
+              <Input
+                type="date"
+                size="sm"
+                value={before}
+                onChange={(event) =>
+                  updateSearchParams({ before: event.target.value })
+                }
+                fullWidth
+              />
+            </Field>
+          </FormRow>
+          <Typography variant="caption" tone="muted" className={s.note}>
+            Pending and confirmed are calculated from total. Accepted, declined, and started metrics are calculated from total minus pending.
+          </Typography>
         </div>
 
-        <Stack gap="24px">
-          {error ? (
-            <Alert
-              tone="danger"
-              title="Unable to load user progress"
-              description="Please retry or adjust the filters."
+        <Section title="Totals">
+          {isLoading && !data ? (
+            <Grid columns={KPI_GRID_COLUMNS} gap={4}>
+              {buildMetricCardSkeletons('totals')}
+            </Grid>
+          ) : (
+            <Grid columns={KPI_GRID_COLUMNS} gap={4}>
+              {buildMetricCards(data?.totals)}
+            </Grid>
+          )}
+        </Section>
+
+        <Section title="Unique totals">
+          {isLoading && !data ? (
+            <Grid columns={KPI_GRID_COLUMNS} gap={4}>
+              {buildMetricCardSkeletons('totals-unique')}
+            </Grid>
+          ) : (
+            <Grid columns={KPI_GRID_COLUMNS} gap={4}>
+              {buildMetricCards(data?.totalsUnique)}
+            </Grid>
+          )}
+        </Section>
+
+        <Section title="By scenario">
+          {isLoading && !data ? (
+            <Table
+              columns={breakdownColumns}
+              rows={breakdownSkeletonRows}
+              scrollable
+              minWidth={TABLE_MIN_WIDTH}
             />
-          ) : null}
-
-          <div className={s.filters}>
-            <FormRow columns={2}>
-              <Field label="From" className={s.filterField}>
-                <Input
-                  type="date"
-                  size="sm"
-                  value={after}
-                  onChange={(event) =>
-                    updateSearchParams({ after: event.target.value })
-                  }
-                  fullWidth
-                />
-              </Field>
-              <Field label="To" className={s.filterField}>
-                <Input
-                  type="date"
-                  size="sm"
-                  value={before}
-                  onChange={(event) =>
-                    updateSearchParams({ before: event.target.value })
-                  }
-                  fullWidth
-                />
-              </Field>
-            </FormRow>
-            <Typography variant="caption" tone="muted" className={s.note}>
-              Pending and confirmed are calculated from total. Accepted, declined, and started metrics are calculated from total minus pending.
-            </Typography>
-          </div>
-
-          <Section title="Totals">
-            {isLoading && !data ? (
-              <Grid columns={KPI_GRID_COLUMNS} gap={4}>
-                {buildMetricCardSkeletons('totals')}
-              </Grid>
-            ) : (
-              <Grid columns={KPI_GRID_COLUMNS} gap={4}>
-                {buildMetricCards(data?.totals)}
-              </Grid>
-            )}
-          </Section>
-
-          <Section title="Unique totals">
-            {isLoading && !data ? (
-              <Grid columns={KPI_GRID_COLUMNS} gap={4}>
-                {buildMetricCardSkeletons('totals-unique')}
-              </Grid>
-            ) : (
-              <Grid columns={KPI_GRID_COLUMNS} gap={4}>
-                {buildMetricCards(data?.totalsUnique)}
-              </Grid>
-            )}
-          </Section>
-
-          <Section title="By scenario">
-            {isLoading && !data ? (
-              <Table
-                columns={breakdownColumns}
-                rows={breakdownSkeletonRows}
-                scrollable
-                minWidth={TABLE_MIN_WIDTH}
-              />
-            ) : breakdownRows.length === 0 ? (
-              <EmptyState
-                title="No scenario progress found"
-                description="Try another date range."
-              />
-            ) : (
-              <Table
-                columns={breakdownColumns}
-                rows={breakdownRows}
-                scrollable
-                minWidth={TABLE_MIN_WIDTH}
-              />
-            )}
-          </Section>
-        </Stack>
-      </Container>
-    </AppShell>
+          ) : breakdownRows.length === 0 ? (
+            <EmptyState
+              title="No scenario progress found"
+              description="Try another date range."
+            />
+          ) : (
+            <Table
+              columns={breakdownColumns}
+              rows={breakdownRows}
+              scrollable
+              minWidth={TABLE_MIN_WIDTH}
+            />
+          )}
+        </Section>
+      </Stack>
+    </>
   );
 }

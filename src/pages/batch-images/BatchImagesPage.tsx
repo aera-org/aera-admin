@@ -366,7 +366,7 @@ export function BatchImagesPage() {
       <Container size="wide" className={s.page}>
         <div className={s.header}>
           <div className={s.titleBlock}>
-            <Typography variant="h2">Batch Images</Typography>
+            <Typography variant="h2">Promo Images</Typography>
           </div>
           <Button iconLeft={<PlusIcon />} onClick={openCreateModal}>
             New batch image

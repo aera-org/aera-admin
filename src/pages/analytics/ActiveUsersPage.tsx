@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import {
+  type ActiveUsersScenario,
+  type ActiveUserStats,
   addMonths,
   compareMonthIds,
   formatCount,
@@ -9,15 +11,12 @@ import {
   getLastFullMonthId,
   getMonthRange,
   isValidMonthId,
-  type ActiveUsersScenario,
-  type ActiveUserStats,
   type MonthId,
   useAnalyticsActiveUsers,
 } from '@/app/analytics';
 import {
   Alert,
   Card,
-  Container,
   EmptyState,
   Field,
   FormRow,
@@ -31,7 +30,6 @@ import {
   Typography,
 } from '@/atoms';
 import { formatCharacterType } from '@/common/utils';
-import { AppShell } from '@/components/templates';
 
 import s from './ActiveUsersPage.module.scss';
 
@@ -225,7 +223,7 @@ type QueryUpdate = {
   q?: string;
 };
 
-export function ActiveUsersPage() {
+export function ActiveUsersSection() {
   const [searchParams, setSearchParams] = useSearchParams();
   const rawMonth = searchParams.get('month');
   const rawQuery = searchParams.get('q') ?? '';
@@ -367,98 +365,92 @@ export function ActiveUsersPage() {
   const showEmpty = !showSkeleton && !error && tableRows.length === 0;
 
   return (
-    <AppShell>
-      <Container className={s.page} size="wide">
-        <div className={s.header}>
-          <Typography variant="h2">Active Users</Typography>
-        </div>
+    <>
+      <Stack gap="24px">
+        {error ? (
+          <Alert
+            tone="danger"
+            title="Unable to load active users"
+            description="Please retry or choose another month."
+          />
+        ) : null}
 
-        <Stack gap="24px">
-          {error ? (
-            <Alert
-              tone="danger"
-              title="Unable to load active users"
-              description="Please retry or choose another month."
+        <Section title="Filters">
+          <div className={s.filters}>
+            <FormRow columns={2}>
+              <Field
+                label="Month"
+                labelFor="active-users-month"
+                className={s.filterField}
+              >
+                <Select
+                  id="active-users-month"
+                  options={monthOptions}
+                  value={month}
+                  onChange={(value) => updateSearchParams({ month: value })}
+                  size="sm"
+                  fullWidth
+                />
+              </Field>
+              <Field
+                label="Search"
+                labelFor="active-users-search"
+                className={s.filterField}
+              >
+                <Input
+                  id="active-users-search"
+                  size="sm"
+                  value={rawQuery}
+                  placeholder="Scenario or metric value"
+                  onChange={(event) =>
+                    updateSearchParams({ q: event.target.value })
+                  }
+                  fullWidth
+                />
+              </Field>
+            </FormRow>
+          </div>
+        </Section>
+
+        <Section title="Totals">
+          {showSkeleton ? (
+            <Grid columns={KPI_GRID_COLUMNS} gap={4}>
+              {buildMetricCardSkeletons('totals')}
+            </Grid>
+          ) : (
+            <Grid columns={KPI_GRID_COLUMNS} gap={4}>
+              {totalCards}
+            </Grid>
+          )}
+        </Section>
+
+        <Section title="By scenario">
+          {showSkeleton ? (
+            <Table
+              columns={tableColumns}
+              rows={tableSkeletonRows}
+              scrollable
+              minWidth={TABLE_MIN_WIDTH}
             />
-          ) : null}
-
-          <Section title="Filters">
-            <div className={s.filters}>
-              <FormRow columns={2}>
-                <Field
-                  label="Month"
-                  labelFor="active-users-month"
-                  className={s.filterField}
-                >
-                  <Select
-                    id="active-users-month"
-                    options={monthOptions}
-                    value={month}
-                    onChange={(value) => updateSearchParams({ month: value })}
-                    size="sm"
-                    fullWidth
-                  />
-                </Field>
-                <Field
-                  label="Search"
-                  labelFor="active-users-search"
-                  className={s.filterField}
-                >
-                  <Input
-                    id="active-users-search"
-                    size="sm"
-                    value={rawQuery}
-                    placeholder="Scenario or metric value"
-                    onChange={(event) =>
-                      updateSearchParams({ q: event.target.value })
-                    }
-                    fullWidth
-                  />
-                </Field>
-              </FormRow>
-            </div>
-          </Section>
-
-          <Section title="Totals">
-            {showSkeleton ? (
-              <Grid columns={KPI_GRID_COLUMNS} gap={4}>
-                {buildMetricCardSkeletons('totals')}
-              </Grid>
-            ) : (
-              <Grid columns={KPI_GRID_COLUMNS} gap={4}>
-                {totalCards}
-              </Grid>
-            )}
-          </Section>
-
-          <Section title="By scenario">
-            {showSkeleton ? (
-              <Table
-                columns={tableColumns}
-                rows={tableSkeletonRows}
-                scrollable
-                minWidth={TABLE_MIN_WIDTH}
-              />
-            ) : showEmpty ? (
-              <EmptyState
-                title="No active users found"
-                description={
-                  searchQuery
-                    ? 'Try another search query.'
-                    : 'Try another month.'
-                }
-              />
-            ) : (
-              <Table
-                columns={tableColumns}
-                rows={tableRows}
-                scrollable
-                minWidth={TABLE_MIN_WIDTH}
-              />
-            )}
-          </Section>
-        </Stack>
-      </Container>
-    </AppShell>
+          ) : showEmpty ? (
+            <EmptyState
+              title="No active users found"
+              description={
+                searchQuery
+                  ? 'Try another search query.'
+                  : 'Try another month.'
+              }
+            />
+          ) : (
+            <Table
+              columns={tableColumns}
+              rows={tableRows}
+              scrollable
+              minWidth={TABLE_MIN_WIDTH}
+            />
+          )}
+        </Section>
+      </Stack>
+    </>
   );
 }

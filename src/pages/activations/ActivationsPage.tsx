@@ -13,7 +13,6 @@ import { formatCount } from '@/app/analytics';
 import {
   Alert,
   Card,
-  Container,
   EmptyState,
   Field,
   FormRow,
@@ -32,7 +31,6 @@ import {
   StageActionType,
 } from '@/common/types';
 import { formatCharacterType } from '@/common/utils';
-import { AppShell } from '@/components/templates';
 
 import s from './ActivationsPage.module.scss';
 
@@ -280,7 +278,7 @@ function buildPercentWithCount(count: number, denominator: number) {
   );
 }
 
-export function ActivationsPage() {
+export function ActivationsSection() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [chartMetric, setChartMetric] = useState<ChartMetricKey>('total');
 
@@ -526,186 +524,180 @@ export function ActivationsPage() {
     useElementWidth<HTMLDivElement>();
 
   return (
-    <AppShell>
-      <Container className={s.page} size="wide">
-        <div className={s.header}>
-          <Typography variant="h2">Activations</Typography>
+    <>
+      <Stack gap="24px">
+        {error ? (
+          <Alert
+            tone="danger"
+            title="Unable to load activations"
+            description={errorDescription}
+          />
+        ) : null}
+
+        <div className={s.filters}>
+          <FormRow columns={2}>
+            <Field label="Start date" className={s.filterField}>
+              <Input
+                type="date"
+                size="sm"
+                value={start}
+                min={MIN_START_DATE}
+                max={maxSelectableDate}
+                onChange={(event) =>
+                  updateSearchParams({ start: event.target.value })
+                }
+                fullWidth
+              />
+            </Field>
+            <Field label="End date" className={s.filterField}>
+              <Input
+                type="date"
+                size="sm"
+                value={end}
+                min={MIN_START_DATE}
+                max={maxSelectableDate}
+                onChange={(event) =>
+                  updateSearchParams({ end: event.target.value })
+                }
+                fullWidth
+              />
+            </Field>
+          </FormRow>
+          <Typography variant="caption" tone="muted" className={s.filterNote}>
+            UTC dates. Start cannot be earlier than June 12, 2026. End cannot
+            be later than the previous UTC day.
+          </Typography>
         </div>
 
-        <Stack gap="24px">
-          {error ? (
-            <Alert
-              tone="danger"
-              title="Unable to load activations"
-              description={errorDescription}
-            />
-          ) : null}
+        <Section title="Totals">
+          {isLoading && !data ? (
+            <Grid columns={TOTAL_METRICS.length} gap={4}>
+              {buildMetricCardSkeletons('totals', TOTAL_METRICS.length)}
+            </Grid>
+          ) : (
+            <Grid columns={TOTAL_METRICS.length} gap={4}>
+              {totalsCards}
+            </Grid>
+          )}
+        </Section>
 
-          <div className={s.filters}>
-            <FormRow columns={2}>
-              <Field label="Start date" className={s.filterField}>
-                <Input
-                  type="date"
-                  size="sm"
-                  value={start}
-                  min={MIN_START_DATE}
-                  max={maxSelectableDate}
-                  onChange={(event) =>
-                    updateSearchParams({ start: event.target.value })
-                  }
-                  fullWidth
-                />
-              </Field>
-              <Field label="End date" className={s.filterField}>
-                <Input
-                  type="date"
-                  size="sm"
-                  value={end}
-                  min={MIN_START_DATE}
-                  max={maxSelectableDate}
-                  onChange={(event) =>
-                    updateSearchParams({ end: event.target.value })
-                  }
-                  fullWidth
-                />
-              </Field>
-            </FormRow>
-            <Typography variant="caption" tone="muted" className={s.filterNote}>
-              UTC dates. Start cannot be earlier than June 12, 2026. End cannot
-              be later than the previous UTC day.
-            </Typography>
-          </div>
+        <Section title="Action totals">
+          {isLoading && !data ? (
+            <Grid columns={ACTION_METRICS.length} gap={4}>
+              {buildMetricCardSkeletons('actions', ACTION_METRICS.length)}
+            </Grid>
+          ) : (
+            <Grid columns={ACTION_METRICS.length} gap={4}>
+              {actionTotalsCards}
+            </Grid>
+          )}
+        </Section>
 
-          <Section title="Totals">
-            {isLoading && !data ? (
-              <Grid columns={TOTAL_METRICS.length} gap={4}>
-                {buildMetricCardSkeletons('totals', TOTAL_METRICS.length)}
-              </Grid>
-            ) : (
-              <Grid columns={TOTAL_METRICS.length} gap={4}>
-                {totalsCards}
-              </Grid>
-            )}
-          </Section>
-
-          <Section title="Action totals">
-            {isLoading && !data ? (
-              <Grid columns={ACTION_METRICS.length} gap={4}>
-                {buildMetricCardSkeletons('actions', ACTION_METRICS.length)}
-              </Grid>
-            ) : (
-              <Grid columns={ACTION_METRICS.length} gap={4}>
-                {actionTotalsCards}
-              </Grid>
-            )}
-          </Section>
-
-          <Section
-            title="Daily"
-            actions={
-              <Field
-                label="Metric"
-                layout="inline"
-                className={s.breakdownField}
-              >
-                <Select
-                  options={chartMetricOptions}
-                  value={chartMetric}
-                  onChange={(value) => setChartMetric(value as ChartMetricKey)}
-                  size="sm"
-                  fitContent
-                />
-              </Field>
-            }
-          >
-            <Card className={s.panel} padding="md">
-              {isLoading && !data ? (
-                <Skeleton height={260} />
-              ) : chartData.length ? (
-                <div ref={chartRef} className={s.chart}>
-                  {chartWidth > 0 ? (
-                    <XYChart
-                      width={chartWidth}
-                      height={260}
-                      xScale={{ type: 'point', padding: 0.1 }}
-                      yScale={{ type: 'linear', nice: true }}
-                    >
-                      <AnimatedGrid columns={false} numTicks={4} />
-                      <AnimatedAxis
-                        orientation="bottom"
-                        tickFormat={(value) =>
-                          formatDayLabel(String(value), 'short')
-                        }
-                        numTicks={Math.min(6, chartData.length)}
-                      />
-                      <AnimatedAxis
-                        orientation="left"
-                        numTicks={4}
-                        tickFormat={(value) => formatChartValue(Number(value))}
-                      />
-                      <AnimatedLineSeries
-                        dataKey={activeChartMetric.label}
-                        data={chartData}
-                        xAccessor={(datum) => datum.day}
-                        yAccessor={(datum) => datum.value}
-                      />
-                      <ChartTooltip
-                        showVerticalCrosshair
-                        showSeriesGlyphs
-                        renderTooltip={({ tooltipData }) => {
-                          const nearest = tooltipData?.nearestDatum;
-                          if (!nearest) return null;
-                          const datum = nearest.datum as DailyChartDatum;
-                          return (
-                            <div className={s.chartTooltip}>
-                              <Typography variant="meta" as="div">
-                                {formatDayLabel(datum.day, 'long')}
-                              </Typography>
-                              <Typography variant="body" as="div">
-                                {formatChartValue(datum.value)}
-                              </Typography>
-                            </div>
-                          );
-                        }}
-                      />
-                    </XYChart>
-                  ) : (
-                    <Skeleton height={260} />
-                  )}
-                </div>
-              ) : (
-                <EmptyState
-                  title="No data for this period"
-                  description="Try adjusting the date range."
-                />
-              )}
-            </Card>
-          </Section>
-
-          <Section title="Scenario Breakdown">
-            {isLoading && !data ? (
-              <Table
-                columns={breakdownColumns}
-                rows={breakdownSkeletonRows}
-                scrollable
-                minWidth={TABLE_MIN_WIDTH}
+        <Section
+          title="Daily"
+          actions={
+            <Field
+              label="Metric"
+              layout="inline"
+              className={s.breakdownField}
+            >
+              <Select
+                options={chartMetricOptions}
+                value={chartMetric}
+                onChange={(value) => setChartMetric(value as ChartMetricKey)}
+                size="sm"
+                fitContent
               />
-            ) : breakdownRows.length === 0 ? (
+            </Field>
+          }
+        >
+          <Card className={s.panel} padding="md">
+            {isLoading && !data ? (
+              <Skeleton height={260} />
+            ) : chartData.length ? (
+              <div ref={chartRef} className={s.chart}>
+                {chartWidth > 0 ? (
+                  <XYChart
+                    width={chartWidth}
+                    height={260}
+                    xScale={{ type: 'point', padding: 0.1 }}
+                    yScale={{ type: 'linear', nice: true }}
+                  >
+                    <AnimatedGrid columns={false} numTicks={4} />
+                    <AnimatedAxis
+                      orientation="bottom"
+                      tickFormat={(value) =>
+                        formatDayLabel(String(value), 'short')
+                      }
+                      numTicks={Math.min(6, chartData.length)}
+                    />
+                    <AnimatedAxis
+                      orientation="left"
+                      numTicks={4}
+                      tickFormat={(value) => formatChartValue(Number(value))}
+                    />
+                    <AnimatedLineSeries
+                      dataKey={activeChartMetric.label}
+                      data={chartData}
+                      xAccessor={(datum) => datum.day}
+                      yAccessor={(datum) => datum.value}
+                    />
+                    <ChartTooltip
+                      showVerticalCrosshair
+                      showSeriesGlyphs
+                      renderTooltip={({ tooltipData }) => {
+                        const nearest = tooltipData?.nearestDatum;
+                        if (!nearest) return null;
+                        const datum = nearest.datum as DailyChartDatum;
+                        return (
+                          <div className={s.chartTooltip}>
+                            <Typography variant="meta" as="div">
+                              {formatDayLabel(datum.day, 'long')}
+                            </Typography>
+                            <Typography variant="body" as="div">
+                              {formatChartValue(datum.value)}
+                            </Typography>
+                          </div>
+                        );
+                      }}
+                    />
+                  </XYChart>
+                ) : (
+                  <Skeleton height={260} />
+                )}
+              </div>
+            ) : (
               <EmptyState
-                title="No activations found"
-                description="Try another date range."
-              />
-            ) : (
-              <Table
-                columns={breakdownColumns}
-                rows={breakdownRows}
-                scrollable
-                minWidth={TABLE_MIN_WIDTH}
+                title="No data for this period"
+                description="Try adjusting the date range."
               />
             )}
-          </Section>
-        </Stack>
-      </Container>
-    </AppShell>
+          </Card>
+        </Section>
+
+        <Section title="Scenario Breakdown">
+          {isLoading && !data ? (
+            <Table
+              columns={breakdownColumns}
+              rows={breakdownSkeletonRows}
+              scrollable
+              minWidth={TABLE_MIN_WIDTH}
+            />
+          ) : breakdownRows.length === 0 ? (
+            <EmptyState
+              title="No activations found"
+              description="Try another date range."
+            />
+          ) : (
+            <Table
+              columns={breakdownColumns}
+              rows={breakdownRows}
+              scrollable
+              minWidth={TABLE_MIN_WIDTH}
+            />
+          )}
+        </Section>
+      </Stack>
+    </>
   );
 }

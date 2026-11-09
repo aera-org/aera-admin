@@ -9,8 +9,6 @@ import {
 
 import { AuthGuard, AuthProvider } from '@/app/auth';
 import {
-  ActivationsPage,
-  ActiveUsersPage,
   AdminsPage,
   AirPurchasesPage,
   AnalyticsPage,
@@ -33,7 +31,6 @@ import {
   ChatsPage,
   CohortRevenuePage,
   ConfirmEmailPage,
-  ConversionsPage,
   CustomCharacterCreatePage,
   CustomCharacterDetailsPage,
   CustomCharactersPage,
@@ -55,18 +52,18 @@ import {
   PoseUpdatePage,
   PostAnalyticsPage,
   PostsPage,
+  ProductPage,
+  ProductRedirect,
   ProfilePage,
   PromptCreatePage,
   PromptsPage,
   PromptUpdatePage,
   ResetPasswordPage,
-  ScenarioAnalyticsPage,
   ScenarioGenCreatePage,
   ScenarioGenDetailsPage,
   ScenarioGenPage,
   UiKitPage,
   UserDetailsPage,
-  UserProgressPage,
   UsersPage,
   UserTypeCreatePage,
   UserTypesPage,
@@ -77,6 +74,7 @@ import {
   VideoPromptUpdatePage,
   VideosPage,
   VoicesPage,
+  WebStubPage,
 } from '@/pages';
 
 function CharacterImageDrawerRedirect() {
@@ -139,10 +137,13 @@ export function AppRoutes() {
             path="/analytics/cohort-revenue"
             element={<CohortRevenuePage />}
           />
-          <Route path="/analytics/active-users" element={<ActiveUsersPage />} />
+          <Route
+            path="/analytics/active-users"
+            element={<ProductRedirect section="active-users" />}
+          />
           <Route
             path="/analytics/scenarios"
-            element={<ScenarioAnalyticsPage />}
+            element={<ProductRedirect section="scenarios" />}
           />
           <Route path="/ui" element={<UiKitPage />} />
           <Route path="/characters" element={<CharactersPage />} />
@@ -182,9 +183,21 @@ export function AppRoutes() {
           <Route path="/user-types" element={<UserTypesPage />} />
           <Route path="/user-types/new" element={<UserTypeCreatePage />} />
           <Route path="/user-types/:id" element={<UserTypeUpdatePage />} />
-          <Route path="/user-progress" element={<UserProgressPage />} />
-          <Route path="/activations" element={<ActivationsPage />} />
-          <Route path="/conversions" element={<ConversionsPage />} />
+          <Route path="/product" element={<ProductPage />} />
+          <Route
+            path="/user-progress"
+            element={<ProductRedirect section="user-progress" />}
+          />
+          <Route
+            path="/activations"
+            element={<ProductRedirect section="activations" />}
+          />
+          <Route
+            path="/conversions"
+            element={<ProductRedirect section="conversions" />}
+          />
+          <Route path="/web/users" element={<WebStubPage title="Users" />} />
+          <Route path="/web/chats" element={<WebStubPage title="Chats" />} />
           <Route path="/chats" element={<ChatsPage />} />
           <Route path="/chats/:id" element={<ChatDetailsPage />} />
           <Route path="/generations/new" element={<GenerateImagePage />} />
