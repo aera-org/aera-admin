@@ -7,6 +7,7 @@ import {
   Alert,
   Badge,
   Button,
+  Checkbox,
   Container,
   EmptyState,
   Field,
@@ -29,21 +30,13 @@ import {
 } from '../webFormat';
 import s from '../WebPage.module.scss';
 
-type AnonymousFilter = '' | 'registered' | 'anonymous';
-
 type QueryUpdate = {
   search?: string;
-  anonymous?: string;
+  anonymous?: boolean;
   order?: string;
   page?: number;
   pageSize?: number;
 };
-
-const ANONYMOUS_OPTIONS = [
-  { label: 'All users', value: '' },
-  { label: 'Registered', value: 'registered' },
-  { label: 'Anonymous', value: 'anonymous' },
-];
 
 const ORDER_OPTIONS = [
   { label: 'Newest first', value: 'DESC' },
@@ -78,15 +71,11 @@ function parsePageSize(value: string | null) {
   return PAGE_SIZE_OPTIONS.includes(parsed) ? parsed : DEFAULT_PAGE_SIZE;
 }
 
-function resolveAnonymous(value: string | null): AnonymousFilter {
-  return value === 'registered' || value === 'anonymous' ? value : '';
-}
-
 export function WebUsersPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSearch = searchParams.get('search') ?? '';
-  const anonymous = resolveAnonymous(searchParams.get('anonymous'));
+  const anonymous = searchParams.get('anonymous') === '1';
   const rawOrder = searchParams.get('order');
   const order = rawOrder === 'ASC' ? 'ASC' : DEFAULT_ORDER;
   const page = parsePositiveNumber(searchParams.get('page'), 1);
@@ -106,7 +95,9 @@ export function WebUsersPage() {
       };
 
       setOrDelete('search', update.search?.trim());
-      setOrDelete('anonymous', update.anonymous);
+      if (update.anonymous !== undefined) {
+        setOrDelete('anonymous', update.anonymous ? '1' : '');
+      }
       if (update.order !== undefined) {
         setOrDelete('order', update.order === DEFAULT_ORDER ? '' : update.order);
       }
@@ -137,7 +128,7 @@ export function WebUsersPage() {
   const queryParams = useMemo(
     () => ({
       search: normalizedSearch || undefined,
-      isAnonymous: anonymous ? anonymous === 'anonymous' : undefined,
+      isAnonymous: anonymous,
       order,
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -282,16 +273,17 @@ export function WebUsersPage() {
               fullWidth
             />
           </Field>
-          <Field label="Type" labelFor="web-users-anonymous">
-            <Select
+          <Field label="Type">
+            <Checkbox
               id="web-users-anonymous"
-              options={ANONYMOUS_OPTIONS}
-              value={anonymous}
-              size="sm"
-              variant="ghost"
-              onChange={(value) =>
-                updateSearchParams({ anonymous: value, page: 1 })
+              checked={anonymous}
+              onChange={(event) =>
+                updateSearchParams({
+                  anonymous: event.target.checked,
+                  page: 1,
+                })
               }
+              label="Anonymous"
             />
           </Field>
           <Field label="Order" labelFor="web-users-order">
