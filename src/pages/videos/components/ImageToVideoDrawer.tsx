@@ -123,8 +123,8 @@ function buildDefaultName(source: ImageToVideoSource) {
 function buildInitialValues(source: ImageToVideoSource): ImageToVideoValues {
   return {
     name: buildDefaultName(source),
-    quality: VideoQuality.Low,
-    resolution: VideoResolution.Medium,
+    quality: VideoQuality.Medium,
+    resolution: VideoResolution.Low,
     aspectRatio: VideoAspectRatio.Square,
     duration: '10',
     posePromptId: source.posePromptId ?? '',

@@ -44,7 +44,7 @@ const SECTION_LABELS: Record<NavSection, string> = {
 };
 
 const SECTION_ORDER: NavSection[] = ['system', 'tg', 'web'];
-const DEFAULT_SECTION: NavSection = 'tg';
+const DEFAULT_SECTION: NavSection = 'system';
 const STORAGE_KEY = 'nav.section';
 
 /** Each section is a list of groups; groups are separated by a divider. */
