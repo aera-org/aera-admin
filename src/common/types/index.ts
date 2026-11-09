@@ -30,3 +30,5 @@ export * from './user-type.type';
 export * from './video-generation.types';
 export * from './video-prompt.type';
 export * from './voice.type';
+export * from './web-plan.type';
+export * from './web-user.type';

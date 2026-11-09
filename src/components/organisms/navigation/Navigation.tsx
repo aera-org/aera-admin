@@ -115,6 +115,7 @@ const NAV: Record<NavSection, NavItem[][]> = {
     [
       { label: 'Users', to: '/web/users', icon: <UserIcon /> },
       { label: 'Chats', to: '/web/chats', icon: <SendIcon /> },
+      { label: 'Plans', to: '/web/plans', icon: <DollarSignIcon /> },
     ],
   ],
 };

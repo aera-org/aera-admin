@@ -74,7 +74,10 @@ import {
   VideoPromptUpdatePage,
   VideosPage,
   VoicesPage,
+  WebPlansPage,
   WebStubPage,
+  WebUserDetailsPage,
+  WebUsersPage,
 } from '@/pages';
 
 function CharacterImageDrawerRedirect() {
@@ -196,8 +199,10 @@ export function AppRoutes() {
             path="/conversions"
             element={<ProductRedirect section="conversions" />}
           />
-          <Route path="/web/users" element={<WebStubPage title="Users" />} />
+          <Route path="/web/users" element={<WebUsersPage />} />
+          <Route path="/web/users/:id" element={<WebUserDetailsPage />} />
           <Route path="/web/chats" element={<WebStubPage title="Chats" />} />
+          <Route path="/web/plans" element={<WebPlansPage />} />
           <Route path="/chats" element={<ChatsPage />} />
           <Route path="/chats/:id" element={<ChatDetailsPage />} />
           <Route path="/generations/new" element={<GenerateImagePage />} />

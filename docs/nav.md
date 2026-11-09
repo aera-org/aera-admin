@@ -41,5 +41,6 @@ Scenario Analytics
 
 # Web
 
-Users (todo)
+Users
 Chats (todo)
+Plans

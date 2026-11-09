@@ -64,4 +64,7 @@ export { VideoPromptUpdatePage } from './video-prompts/VideoPromptUpdatePage';
 export { VideoDetailsPage } from './videos/VideoDetailsPage';
 export { VideosPage } from './videos/VideosPage';
 export { VoicesPage } from './voices/VoicesPage';
+export { WebPlansPage } from './web/plans/WebPlansPage';
+export { WebUserDetailsPage } from './web/users/WebUserDetailsPage';
+export { WebUsersPage } from './web/users/WebUsersPage';
 export { WebStubPage } from './web/WebStubPage';
