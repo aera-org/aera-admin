@@ -1,3 +1,4 @@
+import type { IFile } from './file.type';
 import type { Pose } from './pose-prompt.type';
 
 export interface VideoPromptVars {
@@ -27,6 +28,7 @@ export interface IVideoPrompt {
 
 export interface IVideoPromptDetails extends IVideoPrompt {
   data: VideoPromptData;
+  example: IFile | null;
 }
 
 export interface VideoPromptCreateDto {
@@ -36,6 +38,8 @@ export interface VideoPromptCreateDto {
   isAnal?: boolean;
   isActive?: boolean;
   strength?: number | null;
+  /** null removes the example on update */
+  exampleId?: string | null;
   withMan: boolean;
   isFirstFrame: boolean;
   data: VideoPromptData;

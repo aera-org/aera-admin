@@ -1,4 +1,5 @@
 import type {
+  IFile,
   IVideoPromptDetails,
   Pose,
   VideoPromptCreateDto,
@@ -18,6 +19,7 @@ export type VideoPromptFormValues = {
   sound: string;
   environment: string;
   clothes: string;
+  example: IFile | null;
 };
 
 export type VideoPromptFormField = keyof VideoPromptFormValues;
@@ -45,6 +47,7 @@ export function getEmptyVideoPromptFormValues(): VideoPromptFormValues {
     sound: '',
     environment: '',
     clothes: '',
+    example: null,
   };
 }
 
@@ -65,6 +68,7 @@ export function toVideoPromptFormValues(
     sound: data.data?.sound ?? '',
     environment: data.defaults?.environment ?? '',
     clothes: data.defaults?.clothes ?? '',
+    example: data.example ?? null,
   };
 }
 
@@ -139,5 +143,6 @@ export function toVideoPromptPayload(
       sound: values.sound.trim(),
     },
     defaults,
+    exampleId: values.example?.id ?? null,
   };
 }

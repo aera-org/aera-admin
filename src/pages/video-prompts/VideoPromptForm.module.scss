@@ -24,3 +24,19 @@
   flex-wrap: wrap;
   gap: var(--space-4);
 }
+
+.example {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.examplePreview {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  max-height: 480px;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-sm);
+  background: hsl(var(--bg));
+}

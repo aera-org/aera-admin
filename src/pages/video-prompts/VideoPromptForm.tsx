@@ -1,3 +1,4 @@
+import { notifyError } from '@/app/toast';
 import { PlusIcon, TrashIcon } from '@/assets/icons';
 import {
   Button,
@@ -10,8 +11,9 @@ import {
   Switch,
   Textarea,
 } from '@/atoms';
-import type { Pose } from '@/common/types';
+import { FileDir, type Pose } from '@/common/types';
 import { poseOptions } from '@/common/utils';
+import { FileUpload } from '@/components/molecules';
 
 import s from './VideoPromptForm.module.scss';
 import type {
@@ -21,6 +23,7 @@ import type {
 } from './videoPromptFormValues';
 
 const poseSelectOptions = [{ label: 'No pose', value: '' }, ...poseOptions];
+const VIDEO_ACCEPT = 'video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v';
 
 type VideoPromptFormProps = {
   values: VideoPromptFormValues;
@@ -257,6 +260,30 @@ export function VideoPromptForm({
           />
         </Field>
       </FormRow>
+
+      <div className={s.example}>
+        <FileUpload
+          label="Example video"
+          folder={FileDir.Public}
+          accept={VIDEO_ACCEPT}
+          value={values.example}
+          onChange={(file) => onChange('example', file)}
+          onError={(message) =>
+            notifyError(new Error(message), 'Unable to upload example video.')
+          }
+          disabled={disabled}
+        />
+        {values.example?.url ? (
+          <video
+            key={values.example.id}
+            className={s.examplePreview}
+            src={values.example.url}
+            controls
+            playsInline
+            preload="metadata"
+          />
+        ) : null}
+      </div>
     </>
   );
 }
