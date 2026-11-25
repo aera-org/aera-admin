@@ -72,6 +72,7 @@ type ScenarioSectionProps = {
   showIsNew?: boolean;
   showIsPromoted?: boolean;
   showIsTop?: boolean;
+  showIsPremium?: boolean;
   showVideos?: boolean;
   useCustomCreate?: boolean;
 };
@@ -110,6 +111,7 @@ export function ScenarioSection({
   showIsNew = true,
   showIsPromoted = true,
   showIsTop = true,
+  showIsPremium = true,
   showVideos = false,
   useCustomCreate = false,
 }: ScenarioSectionProps) {
@@ -158,6 +160,7 @@ export function ScenarioSection({
     isPromoted: false,
     promoText: '',
     isTop: false,
+    isPremium: false,
     promoImgId: '',
     promoImgHorizontalId: '',
     personality: '',
@@ -368,6 +371,7 @@ export function ScenarioSection({
       isPromoted: false,
       promoText: '',
       isTop: false,
+      isPremium: false,
       promoImgId: '',
       promoImgHorizontalId: '',
       personality: '',
@@ -412,6 +416,7 @@ export function ScenarioSection({
       isPromoted: showIsPromoted ? Boolean(selectedScenario.isPromoted) : false,
       promoText: showIsPromoted ? (selectedScenario.promoText ?? '') : '',
       isTop: showIsTop ? Boolean(selectedScenario.isTop) : false,
+      isPremium: showIsPremium ? Boolean(selectedScenario.isPremium) : false,
       promoImgId: showPromoImages ? (selectedScenario.promoImg?.id ?? '') : '',
       promoImgHorizontalId: showPromoImages
         ? (selectedScenario.promoImgHorizontal?.id ?? '')
@@ -561,6 +566,9 @@ export function ScenarioSection({
           ? editValues.promoText.trim()
           : selectedScenario.promoText,
         isTop: showIsTop ? editValues.isTop : selectedScenario.isTop,
+        isPremium: showIsPremium
+          ? editValues.isPremium
+          : selectedScenario.isPremium,
         promoImgId: showPromoImages
           ? editValues.promoImgId || undefined
           : selectedScenario.promoImg?.id,
@@ -934,6 +942,7 @@ export function ScenarioSection({
               showIsNew={showIsNew}
               showIsPromoted={showIsPromoted}
               showIsTop={showIsTop}
+              showIsPremium={showIsPremium}
               showPromoImages={showPromoImages}
               showVideos={showVideos}
             />
@@ -1766,6 +1775,26 @@ export function ScenarioSection({
                   }))
                 }
                 label={editValues.isTop ? 'Top' : 'Not top'}
+              />
+            </Field>
+          ) : null}
+
+          {showIsPremium ? (
+            <Field
+              label="Premium"
+              labelFor="scenario-edit-is-premium"
+              hint="Telegram: only subscribed users can start it."
+            >
+              <Switch
+                id="scenario-edit-is-premium"
+                checked={editValues.isPremium}
+                onChange={(event) =>
+                  setEditValues((prev) => ({
+                    ...prev,
+                    isPremium: event.target.checked,
+                  }))
+                }
+                label={editValues.isPremium ? 'Premium' : 'Not premium'}
               />
             </Field>
           ) : null}

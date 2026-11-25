@@ -16,6 +16,7 @@ import {
   NewspaperIcon,
   RadioIcon,
   SendIcon,
+  SlidersIcon,
   SparklesIcon,
   UserCogIcon,
   UserIcon,
@@ -109,6 +110,7 @@ const NAV: Record<NavSection, NavItem[][]> = {
         to: '/custom-characters',
         icon: <SparklesIcon />,
       },
+      { label: 'Config', to: '/config', icon: <SlidersIcon /> },
     ],
   ],
   web: [
@@ -116,6 +118,7 @@ const NAV: Record<NavSection, NavItem[][]> = {
       { label: 'Users', to: '/web/users', icon: <UserIcon /> },
       { label: 'Chats', to: '/web/chats', icon: <SendIcon /> },
       { label: 'Plans', to: '/web/plans', icon: <DollarSignIcon /> },
+      { label: 'Config', to: '/web/config', icon: <SlidersIcon /> },
     ],
   ],
 };

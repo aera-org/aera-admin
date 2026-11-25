@@ -135,6 +135,7 @@ export type ScenarioUpdateDto = ScenarioCreateDto & {
   nameWeb?: string;
   isActiveWeb?: boolean;
   promoVideoId?: string | null;
+  isPremium?: boolean;
 };
 export type AddScenarioI18nDto = {
   languages: Language[];

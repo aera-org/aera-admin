@@ -124,6 +124,8 @@ export interface IScenario {
     gifts: ICharacterGift[];
     liveGenerations: ScenarioLiveGenerations;
     isPromoted: boolean;
+    /** Telegram: only subscribed users can start it. */
+    isPremium: boolean;
     promoText: string;
     isTop: boolean;
     createdAt: string;

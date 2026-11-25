@@ -30,6 +30,7 @@ import {
   ChatDetailsPage,
   ChatsPage,
   CohortRevenuePage,
+  ConfigPage,
   ConfirmEmailPage,
   CustomCharacterCreatePage,
   CustomCharacterDetailsPage,
@@ -203,6 +204,7 @@ export function AppRoutes() {
           <Route path="/web/users/:id" element={<WebUserDetailsPage />} />
           <Route path="/web/chats" element={<WebStubPage title="Chats" />} />
           <Route path="/web/plans" element={<WebPlansPage />} />
+          <Route path="/web/config" element={<ConfigPage scope="web" />} />
           <Route path="/chats" element={<ChatsPage />} />
           <Route path="/chats/:id" element={<ChatDetailsPage />} />
           <Route path="/generations/new" element={<GenerateImagePage />} />
@@ -232,6 +234,7 @@ export function AppRoutes() {
           <Route path="/scenario-gen/new" element={<ScenarioGenCreatePage />} />
           <Route path="/scenario-gen/:id" element={<ScenarioGenDetailsPage />} />
           <Route path="/plans" element={<PlansPage />} />
+          <Route path="/config" element={<ConfigPage scope="tg" />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
       </Route>

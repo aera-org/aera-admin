@@ -24,6 +24,7 @@ export { CharacterDetailsPage } from './characters/CharacterDetailsPage';
 export { CharactersPage } from './characters/CharactersPage';
 export { ChatDetailsPage } from './chats/ChatDetailsPage';
 export { ChatsPage } from './chats/ChatsPage';
+export { ConfigPage } from './config/ConfigPage';
 export { CustomCharacterCreatePage } from './custom-characters/CustomCharacterCreatePage';
 export { CustomCharacterDetailsPage } from './custom-characters/CustomCharacterDetailsPage';
 export { CustomCharactersPage } from './custom-characters/CustomCharactersPage';
