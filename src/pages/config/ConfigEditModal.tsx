@@ -8,6 +8,7 @@ import {
   type IConfigItem,
 } from '@/common/types';
 
+import { getConfigLabel } from './configLabels';
 import s from './ConfigPage.module.scss';
 
 type ConfigEditModalProps = {
@@ -58,7 +59,7 @@ export function ConfigEditModal({ scope, item, onClose }: ConfigEditModalProps) 
   return (
     <Modal
       open
-      title={item.key}
+      title={getConfigLabel(scope, item)}
       onClose={handleClose}
       actions={
         <div className={s.modalActions}>

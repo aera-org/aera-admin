@@ -15,6 +15,7 @@ import type { ConfigScope, IConfigItem } from '@/common/types';
 import { AppShell } from '@/components/templates';
 
 import { ConfigEditModal } from './ConfigEditModal';
+import { getConfigLabel } from './configLabels';
 import s from './ConfigPage.module.scss';
 
 const TITLES: Record<ConfigScope, string> = {
@@ -35,7 +36,7 @@ function formatDate(value: string | null) {
 }
 
 const columns = [
-  { key: 'key', label: 'Key' },
+  { key: 'key', label: 'Setting' },
   { key: 'value', label: 'Value' },
   { key: 'default', label: 'Default' },
   { key: 'updated', label: <span className={s.alignRight}>Updated</span> },
@@ -64,7 +65,14 @@ export function ConfigPage({ scope }: ConfigPageProps) {
   const rows = useMemo(
     () =>
       items.map((item) => ({
-        key: <Typography variant="body">{item.key}</Typography>,
+        key: (
+          <div className={s.cell}>
+            <Typography variant="body">{getConfigLabel(scope, item)}</Typography>
+            <Typography variant="caption" tone="muted">
+              {item.key}
+            </Typography>
+          </div>
+        ),
         value: <Typography variant="body">{item.value}</Typography>,
         default: (
           <Typography variant="body" tone="muted">
@@ -77,7 +85,7 @@ export function ConfigPage({ scope }: ConfigPageProps) {
           </Typography>
         ),
       })),
-    [items],
+    [items, scope],
   );
 
   const showSkeleton = isLoading && !data;
