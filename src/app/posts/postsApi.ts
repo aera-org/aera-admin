@@ -15,6 +15,7 @@ export type PostsListParams = {
   scenarioId?: string;
   isActive?: boolean;
   isStart?: boolean;
+  isRvb?: boolean;
   skip?: number;
   take?: number;
 };
@@ -42,12 +43,20 @@ type StartPostDto = {
   scenarioId?: never;
 };
 
+/** Rvb bot post: no scenario, never start or custom character. */
+type RvbPostDto = {
+  isStart: false;
+  isCustomCharacter: false;
+  isRvb: true;
+  scenarioId?: never;
+};
+
 type PostMediaDto =
   | { type: PostType.Img; imgId: string }
   | { type: PostType.Video; videoId: string };
 
 export type CreatePostDto = PostBaseDto &
-  (RegularPostDto | CustomCharacterPostDto | StartPostDto) &
+  (RegularPostDto | CustomCharacterPostDto | StartPostDto | RvbPostDto) &
   PostMediaDto;
 
 export type UpdatePostDto = PostBaseDto & {
@@ -80,6 +89,9 @@ function buildListQuery(params: PostsListParams) {
   }
   if (typeof params.isStart === 'boolean') {
     query.set('isStart', String(params.isStart));
+  }
+  if (typeof params.isRvb === 'boolean') {
+    query.set('isRvb', String(params.isRvb));
   }
   if (typeof params.skip === 'number') query.set('skip', String(params.skip));
   if (typeof params.take === 'number') query.set('take', String(params.take));

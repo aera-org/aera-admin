@@ -29,6 +29,7 @@ import {
   Textarea,
   Typography,
 } from '@/atoms';
+import { isX } from '@/common/is-x';
 import {
   FileDir,
   FileStatus,
@@ -71,6 +72,7 @@ type Values = {
   scenarioId: string;
   isCustomCharacter: boolean;
   isStart: boolean;
+  isRvb: boolean;
   type: PostType;
   text: string;
   isActive: boolean;
@@ -234,6 +236,7 @@ export function PostUpsertDrawer({
     scenarioId: '',
     isCustomCharacter: false,
     isStart: false,
+    isRvb: false,
     type: PostType.Img,
     text: '',
     isActive: true,
@@ -306,6 +309,10 @@ export function PostUpsertDrawer({
     [values.localizations],
   );
 
+  // start, custom character and rvb posts have no scenario
+  const isScenarioless =
+    values.isCustomCharacter || values.isStart || values.isRvb;
+
   const resetState = useCallback(() => {
     const postType = post?.type ?? PostType.Img;
 
@@ -315,6 +322,7 @@ export function PostUpsertDrawer({
       scenarioId: post?.scenario?.id ?? initialScenarioId,
       isCustomCharacter: post?.isCustomCharacter ?? false,
       isStart: post?.isStart ?? false,
+      isRvb: post?.isRvb ?? false,
       type: postType,
       text: post?.text ?? '',
       isActive: post?.isActive ?? true,
@@ -335,7 +343,7 @@ export function PostUpsertDrawer({
   }, [open, resetState]);
 
   useEffect(() => {
-    if (values.isCustomCharacter || values.isStart) {
+    if (isScenarioless) {
       if (!values.characterId && !values.scenarioId) return;
       setValues((prev) => ({ ...prev, characterId: '', scenarioId: '' }));
       return;
@@ -355,8 +363,7 @@ export function PostUpsertDrawer({
     }
   }, [
     isScenariosLoading,
-    values.isCustomCharacter,
-    values.isStart,
+    isScenarioless,
     scenarioOptions,
     selectedCharacterDetails,
     values.characterId,
@@ -368,13 +375,11 @@ export function PostUpsertDrawer({
 
     return {
       characterId:
-        values.isCustomCharacter || values.isStart || values.characterId
+        isScenarioless || values.characterId
           ? undefined
           : 'Select a character.',
       scenarioId:
-        values.isCustomCharacter || values.isStart || values.scenarioId
-          ? undefined
-          : 'Select a scenario.',
+        isScenarioless || values.scenarioId ? undefined : 'Select a scenario.',
       text: values.text.trim() ? undefined : 'Enter text.',
       media: resolvedMedia
         ? undefined
@@ -387,9 +392,8 @@ export function PostUpsertDrawer({
     mediaConfig.missingError,
     resolvedMedia,
     showErrors,
+    isScenarioless,
     values.characterId,
-    values.isCustomCharacter,
-    values.isStart,
     values.scenarioId,
     values.text,
   ]);
@@ -477,8 +481,8 @@ export function PostUpsertDrawer({
 
   const handleSave = async () => {
     if (
-      (!values.isCustomCharacter && !values.isStart && !values.characterId) ||
-      (!values.isCustomCharacter && !values.isStart && !values.scenarioId) ||
+      (!isScenarioless && !values.characterId) ||
+      (!isScenarioless && !values.scenarioId) ||
       !values.text.trim() ||
       !resolvedMedia
     ) {
@@ -497,15 +501,17 @@ export function PostUpsertDrawer({
         values.type === PostType.Video
           ? { type: PostType.Video as const, videoId: resolvedMedia.id }
           : { type: PostType.Img as const, imgId: resolvedMedia.id };
-      const mode = values.isStart
-        ? ({ isStart: true, isCustomCharacter: false } as const)
-        : values.isCustomCharacter
-          ? ({ isStart: false, isCustomCharacter: true } as const)
-          : ({
-              isStart: false,
-              isCustomCharacter: false,
-              scenarioId: values.scenarioId,
-            } as const);
+      const mode = values.isRvb
+        ? ({ isStart: false, isCustomCharacter: false, isRvb: true } as const)
+        : values.isStart
+          ? ({ isStart: true, isCustomCharacter: false } as const)
+          : values.isCustomCharacter
+            ? ({ isStart: false, isCustomCharacter: true } as const)
+            : ({
+                isStart: false,
+                isCustomCharacter: false,
+                scenarioId: values.scenarioId,
+              } as const);
       const payload: CreatePostDto = { ...content, ...mode, ...media };
 
       if (post) {
@@ -562,7 +568,7 @@ export function PostUpsertDrawer({
         ) : null}
 
         <FormRow columns={2}>
-          {!values.isCustomCharacter && !values.isStart ? (
+          {!isScenarioless ? (
             <Field
               label="Character"
               labelFor="post-upsert-character"
@@ -594,49 +600,80 @@ export function PostUpsertDrawer({
             </Field>
           ) : null}
 
-          <Field label="Start" labelFor="post-upsert-is-start">
-            <Switch
-              id="post-upsert-is-start"
-              checked={values.isStart}
-              disabled={isBusy || Boolean(post)}
-              onChange={(event) =>
-                setValues((prev) => ({
-                  ...prev,
-                  isStart: event.target.checked,
-                  isCustomCharacter: event.target.checked
-                    ? false
-                    : prev.isCustomCharacter,
-                  characterId: event.target.checked ? '' : prev.characterId,
-                  scenarioId: event.target.checked ? '' : prev.scenarioId,
-                }))
-              }
-              label={values.isStart ? 'Enabled' : 'Disabled'}
-            />
-          </Field>
+          {isX ? (
+            <Field
+              label="RVB bot"
+              labelFor="post-upsert-is-rvb"
+              hint={post ? 'Cannot be changed after creation.' : undefined}
+            >
+              <Switch
+                id="post-upsert-is-rvb"
+                checked={values.isRvb}
+                disabled={isBusy || Boolean(post)}
+                onChange={(event) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    isRvb: event.target.checked,
+                    isStart: event.target.checked ? false : prev.isStart,
+                    isCustomCharacter: event.target.checked
+                      ? false
+                      : prev.isCustomCharacter,
+                    characterId: event.target.checked ? '' : prev.characterId,
+                    scenarioId: event.target.checked ? '' : prev.scenarioId,
+                  }))
+                }
+                label={values.isRvb ? 'Enabled' : 'Disabled'}
+              />
+            </Field>
+          ) : null}
 
-          <Field
-            label="Custom character"
-            labelFor="post-upsert-is-custom-character"
-          >
-            <Switch
-              id="post-upsert-is-custom-character"
-              checked={values.isCustomCharacter}
-              disabled={isBusy || Boolean(post?.isStart)}
-              onChange={(event) =>
-                setValues((prev) => ({
-                  ...prev,
-                  isCustomCharacter: event.target.checked,
-                  isStart: event.target.checked ? false : prev.isStart,
-                  characterId: event.target.checked ? '' : prev.characterId,
-                  scenarioId: event.target.checked ? '' : prev.scenarioId,
-                }))
-              }
-              label={values.isCustomCharacter ? 'Enabled' : 'Disabled'}
-            />
-          </Field>
+          {!values.isRvb ? (
+            <>
+              <Field label="Start" labelFor="post-upsert-is-start">
+                <Switch
+                  id="post-upsert-is-start"
+                  checked={values.isStart}
+                  disabled={isBusy || Boolean(post)}
+                  onChange={(event) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      isStart: event.target.checked,
+                      isCustomCharacter: event.target.checked
+                        ? false
+                        : prev.isCustomCharacter,
+                      characterId: event.target.checked ? '' : prev.characterId,
+                      scenarioId: event.target.checked ? '' : prev.scenarioId,
+                    }))
+                  }
+                  label={values.isStart ? 'Enabled' : 'Disabled'}
+                />
+              </Field>
+
+              <Field
+                label="Custom character"
+                labelFor="post-upsert-is-custom-character"
+              >
+                <Switch
+                  id="post-upsert-is-custom-character"
+                  checked={values.isCustomCharacter}
+                  disabled={isBusy || Boolean(post?.isStart)}
+                  onChange={(event) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      isCustomCharacter: event.target.checked,
+                      isStart: event.target.checked ? false : prev.isStart,
+                      characterId: event.target.checked ? '' : prev.characterId,
+                      scenarioId: event.target.checked ? '' : prev.scenarioId,
+                    }))
+                  }
+                  label={values.isCustomCharacter ? 'Enabled' : 'Disabled'}
+                />
+              </Field>
+            </>
+          ) : null}
         </FormRow>
 
-        {!values.isCustomCharacter && !values.isStart ? (
+        {!isScenarioless ? (
           <Field
             label="Scenario"
             labelFor="post-upsert-scenario"

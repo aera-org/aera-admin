@@ -17,7 +17,9 @@ export function PostItemCard({
   onDelete,
   isDeleting = false,
 }: PostItemCardProps) {
-  const scenarioName = item.scenario?.name || 'Custom character';
+  const scenarioName =
+    item.scenario?.name ||
+    (item.isRvb ? 'RVB bot' : item.isStart ? 'Start' : 'Custom character');
   const imageUrl = item.img?.url ?? '';
   const videoUrl = item.video?.url ?? '';
   const textValue = item.text || '—';
@@ -34,7 +36,9 @@ export function PostItemCard({
   return (
     <Card
       padding="md"
-      className={[s.card, isSelectable ? s.selectable : ''].filter(Boolean).join(' ')}
+      className={[s.card, isSelectable ? s.selectable : '']
+        .filter(Boolean)
+        .join(' ')}
       role={isSelectable ? 'button' : undefined}
       tabIndex={isSelectable ? 0 : undefined}
       onClick={isSelectable ? handleSelect : undefined}
@@ -104,6 +108,7 @@ export function PostItemCard({
               {item.isActive ? 'Active' : 'Inactive'}
             </Badge>
             <Badge>{item.type === PostType.Video ? 'Video' : 'Image'}</Badge>
+            {item.isRvb ? <Badge outline>RVB</Badge> : null}
           </div>
         </div>
         <pre className={s.textValue}>{textValue}</pre>

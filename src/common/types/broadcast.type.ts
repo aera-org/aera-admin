@@ -3,6 +3,10 @@ export interface BroadcastFilters {
   lastVisitedAfter?: Date;
   subscribed?: boolean;
   userIds?: string[];
+  /** isX: promote the rvb bot to users not yet notified, in random order. */
+  rvb?: boolean;
+  /** Max number of recipients. */
+  amount?: number;
 }
 
 export enum MessageActionType {

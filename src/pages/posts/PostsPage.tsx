@@ -23,6 +23,7 @@ import {
   Stack,
   Typography,
 } from '@/atoms';
+import { isX } from '@/common/is-x';
 import type { ICharacterDetails, IPost, Language } from '@/common/types';
 import { formatCharacterSelectLabel } from '@/common/utils';
 import { ConfirmModal } from '@/components/molecules';
@@ -41,6 +42,7 @@ type QueryUpdate = {
   pageSize?: number;
   isActive?: string;
   isStart?: string;
+  isRvb?: string;
 };
 
 type ScenarioOption = {
@@ -114,6 +116,7 @@ export function PostsPage() {
   const rawPageSize = searchParams.get('pageSize');
   const rawIsActive = searchParams.get('isActive');
   const rawIsStart = searchParams.get('isStart');
+  const rawIsRvb = searchParams.get('isRvb');
 
   const [searchInput, setSearchInput] = useState(rawSearch);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -131,6 +134,7 @@ export function PostsPage() {
   const pageSize = parsePageSize(rawPageSize);
   const activeFilter = resolveBooleanFilter(rawIsActive);
   const startFilter = resolveBooleanFilter(rawIsStart);
+  const rvbFilter = isX ? resolveBooleanFilter(rawIsRvb) : 'all';
 
   const updateSearchParams = useCallback(
     (update: QueryUpdate, replace = false) => {
@@ -192,6 +196,14 @@ export function PostsPage() {
           next.set('isStart', update.isStart);
         } else {
           next.delete('isStart');
+        }
+      }
+
+      if (update.isRvb !== undefined) {
+        if (update.isRvb === 'true' || update.isRvb === 'false') {
+          next.set('isRvb', update.isRvb);
+        } else {
+          next.delete('isRvb');
         }
       }
 
@@ -354,12 +366,14 @@ export function PostsPage() {
       scenarioId: scenarioFilter || undefined,
       isActive,
       isStart: startFilter === 'all' ? undefined : startFilter === 'true',
+      isRvb: rvbFilter === 'all' ? undefined : rvbFilter === 'true',
       skip: (page - 1) * pageSize,
       take: pageSize,
     };
   }, [
     activeFilter,
     startFilter,
+    rvbFilter,
     normalizedSearch,
     page,
     pageSize,
@@ -563,6 +577,25 @@ export function PostsPage() {
                 }
               />
             </Field>
+
+            {isX ? (
+              <Field
+                className={s.booleanField}
+                label="RVB bot"
+                labelFor="posts-rvb"
+              >
+                <Select
+                  id="posts-rvb"
+                  options={BOOLEAN_FILTER_OPTIONS}
+                  value={rvbFilter}
+                  size="sm"
+                  variant="ghost"
+                  onChange={(value) =>
+                    updateSearchParams({ isRvb: value, page: 1 })
+                  }
+                />
+              </Field>
+            ) : null}
 
             <Field
               className={s.booleanField}

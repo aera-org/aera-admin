@@ -24,6 +24,8 @@ export interface IPost {
     isActive: boolean;
     isCustomCharacter: boolean;
     isStart: boolean;
+    /** isX: post for the rvb bot. */
+    isRvb: boolean;
     scenario: IScenario | null;
     updatedAt: string;
     createdAt: string;

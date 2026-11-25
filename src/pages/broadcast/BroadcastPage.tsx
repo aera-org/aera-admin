@@ -18,10 +18,12 @@ import {
   Popover,
   Select,
   Stack,
+  Switch,
   Tag,
   Textarea,
   Typography,
 } from '@/atoms';
+import { isX } from '@/common/is-x';
 import type {
   BroadcastDto,
   BroadcastFilters,
@@ -48,6 +50,7 @@ type ValidationErrors = {
   messageText?: string;
   lastVisitedAfter?: string;
   lastVisitedBefore?: string;
+  amount?: string;
   actionTexts?: Record<number, string>;
   actionValues?: Record<number, string>;
 };
@@ -117,6 +120,17 @@ function parseUserIds(value: string) {
   return Array.from(new Set(ids));
 }
 
+/** Positive integer, or null when empty; undefined when invalid. */
+function parseAmount(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Number(trimmed);
+  if (!Number.isInteger(parsed) || parsed < 1) return undefined;
+  return parsed;
+}
+
+const numberFormatter = new Intl.NumberFormat('en-US');
+
 function isHttpUrl(value: string) {
   try {
     const parsed = new URL(value);
@@ -143,6 +157,8 @@ export function BroadcastPage() {
     useState<SubscriptionFilter>('any');
   const [lastVisitedAfter, setLastVisitedAfter] = useState('');
   const [lastVisitedBefore, setLastVisitedBefore] = useState('');
+  const [isRvb, setIsRvb] = useState(false);
+  const [amount, setAmount] = useState('');
 
   const [userSearch, setUserSearch] = useState('');
   const [isUserPickerOpen, setIsUserPickerOpen] = useState(false);
@@ -251,6 +267,12 @@ export function BroadcastPage() {
       }
     }
 
+    // rvb and amount only apply to "all" and "filters" audiences
+    const usesRvbOptions = isX && audienceMode !== 'users';
+    if (usesRvbOptions && parseAmount(amount) === undefined) {
+      errors.amount = 'Enter a whole number, 1 or more, or leave empty.';
+    }
+
     messageActions.forEach((action, index) => {
       const nextActionText = action.text.trim();
       const nextActionValue = action.value.trim();
@@ -279,6 +301,7 @@ export function BroadcastPage() {
 
     return errors;
   }, [
+    amount,
     audienceMode,
     lastVisitedAfter,
     lastVisitedBefore,
@@ -301,6 +324,8 @@ export function BroadcastPage() {
     setSubscriptionFilter('any');
     setLastVisitedAfter('');
     setLastVisitedBefore('');
+    setIsRvb(false);
+    setAmount('');
     setUserSearch('');
     setIsUserPickerOpen(false);
     setSelectedUserIds([]);
@@ -352,16 +377,25 @@ export function BroadcastPage() {
     setSelectedUserIds((prev) => prev.filter((userId) => userId !== id));
   };
 
+  const buildRvbOptions = (): BroadcastFilters => {
+    if (!isX) return {};
+    const options: BroadcastFilters = {};
+    if (isRvb) options.rvb = true;
+    const parsedAmount = parseAmount(amount);
+    if (parsedAmount) options.amount = parsedAmount;
+    return options;
+  };
+
   const buildFilters = (): BroadcastFilters => {
     if (audienceMode === 'all') {
-      return {};
+      return buildRvbOptions();
     }
 
     if (audienceMode === 'users') {
       return { userIds: selectedUserIds };
     }
 
-    const filters: BroadcastFilters = {};
+    const filters: BroadcastFilters = buildRvbOptions();
     if (subscriptionFilter === 'subscribed') {
       filters.subscribed = true;
     } else if (subscriptionFilter === 'unsubscribed') {
@@ -409,8 +443,21 @@ export function BroadcastPage() {
     });
   };
 
+  const amountLimit =
+    isX && audienceMode !== 'users' ? (parseAmount(amount) ?? null) : null;
+  // a capped broadcast never reaches all users
+  const requiresAllUsersConfirm = audienceMode === 'all' && !amountLimit;
+  const matchedCount = countMutation.data?.count ?? null;
+  // /broadcast/count ignores `amount`; the backend caps the send by it
+  const recipientCount =
+    matchedCount === null
+      ? null
+      : amountLimit
+        ? Math.min(matchedCount, amountLimit)
+        : matchedCount;
+
   const sendBroadcast = async () => {
-    if (audienceMode === 'all' && !allUsersConfirmed) return;
+    if (requiresAllUsersConfirm && !allUsersConfirmed) return;
     if (
       countMutation.isPending ||
       countMutation.isError ||
@@ -436,7 +483,7 @@ export function BroadcastPage() {
     countMutation.isPending ||
     countMutation.isError ||
     !countMutation.data ||
-    (audienceMode === 'all' && !allUsersConfirmed);
+    (requiresAllUsersConfirm && !allUsersConfirmed);
 
   return (
     <AppShell>
@@ -531,6 +578,45 @@ export function BroadcastPage() {
                       }
                       disabled={createMutation.isPending}
                       invalid={Boolean(errors.lastVisitedBefore)}
+                      fullWidth
+                    />
+                  </Field>
+                </FormRow>
+              ) : null}
+
+              {isX && audienceMode !== 'users' ? (
+                <FormRow columns={2}>
+                  <Field
+                    label="RVB bot promo"
+                    labelFor="broadcast-rvb"
+                    hint="Only users not reached by earlier RVB broadcasts, in random order."
+                  >
+                    <Switch
+                      id="broadcast-rvb"
+                      checked={isRvb}
+                      onChange={(event) => setIsRvb(event.target.checked)}
+                      label={isRvb ? 'Enabled' : 'Disabled'}
+                      disabled={createMutation.isPending}
+                    />
+                  </Field>
+                  <Field
+                    label="Max recipients"
+                    labelFor="broadcast-amount"
+                    hint="Optional. Leave empty to send to everyone matched."
+                    error={errors.amount}
+                  >
+                    <Input
+                      id="broadcast-amount"
+                      type="number"
+                      size="sm"
+                      min={1}
+                      step={1}
+                      inputMode="numeric"
+                      value={amount}
+                      onChange={(event) => setAmount(event.target.value)}
+                      placeholder="No limit"
+                      disabled={createMutation.isPending}
+                      invalid={Boolean(errors.amount)}
                       fullWidth
                     />
                   </Field>
@@ -875,13 +961,18 @@ export function BroadcastPage() {
               Counting users...
             </Typography>
           ) : null}
-          {countMutation.data ? (
+          {recipientCount !== null && matchedCount !== null ? (
             <Typography variant="body">
-              Will be sent to{' '}
-              {new Intl.NumberFormat('en-US').format(
-                countMutation.data.count,
-              )}{' '}
-              users
+              Will be sent to {numberFormatter.format(recipientCount)} users
+              {recipientCount < matchedCount
+                ? ` (limit; ${numberFormatter.format(matchedCount)} match)`
+                : ''}
+            </Typography>
+          ) : null}
+          {isX && isRvb && audienceMode !== 'users' ? (
+            <Typography variant="body" tone="muted">
+              RVB bot promo: random users not reached by earlier RVB broadcasts.
+              Recipients are marked and skipped next time.
             </Typography>
           ) : null}
           {countMutation.isError ? (
@@ -891,7 +982,7 @@ export function BroadcastPage() {
               description={countErrorMessage}
             />
           ) : null}
-          {audienceMode === 'all' ? (
+          {requiresAllUsersConfirm ? (
             <Checkbox
               checked={allUsersConfirmed}
               onChange={(event) => setAllUsersConfirmed(event.target.checked)}
