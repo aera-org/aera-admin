@@ -1,0 +1,62 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.fields {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.textInput {
+  flex: 1;
+  min-width: 0;
+}
+
+.styleSelect {
+  width: 120px;
+}
+
+.styleOption {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+}
+
+.swatchDefault {
+  background: #242f3d;
+}
+
+.swatchPrimary {
+  background: #3a74c9;
+}
+
+.swatchSuccess {
+  background: #3b7f3f;
+}
+
+.swatchDanger {
+  background: #a8473f;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}

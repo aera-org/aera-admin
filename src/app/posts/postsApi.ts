@@ -2,9 +2,11 @@ import { apiFetch } from '@/app/api';
 import { buildApiError } from '@/app/api/apiErrors';
 import {
   type IPost,
+  type IPostSettings,
   Language,
   type PostAnalytics,
   type PostAnalyticsQuery,
+  type PostButtonStyle,
   PostType,
 } from '@/common/types';
 
@@ -20,9 +22,18 @@ export type PostsListParams = {
   take?: number;
 };
 
+export type PostButtonDto = {
+  text: string;
+  style: PostButtonStyle;
+  /** Left out: kept for an unchanged text, missing languages are translated. */
+  localizations?: Partial<Record<Language, string>>;
+};
+
 type PostBaseDto = {
   text: string;
   isActive: boolean;
+  /** Up to 3; an empty list removes them. */
+  buttons?: PostButtonDto[];
 };
 
 type RegularPostDto = {
@@ -70,6 +81,11 @@ export type LocalizePostDto = {
 export type LocalizeAllPostsDto = {
   language: Language;
 };
+export type PreviewPostDto = {
+  telegramChatId: number;
+  /** 'en' or a localization; en by default. */
+  language?: string;
+};
 
 const listFallbackError = 'Unable to load posts.';
 const createFallbackError = 'Unable to create the post.';
@@ -78,6 +94,8 @@ const deleteFallbackError = 'Unable to delete the post.';
 const localizeFallbackError = 'Unable to localize the post.';
 const localizeAllFallbackError = 'Unable to localize posts.';
 const analyticsFallbackError = 'Unable to load post analytics.';
+const settingsFallbackError = 'Unable to load post settings.';
+const previewFallbackError = 'Unable to send the preview.';
 
 function buildListQuery(params: PostsListParams) {
   const query = new URLSearchParams();
@@ -217,5 +235,25 @@ export async function localizeAllPosts(payload: LocalizeAllPostsDto) {
   });
   if (!res.ok) {
     throw await buildApiError(res, localizeAllFallbackError);
+  }
+}
+
+export async function getPostSettings() {
+  const res = await apiFetch('/admin/posts/settings');
+  if (!res.ok) {
+    throw await buildApiError(res, settingsFallbackError);
+  }
+  return (await res.json()) as IPostSettings;
+}
+
+/** The posting bot sends the saved post to the chat, as partners get it. */
+export async function previewPost(id: string, payload: PreviewPostDto) {
+  const res = await apiFetch(`/admin/posts/${id}/preview`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw await buildApiError(res, previewFallbackError);
   }
 }

@@ -2,7 +2,9 @@ export type {
   CreatePostDto,
   LocalizeAllPostsDto,
   LocalizePostDto,
+  PostButtonDto,
   PostsListParams,
+  PreviewPostDto,
   UpdatePostDto,
 } from './postsApi';
 export {
@@ -12,5 +14,7 @@ export {
   useLocalizePost,
   usePostAnalytics,
   usePosts,
+  usePostSettings,
+  usePreviewPost,
   useUpdatePost,
 } from './queries';

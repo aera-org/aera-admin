@@ -12,8 +12,10 @@ import { useCharacterDetails, useCharacters } from '@/app/characters';
 import { markFileUploaded, signUpload } from '@/app/files/filesApi';
 import {
   type CreatePostDto,
+  type PostButtonDto,
   type UpdatePostDto,
   useCreatePost,
+  usePostSettings,
   useUpdatePost,
 } from '@/app/posts';
 import { notifyError } from '@/app/toast';
@@ -35,6 +37,8 @@ import {
   FileStatus,
   type IFile,
   type IPost,
+  type IPostButton,
+  type IPostSettings,
   Language,
   PostType,
 } from '@/common/types';
@@ -45,8 +49,20 @@ import {
   type SearchSelectOption,
 } from '@/components/molecules';
 
+import {
+  captionLength,
+  formatCaptionLength,
+  getButtonError,
+  getButtonTextIn,
+  getPostLanguages,
+  getPostTextIn,
+  PREVIEW_EN,
+} from '../postCaption';
 import { getLanguageLabel } from '../postLocalization';
+import { PostButtonsEditor } from './PostButtonsEditor';
+import { PostTelegramSend } from './PostTelegramSend';
 import s from './PostUpsertDrawer.module.scss';
+import { TelegramPostPreview } from './TelegramPostPreview';
 
 type PostUpsertDrawerProps = {
   open: boolean;
@@ -77,9 +93,17 @@ type Values = {
   text: string;
   isActive: boolean;
   localizations: Partial<Record<Language, string>>;
+  buttons: IPostButton[];
 };
 
 const CHARACTER_LIST_LIMIT = 100;
+// until the backend answers: the counter is then a few characters off
+const FALLBACK_SETTINGS: IPostSettings = {
+  shortLink: 'https://t.me/bot',
+  captionLimit: 1024,
+  buttonsLimit: 3,
+  buttonTextLimit: 64,
+};
 const SEARCH_DEBOUNCE_MS = 300;
 const MEDIA_CONFIG = {
   [PostType.Img]: {
@@ -241,7 +265,9 @@ export function PostUpsertDrawer({
     text: '',
     isActive: true,
     localizations: {},
+    buttons: [],
   });
+  const [previewLanguage, setPreviewLanguage] = useState<string>(PREVIEW_EN);
   const [uploadItem, setUploadItem] = useState<UploadItem | null>(null);
   const [currentMedia, setCurrentMedia] = useState<IFile | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -270,6 +296,8 @@ export function PostUpsertDrawer({
     useCharacterDetails(values.characterId || null);
   const createMutation = useCreatePost();
   const updateMutation = useUpdatePost();
+  const { data: settingsData } = usePostSettings();
+  const settings = settingsData ?? FALLBACK_SETTINGS;
 
   const characterOptions = useMemo(
     () =>
@@ -309,6 +337,25 @@ export function PostUpsertDrawer({
     [values.localizations],
   );
 
+  // caption = the text and the short bot link; the bot refuses longer ones
+  const textLength = captionLength(values.text.trim(), settings.shortLink);
+  const isTextTooLong = textLength > settings.captionLimit;
+  const tooLongLocalizations = localizationEntries
+    .filter(
+      ([, text]) =>
+        captionLength(text.trim(), settings.shortLink) > settings.captionLimit,
+    )
+    .map(([language]) => language);
+  const hasButtonErrors = values.buttons.some((button) =>
+    Boolean(getButtonError(button, settings.buttonTextLimit)),
+  );
+  const previewLanguages = getPostLanguages(values.localizations);
+  const activePreviewLanguage = previewLanguages.includes(previewLanguage)
+    ? previewLanguage
+    : PREVIEW_EN;
+  const formatLength = (length: number) =>
+    formatCaptionLength(length, settings.captionLimit);
+
   // start, custom character and rvb posts have no scenario
   const isScenarioless =
     values.isCustomCharacter || values.isStart || values.isRvb;
@@ -327,7 +374,13 @@ export function PostUpsertDrawer({
       text: post?.text ?? '',
       isActive: post?.isActive ?? true,
       localizations: { ...(post?.localizations ?? {}) },
+      buttons: (post?.buttons ?? []).map((button) => ({
+        text: button.text,
+        style: button.style,
+        localizations: { ...(button.localizations ?? {}) },
+      })),
     });
+    setPreviewLanguage(PREVIEW_EN);
     setCurrentMedia(
       postType === PostType.Video ? (post?.video ?? null) : (post?.img ?? null),
     );
@@ -380,7 +433,16 @@ export function PostUpsertDrawer({
           : 'Select a character.',
       scenarioId:
         isScenarioless || values.scenarioId ? undefined : 'Select a scenario.',
-      text: values.text.trim() ? undefined : 'Enter text.',
+      text: !values.text.trim()
+        ? 'Enter text.'
+        : isTextTooLong
+          ? `Too long for a caption: ${formatCaptionLength(textLength, settings.captionLimit)}.`
+          : undefined,
+      localizations: tooLongLocalizations.length
+        ? `Too long for a caption: ${tooLongLocalizations
+            .map((language) => getLanguageLabel(language))
+            .join(', ')}.`
+        : undefined,
       media: resolvedMedia
         ? undefined
         : isUploadingFile
@@ -396,6 +458,10 @@ export function PostUpsertDrawer({
     values.characterId,
     values.scenarioId,
     values.text,
+    isTextTooLong,
+    textLength,
+    tooLongLocalizations,
+    settings.captionLimit,
   ]);
 
   const characterValueLabel = useMemo(
@@ -484,7 +550,10 @@ export function PostUpsertDrawer({
       (!isScenarioless && !values.characterId) ||
       (!isScenarioless && !values.scenarioId) ||
       !values.text.trim() ||
-      !resolvedMedia
+      !resolvedMedia ||
+      isTextTooLong ||
+      tooLongLocalizations.length > 0 ||
+      hasButtonErrors
     ) {
       setShowErrors(true);
       return;
@@ -493,9 +562,24 @@ export function PostUpsertDrawer({
     setIsSubmitting(true);
 
     try {
+      const buttons: PostButtonDto[] = values.buttons.map((button) => {
+        const localizations = Object.fromEntries(
+          Object.entries(button.localizations).filter(([, text]) =>
+            text?.trim(),
+          ),
+        );
+
+        return {
+          text: button.text.trim(),
+          style: button.style,
+          // none: the backend keeps the ones of the same text or translates
+          ...(Object.keys(localizations).length ? { localizations } : {}),
+        };
+      });
       const content = {
         text: values.text.trim(),
         isActive: values.isActive,
+        buttons,
       };
       const media =
         values.type === PostType.Video
@@ -851,7 +935,16 @@ export function PostUpsertDrawer({
           />
         </Field>
 
-        <Field label="Text" labelFor="post-upsert-text" error={errors.text}>
+        <Field
+          label="Text"
+          labelFor="post-upsert-text"
+          error={errors.text}
+          hint={
+            <span className={isTextTooLong ? s.counterOver : undefined}>
+              {formatLength(textLength)}
+            </span>
+          }
+        >
           <Textarea
             id="post-upsert-text"
             size="sm"
@@ -868,15 +961,45 @@ export function PostUpsertDrawer({
           />
         </Field>
 
+        {/* the posting bot of the R bot sends buttons; X posts go out without */}
+        {!isX ? (
+          <Field label="Buttons">
+            <PostButtonsEditor
+              buttons={values.buttons}
+              onChange={(buttons) =>
+                setValues((prev) => ({ ...prev, buttons }))
+              }
+              limit={settings.buttonsLimit}
+              textLimit={settings.buttonTextLimit}
+              disabled={isBusy}
+              showErrors={showErrors}
+            />
+          </Field>
+        ) : null}
+
         {post ? (
-          <Field label="Localizations">
+          <Field label="Localizations" error={errors.localizations}>
             {localizationEntries.length > 0 ? (
               <div className={s.localizationList}>
                 {localizationEntries.map(([language, text]) => (
                   <div key={language} className={s.localizationItem}>
-                    <Typography variant="meta" tone="muted">
-                      {getLanguageLabel(language)}
-                    </Typography>
+                    <div className={s.localizationHeader}>
+                      <Typography variant="meta" tone="muted">
+                        {getLanguageLabel(language)}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        tone={
+                          tooLongLocalizations.includes(language)
+                            ? 'danger'
+                            : 'muted'
+                        }
+                      >
+                        {formatLength(
+                          captionLength(text.trim(), settings.shortLink),
+                        )}
+                      </Typography>
+                    </div>
                     <Textarea
                       id={`post-upsert-localization-${language}`}
                       size="sm"
@@ -894,6 +1017,33 @@ export function PostUpsertDrawer({
                       fullWidth
                       disabled={isBusy}
                     />
+                    {(isX ? [] : values.buttons).map((button, index) => (
+                      <Input
+                        key={index}
+                        size="sm"
+                        value={button.localizations[language] ?? ''}
+                        placeholder={`${button.text || 'Button'} (translated on save)`}
+                        maxLength={settings.buttonTextLimit}
+                        disabled={isBusy}
+                        fullWidth
+                        onChange={(event) =>
+                          setValues((prev) => ({
+                            ...prev,
+                            buttons: prev.buttons.map((b, i) =>
+                              i === index
+                                ? {
+                                    ...b,
+                                    localizations: {
+                                      ...b.localizations,
+                                      [language]: event.target.value,
+                                    },
+                                  }
+                                : b,
+                            ),
+                          }))
+                        }
+                      />
+                    ))}
                   </div>
                 ))}
               </div>
@@ -905,6 +1055,46 @@ export function PostUpsertDrawer({
               </div>
             )}
           </Field>
+        ) : null}
+
+        {!isX ? (
+          <Field label="Preview">
+            <div className={s.previewSection}>
+              {previewLanguages.length > 1 ? (
+                <Select
+                  size="sm"
+                  options={previewLanguages.map((language) => ({
+                    value: language,
+                    label:
+                      language === PREVIEW_EN
+                        ? 'English'
+                        : getLanguageLabel(language as Language),
+                  }))}
+                  value={activePreviewLanguage}
+                  onChange={setPreviewLanguage}
+                  disabled={isBusy}
+                />
+              ) : null}
+              <TelegramPostPreview
+                mediaType={values.type}
+                mediaUrl={resolvedMedia?.url ?? undefined}
+                text={getPostTextIn(values, activePreviewLanguage).trim()}
+                shortLink={settings.shortLink}
+                buttons={values.buttons.map((button) => ({
+                  text: getButtonTextIn(button, activePreviewLanguage),
+                  style: button.style,
+                }))}
+              />
+            </div>
+          </Field>
+        ) : null}
+
+        {post && !isX ? (
+          <PostTelegramSend
+            postId={post.id}
+            language={activePreviewLanguage}
+            disabled={isBusy}
+          />
         ) : null}
 
         <div className={s.drawerActions}>

@@ -1,7 +1,9 @@
+import { usePostSettings } from '@/app/posts';
 import { TrashIcon } from '@/assets/icons';
 import { Badge, Card, IconButton, Skeleton, Typography } from '@/atoms';
 import { type IPost, PostType } from '@/common/types';
 
+import { getTooLongLanguages } from '../postCaption';
 import s from './PostItemCard.module.scss';
 
 type PostItemCardProps = {
@@ -23,6 +25,12 @@ export function PostItemCard({
   const imageUrl = item.img?.url ?? '';
   const videoUrl = item.video?.url ?? '';
   const textValue = item.text || '—';
+  const { data: settings } = usePostSettings();
+  const buttonsCount = item.buttons?.length ?? 0;
+  // the bot does not send a post with a longer caption
+  const tooLong = settings
+    ? getTooLongLanguages(item, settings.captionLimit)
+    : [];
   const isSelectable = Boolean(onSelect);
   const handleSelect = () => {
     if (!onSelect) return;
@@ -109,6 +117,16 @@ export function PostItemCard({
             </Badge>
             <Badge>{item.type === PostType.Video ? 'Video' : 'Image'}</Badge>
             {item.isRvb ? <Badge outline>RVB</Badge> : null}
+            {buttonsCount ? (
+              <Badge outline>
+                {buttonsCount} {buttonsCount === 1 ? 'button' : 'buttons'}
+              </Badge>
+            ) : null}
+            {tooLong.length ? (
+              <Badge tone="danger">
+                Too long: {tooLong.join(', ').toUpperCase()}
+              </Badge>
+            ) : null}
           </div>
         </div>
         <pre className={s.textValue}>{textValue}</pre>

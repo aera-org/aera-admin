@@ -1,7 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { notifyError, notifySuccess } from '@/app/toast';
-import type { IPost, PostAnalytics, PostAnalyticsQuery } from '@/common/types';
+import type {
+  IPost,
+  IPostSettings,
+  PostAnalytics,
+  PostAnalyticsQuery,
+} from '@/common/types';
 
 import type { PaginatedResponse } from '../paginated-response.type';
 import {
@@ -10,16 +15,20 @@ import {
   deletePost,
   getPostAnalytics,
   getPosts,
+  getPostSettings,
   localizeAllPosts,
   type LocalizeAllPostsDto,
   localizePost,
   type LocalizePostDto,
   type PostsListParams,
+  previewPost,
+  type PreviewPostDto,
   updatePost,
   type UpdatePostDto,
 } from './postsApi';
 
 const postKeys = {
+  settings: ['posts', 'settings'] as const,
   posts: (params: PostsListParams) => ['posts', 'items', params] as const,
   analytics: (params: PostAnalyticsQuery) =>
     ['posts', 'analytics', params] as const,
@@ -146,6 +155,35 @@ export function useLocalizeAllPosts() {
     },
     onError: (error) => {
       notifyError(error, 'Unable to localize posts.');
+    },
+  });
+}
+
+export function usePostSettings() {
+  return useQuery<IPostSettings>({
+    queryKey: postKeys.settings,
+    queryFn: getPostSettings,
+    staleTime: Infinity,
+  });
+}
+
+type PostPreviewOptions = {
+  id: string;
+  payload: PreviewPostDto;
+};
+
+export function usePreviewPost() {
+  return useMutation({
+    mutationFn: ({ id, payload }: PostPreviewOptions) =>
+      previewPost(id, payload),
+    onSuccess: () => {
+      notifySuccess(
+        'Preview sent: check the chat with the posting bot.',
+        'Preview sent.',
+      );
+    },
+    onError: (error) => {
+      notifyError(error, 'Unable to send the preview.');
     },
   });
 }

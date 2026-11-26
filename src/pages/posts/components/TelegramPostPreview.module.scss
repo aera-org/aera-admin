@@ -1,0 +1,104 @@
+// Telegram dark theme, as on the client screenshots
+.root {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bubble {
+  background: #182533;
+  color: #f5f5f5;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.media {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  background: #0e1621;
+}
+
+.mediaEmpty {
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #708499;
+  font-size: 13px;
+  background: #0e1621;
+}
+
+.caption {
+  padding: 8px 12px 10px;
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.link {
+  color: #6ab3f3;
+}
+
+.code {
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  color: #e6a26f;
+}
+
+.pre {
+  margin: 4px 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.button {
+  position: relative;
+  padding: 10px 24px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  word-break: break-word;
+
+  // url button mark
+  &::after {
+    content: '↗';
+    position: absolute;
+    top: 3px;
+    right: 7px;
+    font-size: 11px;
+    opacity: 0.8;
+  }
+}
+
+.buttonDefault {
+  background: rgba(36, 47, 61, 0.95);
+}
+
+.buttonPrimary {
+  background: #3a74c9;
+}
+
+.buttonSuccess {
+  background: #3b7f3f;
+}
+
+.buttonDanger {
+  background: #a8473f;
+}

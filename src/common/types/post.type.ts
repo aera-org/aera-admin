@@ -15,6 +15,31 @@ export enum Language {
     Pl = 'pl',
 }
 
+/** Telegram button colour: default has none. */
+export enum PostButtonStyle {
+    Default = 'default',
+    Primary = 'primary',
+    Success = 'success',
+    Danger = 'danger',
+}
+
+/** Url button under the post: opens the post deeplink with the partner ref. */
+export interface IPostButton {
+    text: string;
+    style: PostButtonStyle;
+    /** Translated texts; missing ones are translated on save. */
+    localizations: Partial<Record<Language, string>>;
+}
+
+/** What the editor needs to show the post as Telegram will. */
+export interface IPostSettings {
+    /** Link text under every post: counts toward the caption limit. */
+    shortLink: string;
+    captionLimit: number;
+    buttonsLimit: number;
+    buttonTextLimit: number;
+}
+
 export interface IPost {
     id: string;
     text: string;
@@ -30,6 +55,9 @@ export interface IPost {
     updatedAt: string;
     createdAt: string;
     localizations: Partial<Record<Language, string>>;
+    buttons?: IPostButton[];
+    /** Caption length by language ('en' and localizations), with the link. */
+    captionLength?: Partial<Record<string, number>>;
 }
 
 export interface PostsStats {
