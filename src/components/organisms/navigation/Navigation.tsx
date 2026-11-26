@@ -28,7 +28,7 @@ import { isX } from '@/common/is-x';
 
 import s from './Navigation.module.scss';
 
-type NavSection = 'system' | 'tg' | 'web';
+type NavSection = 'system' | 'tg' | 'web' | 'rvb';
 
 type NavItem = {
   label: string;
@@ -42,9 +42,10 @@ const SECTION_LABELS: Record<NavSection, string> = {
   system: 'System',
   tg: 'TG',
   web: 'Web',
+  rvb: 'RVB',
 };
 
-const SECTION_ORDER: NavSection[] = ['system', 'tg', 'web'];
+const SECTION_ORDER: NavSection[] = ['system', 'tg', 'web', 'rvb'];
 const DEFAULT_SECTION: NavSection = 'system';
 const STORAGE_KEY = 'nav.section';
 
@@ -121,6 +122,25 @@ const NAV: Record<NavSection, NavItem[][]> = {
       { label: 'Config', to: '/web/config', icon: <SlidersIcon /> },
     ],
   ],
+  // RVB bot: isX only; an empty section is hidden.
+  rvb: isX
+    ? [
+        [
+          { label: 'Users', to: '/rvb/users', icon: <UserIcon /> },
+          {
+            label: 'Generations',
+            to: '/rvb/generations',
+            icon: <VideoIcon />,
+          },
+          {
+            label: 'Payments',
+            to: '/rvb/payments',
+            icon: <DollarSignIcon />,
+          },
+          { label: 'Plans', to: '/rvb/plans', icon: <DollarSignIcon /> },
+        ],
+      ]
+    : [],
 };
 
 function matchesPrefix(pathname: string, prefix: string) {

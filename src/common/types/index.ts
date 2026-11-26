@@ -22,6 +22,7 @@ export * from './plan.type';
 export * from './pose-prompt.type';
 export * from './post.type';
 export * from './prompt.type';
+export * from './rvb.type';
 export * from './scenario.type';
 export * from './scenario-gen.type';
 export * from './tg-user.type';

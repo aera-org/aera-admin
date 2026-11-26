@@ -60,6 +60,12 @@ import {
   PromptsPage,
   PromptUpdatePage,
   ResetPasswordPage,
+  RvbGenerationDetailsPage,
+  RvbGenerationsPage,
+  RvbPaymentsPage,
+  RvbPlansPage,
+  RvbUserDetailsPage,
+  RvbUsersPage,
   ScenarioGenCreatePage,
   ScenarioGenDetailsPage,
   ScenarioGenPage,
@@ -205,6 +211,19 @@ export function AppRoutes() {
           <Route path="/web/chats" element={<WebStubPage title="Chats" />} />
           <Route path="/web/plans" element={<WebPlansPage />} />
           <Route path="/web/config" element={<ConfigPage scope="web" />} />
+          {isX ? (
+            <>
+              <Route path="/rvb/users" element={<RvbUsersPage />} />
+              <Route path="/rvb/users/:id" element={<RvbUserDetailsPage />} />
+              <Route path="/rvb/generations" element={<RvbGenerationsPage />} />
+              <Route
+                path="/rvb/generations/:id"
+                element={<RvbGenerationDetailsPage />}
+              />
+              <Route path="/rvb/payments" element={<RvbPaymentsPage />} />
+              <Route path="/rvb/plans" element={<RvbPlansPage />} />
+            </>
+          ) : null}
           <Route path="/chats" element={<ChatsPage />} />
           <Route path="/chats/:id" element={<ChatDetailsPage />} />
           <Route path="/generations/new" element={<GenerateImagePage />} />

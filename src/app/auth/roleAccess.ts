@@ -25,7 +25,9 @@ const AI_NAV_PATHS = new Set([
 const TARGET_NAV_PATHS = new Set([
   '/',
   '/posts',
-  '/payments'
+  '/payments',
+  // the backend opens rvb payments to the target role too
+  '/rvb/payments',
 ]);
 
 function matchesPrefix(pathname: string, prefix: string) {
