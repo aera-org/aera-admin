@@ -181,12 +181,9 @@ export function RvbPaymentsPage() {
     () =>
       payments.map((payment) => ({
         payment: (
-          <div className={s.cell}>
-            <Typography variant="caption" tone="muted">
+          <div className={s.idCell} title={payment.id}>
+            <Typography variant="caption" tone="muted" truncate>
               {payment.id}
-            </Typography>
-            <Typography variant="caption" tone="muted">
-              {payment.telegramChargeId}
             </Typography>
           </div>
         ),
@@ -241,7 +238,7 @@ export function RvbPaymentsPage() {
     () =>
       Array.from({ length: 6 }, (_, index) => ({
         payment: (
-          <Skeleton key={`rvb-payment-${index}`} width={180} height={12} />
+          <Skeleton key={`rvb-payment-${index}`} width={100} height={12} />
         ),
         amount: <Skeleton width={60} height={12} />,
         usd: <Skeleton width={60} height={12} />,

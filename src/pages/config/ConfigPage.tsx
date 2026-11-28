@@ -15,7 +15,7 @@ import type { ConfigScope, IConfigItem } from '@/common/types';
 import { AppShell } from '@/components/templates';
 
 import { ConfigEditModal } from './ConfigEditModal';
-import { getConfigLabel } from './configLabels';
+import { getConfigLabel, isConfigKeyVisible } from './configLabels';
 import s from './ConfigPage.module.scss';
 
 const TITLES: Record<ConfigScope, string> = {
@@ -59,7 +59,11 @@ type ConfigPageProps = {
 
 export function ConfigPage({ scope }: ConfigPageProps) {
   const { data, error, isLoading, refetch } = useConfig(scope);
-  const items = useMemo(() => data?.data ?? [], [data?.data]);
+  const items = useMemo(
+    () =>
+      (data?.data ?? []).filter((item) => isConfigKeyVisible(scope, item.key)),
+    [data?.data, scope],
+  );
   const [editing, setEditing] = useState<IConfigItem | null>(null);
 
   const rows = useMemo(
